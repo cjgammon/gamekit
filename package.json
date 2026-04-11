@@ -1,34 +1,9 @@
 {
-  "name": "kidengine",
-  "version": "0.1.0",
-  "description": "A friendly game engine for kids learning to code — PixiJS rendering, Matter.js physics, and Socket.io multiplayer in one simple package",
-  "type": "module",
-  "main": "src/index.js",
-  "module": "src/index.js",
-  "exports": {
-    ".": "./src/index.js"
-  },
-  "files": [
-    "src"
-  ],
-  "keywords": [
-    "game-engine",
-    "kids",
-    "learning",
-    "pixi",
-    "matter-js",
-    "multiplayer",
-    "socket.io",
-    "webgl",
-    "physics"
-  ],
-  "license": "MIT",
-  "engines": {
-    "node": ">=18"
-  },
-  "dependencies": {
-    "matter-js": "^0.19.0",
-    "pixi.js": "^7.4.0",
-    "socket.io-client": "^4.7.0"
-  }
+  "name": "gamekit-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ]
 }

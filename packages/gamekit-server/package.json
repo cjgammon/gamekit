@@ -1,0 +1,30 @@
+{
+  "name": "gamekit-server",
+  "version": "0.1.0",
+  "description": "Multiplayer server for games built with GameKit",
+  "type": "module",
+  "main": "server.js",
+  "exports": {
+    ".": "./server.js"
+  },
+  "files": [
+    "server.js"
+  ],
+  "bin": {
+    "gamekit-server": "./server.js"
+  },
+  "keywords": [
+    "gamekit",
+    "game-server",
+    "multiplayer",
+    "socket.io",
+    "kids"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.0"
+  }
+}
