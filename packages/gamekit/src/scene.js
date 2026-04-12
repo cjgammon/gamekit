@@ -6,18 +6,17 @@
 //  remote players over the network.
 // ============================================================
 
-import * as PIXI from 'pixi.js';
-import { Sprite } from './sprite.js';
+import * as PIXI from "pixi.js";
+import { Sprite } from "./sprite.js";
 
 let _nextSyncId = 1;
 
 export class Scene {
-
   constructor(stage, physics, network, camera) {
-    this._stage   = stage;
+    this._stage = stage;
     this._physics = physics;
     this._network = network;
-    this._camera  = camera;
+    this._camera = camera;
 
     // all sprites currently in the scene
     this._sprites = [];
@@ -39,12 +38,12 @@ export class Scene {
   // ------------------------------------------------------------------
   addSprite(imagePath, options = {}) {
     const texture = PIXI.Texture.from(imagePath);
-    const pixi    = new PIXI.Sprite(texture);
+    const pixi = new PIXI.Sprite(texture);
 
     pixi.x = options.x ?? 0;
     pixi.y = options.y ?? 0;
 
-    if (options.width)  pixi.width  = options.width;
+    if (options.width) pixi.width = options.width;
     if (options.height) pixi.height = options.height;
 
     pixi.anchor.set(options.anchor ?? 0.5);
@@ -73,9 +72,9 @@ export class Scene {
   //  }
   // ------------------------------------------------------------------
   addBox(options = {}) {
-    const w     = options.width  ?? 100;
-    const h     = options.height ?? 100;
-    const color = options.color  ?? 0x888888;
+    const w = options.width ?? 100;
+    const h = options.height ?? 100;
+    const color = options.color ?? 0x888888;
 
     const gfx = new PIXI.Graphics();
     gfx.beginFill(color);
@@ -91,9 +90,9 @@ export class Scene {
 
     // boxes are static by default — add physics automatically
     this._physics.add(sprite, {
-      isStatic:  options.isStatic ?? true,
-      bounce:    options.bounce   ?? 0,
-      friction:  options.friction ?? 0.8,
+      isStatic: options.isStatic ?? true,
+      bounce: options.bounce ?? 0,
+      friction: options.friction ?? 0.8,
     });
 
     this._sprites.push(sprite);
@@ -105,7 +104,7 @@ export class Scene {
   // ------------------------------------------------------------------
   addCircle(options = {}) {
     const radius = options.radius ?? 30;
-    const color  = options.color  ?? 0xff4444;
+    const color = options.color ?? 0xff4444;
 
     const gfx = new PIXI.Graphics();
     gfx.beginFill(color);
@@ -117,7 +116,10 @@ export class Scene {
 
     this._stage.addChild(gfx);
 
-    const sprite = new Sprite(gfx, { owned: true, syncId: String(_nextSyncId++) });
+    const sprite = new Sprite(gfx, {
+      owned: true,
+      syncId: String(_nextSyncId++),
+    });
     this._sprites.push(sprite);
     return sprite;
   }
@@ -130,14 +132,14 @@ export class Scene {
   // ------------------------------------------------------------------
   async loadTilemap(path, options = {}) {
     const response = await fetch(path);
-    const map      = await response.json();
+    const map = await response.json();
 
-    const tileW    = map.tilewidth;
-    const tileH    = map.tileheight;
-    const cols     = map.width;
+    const tileW = map.tilewidth;
+    const tileH = map.tileheight;
+    const cols = map.width;
 
     // load the tileset image
-    const tileset    = map.tilesets[0];
+    const tileset = map.tilesets[0];
     const tilesetImg = tileset.image;
     const tilesetTex = PIXI.Texture.from(tilesetImg);
     const tilesetCols = Math.floor(tileset.imagewidth / tileW);
@@ -145,9 +147,9 @@ export class Scene {
     const solidRects = [];
 
     for (const layer of map.layers) {
-      if (layer.type !== 'tilelayer') continue;
+      if (layer.type !== "tilelayer") continue;
 
-      const isSolid = layer.name.toLowerCase() === 'solid';
+      const isSolid = layer.name.toLowerCase() === "solid";
       const container = new PIXI.Container();
 
       layer.data.forEach((tileId, i) => {
@@ -167,7 +169,7 @@ export class Scene {
           tileH,
         );
 
-        const tex    = new PIXI.Texture(tilesetTex.baseTexture, frame);
+        const tex = new PIXI.Texture(tilesetTex.baseTexture, frame);
         const sprite = new PIXI.Sprite(tex);
 
         sprite.x = col * tileW;
@@ -176,7 +178,12 @@ export class Scene {
         container.addChild(sprite);
 
         if (isSolid) {
-          solidRects.push({ x: col * tileW, y: row * tileH, width: tileW, height: tileH });
+          solidRects.push({
+            x: col * tileW,
+            y: row * tileH,
+            width: tileW,
+            height: tileH,
+          });
         }
       });
 
@@ -198,15 +205,15 @@ export class Scene {
   syncPhysics() {
     for (const sprite of this._sprites) {
       if (sprite.destroyed) continue;
-      if (!sprite._body)    continue;
+      if (!sprite._body) continue;
 
-      sprite._pixi.x        = sprite._body.position.x;
-      sprite._pixi.y        = sprite._body.position.y;
+      sprite._pixi.x = sprite._body.position.x;
+      sprite._pixi.y = sprite._body.position.y;
       sprite._pixi.rotation = sprite._body.angle;
     }
 
     // clean up destroyed sprites
-    this._sprites = this._sprites.filter(s => !s.destroyed);
+    this._sprites = this._sprites.filter((s) => !s.destroyed);
   }
 
   // ------------------------------------------------------------------
@@ -219,7 +226,7 @@ export class Scene {
     if (!sprite._syncId) {
       sprite._syncId = String(_nextSyncId++);
     }
-    sprite._owned  = true;
+    sprite._owned = true;
     sprite._synced = true;
   }
 
@@ -227,12 +234,11 @@ export class Scene {
   //  getSyncedSprites() — all sprites that should be broadcast
   // ------------------------------------------------------------------
   getSyncedSprites() {
-    const synced = this._sprites.filter(s =>
-      !s.destroyed && s._owned && s._syncId &&
-      (s._body || s._synced)
+    const synced = this._sprites.filter(
+      (s) => !s.destroyed && s._owned && s._syncId && (s._body || s._synced),
     );
     if (synced.length > 0) {
-      console.log('[SCENE] Synced sprites:', synced.length, '- IDs:', synced.map(s => s._syncId).join(', '));
+      //console.log('[SCENE] Synced sprites:', synced.length, '- IDs:', synced.map(s => s._syncId).join(', '));
     }
     return synced;
   }
@@ -250,9 +256,9 @@ export class Scene {
 
     if (template) {
       const texture = PIXI.Texture.from(template.imagePath);
-      pixi          = new PIXI.Sprite(texture);
+      pixi = new PIXI.Sprite(texture);
 
-      if (template.options.width)  pixi.width  = template.options.width;
+      if (template.options.width) pixi.width = template.options.width;
       if (template.options.height) pixi.height = template.options.height;
       pixi.anchor.set(template.options.anchor ?? 0.5);
     } else {

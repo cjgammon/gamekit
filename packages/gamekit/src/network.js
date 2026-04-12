@@ -5,20 +5,19 @@
 //  and smoothly interpolating remote (other player) sprites.
 // ============================================================
 
-import { io } from 'socket.io-client';
+import { io } from "socket.io-client";
 
 // how often to send state updates (milliseconds)
 const SYNC_RATE_MS = 50; // 20 times per second
 
 export class Network {
-
   constructor(serverUrl) {
-    this._socket     = null;
-    this._serverUrl  = serverUrl;
-    this._roomName   = null;
+    this._socket = null;
+    this._serverUrl = serverUrl;
+    this._roomName = null;
     this._playerName = null;
-    this._scene      = null;
-    this._connected  = false;
+    this._scene = null;
+    this._connected = false;
 
     // remote sprites: syncId → Sprite
     this._remoteSprites = {};
@@ -41,40 +40,44 @@ export class Network {
   // ------------------------------------------------------------------
   _connect() {
     this._socket = io(this._serverUrl, {
-      autoConnect:    true,
-      reconnection:   true,
+      autoConnect: true,
+      reconnection: true,
       reconnectionDelay: 1000,
     });
 
-    this._socket.on('connect', () => {
-      console.log('[KidEngine] Connected to server:', this._socket.id);
+    this._socket.on("connect", () => {
+      console.log("[KidEngine] Connected to server:", this._socket.id);
       this._connected = true;
 
       // rejoin room automatically on reconnect
       if (this._roomName && this._playerName) {
-        this._socket.emit('joinRoom', { code: this._roomName, name: this._playerName });
+        this._socket.emit("joinRoom", {
+          code: this._roomName,
+          name: this._playerName,
+        });
       }
     });
 
-    this._socket.on('disconnect', () => {
-      console.log('[KidEngine] Disconnected from server');
+    this._socket.on("disconnect", () => {
+      console.log("[KidEngine] Disconnected from server");
       this._connected = false;
     });
 
     // another player's sprite state arrived
-    this._socket.on('spriteSync', (data) => {
+    this._socket.on("spriteSync", (data) => {
+      console.log("wooot", data);
       this._applyRemoteSync(data);
     });
 
     // another player left — remove their sprites
-    this._socket.on('playerLeft', ({ playerId }) => {
+    this._socket.on("playerLeft", ({ playerId }) => {
       this._removeRemotePlayer(playerId);
     });
 
     // forward any custom events to registered listeners
     this._socket.onAny((event, data) => {
-      if (event.startsWith('_')) return; // internal events
-      (this._listeners[event] || []).forEach(cb => cb(data));
+      if (event.startsWith("_")) return; // internal events
+      (this._listeners[event] || []).forEach((cb) => cb(data));
     });
   }
 
@@ -84,13 +87,15 @@ export class Network {
   //  Creates a new room and returns the 4-letter code to share.
   // ------------------------------------------------------------------
   createRoom(playerName, scene) {
+    console.log("createRoom");
     this._playerName = playerName;
-    this._scene      = scene;
+    this._scene = scene;
+    console.log(">" + scene);
 
     return new Promise((resolve) => {
       const doCreate = () => {
-        this._socket.emit('createRoom', { name: playerName });
-        this._socket.once('roomCreated', ({ code, players, sprites }) => {
+        this._socket.emit("createRoom", { name: playerName });
+        this._socket.once("roomCreated", ({ code, players, sprites }) => {
           this._roomName = code;
           this._applyLateJoinState(sprites);
           resolve({ code, players });
@@ -98,7 +103,7 @@ export class Network {
       };
 
       if (this._connected) doCreate();
-      else this._socket.once('connect', doCreate);
+      else this._socket.once("connect", doCreate);
     });
   }
 
@@ -108,26 +113,34 @@ export class Network {
   //  Joins an existing room by 4-letter code.
   // ------------------------------------------------------------------
   joinRoom(code, playerName, scene) {
+    console.log("joinRoom");
     this._playerName = playerName;
-    this._scene      = scene;
+    this._scene = scene;
+    console.log(">" + scene);
 
     return new Promise((resolve, reject) => {
       const doJoin = () => {
-        this._socket.emit('joinRoom', { code: code.toUpperCase(), name: playerName });
-
-        this._socket.once('roomJoined', ({ code: joinedCode, players, sprites }) => {
-          this._roomName = joinedCode;
-          this._applyLateJoinState(sprites);
-          resolve({ code: joinedCode, players });
+        this._socket.emit("joinRoom", {
+          code: code.toUpperCase(),
+          name: playerName,
         });
 
-        this._socket.once('roomError', ({ message }) => {
+        this._socket.once(
+          "roomJoined",
+          ({ code: joinedCode, players, sprites }) => {
+            this._roomName = joinedCode;
+            this._applyLateJoinState(sprites);
+            resolve({ code: joinedCode, players });
+          },
+        );
+
+        this._socket.once("roomError", ({ message }) => {
           reject(new Error(message));
         });
       };
 
       if (this._connected) doJoin();
-      else this._socket.once('connect', doJoin);
+      else this._socket.once("connect", doJoin);
     });
   }
 
@@ -174,9 +187,9 @@ export class Network {
     }
 
     if (updates.length > 0) {
-      console.log('[SYNC] Sending', updates.length, 'sprite(s):', updates.map(u => `id=${u.id} (${u.x},${u.y})`));
-      this._socket.emit('spriteSync', {
-        room:    this._roomName,
+      //console.log('[SYNC] Sending', updates.length, 'sprite(s):', updates.map(u => `id=${u.id} (${u.x},${u.y})`));
+      this._socket.emit("spriteSync", {
+        room: this._roomName,
         sprites: updates,
       });
     }
@@ -187,10 +200,10 @@ export class Network {
   // ------------------------------------------------------------------
   setScore(score) {
     if (!this._connected || !this._roomName) return;
-    this._socket.emit('gameEvent', {
-      room:  this._roomName,
-      event: 'scoreUpdate',
-      data:  { score },
+    this._socket.emit("gameEvent", {
+      room: this._roomName,
+      event: "scoreUpdate",
+      data: { score },
     });
   }
 
@@ -199,7 +212,7 @@ export class Network {
   // ------------------------------------------------------------------
   requestLeaderboard() {
     if (!this._connected) return;
-    this._socket.emit('requestLeaderboard');
+    this._socket.emit("requestLeaderboard");
   }
 
   // ------------------------------------------------------------------
@@ -209,10 +222,18 @@ export class Network {
   //  then updates their positions with interpolation.
   // ------------------------------------------------------------------
   _applyRemoteSync(data) {
+    console.log("?" + this._scene);
     if (!this._scene) return;
 
     const { playerId, sprites } = data;
-    console.log('[RECV] Received', sprites.length, 'sprite(s) from', playerId, ':', sprites.map(s => `id=${s.id} (${s.x},${s.y})`));
+    console.log(
+      "[RECV] Received",
+      sprites.length,
+      "sprite(s) from",
+      playerId,
+      ":",
+      sprites.map((s) => `id=${s.id} (${s.x},${s.y})`),
+    );
 
     for (const snap of sprites) {
       const key = `${playerId}:${snap.id}`;
@@ -252,8 +273,8 @@ export class Network {
 
   send(event, data) {
     if (!this._connected) return;
-    this._socket.emit('gameEvent', {
-      room:  this._roomName,
+    this._socket.emit("gameEvent", {
+      room: this._roomName,
       event,
       data,
     });
@@ -265,15 +286,15 @@ export class Network {
 //  enough from the last one to be worth sending
 // ------------------------------------------------------------------
 function _changed(last, snap) {
-  const POS_THRESHOLD = 0.5;  // pixels
-  const VEL_THRESHOLD = 0.1;  // pixels/frame
+  const POS_THRESHOLD = 0.5; // pixels
+  const VEL_THRESHOLD = 0.1; // pixels/frame
   const ANG_THRESHOLD = 0.01; // radians
 
   return (
-    Math.abs(last.x  - snap.x)  > POS_THRESHOLD ||
-    Math.abs(last.y  - snap.y)  > POS_THRESHOLD ||
+    Math.abs(last.x - snap.x) > POS_THRESHOLD ||
+    Math.abs(last.y - snap.y) > POS_THRESHOLD ||
     Math.abs(last.vx - snap.vx) > VEL_THRESHOLD ||
     Math.abs(last.vy - snap.vy) > VEL_THRESHOLD ||
-    Math.abs(last.a  - snap.a)  > ANG_THRESHOLD
+    Math.abs(last.a - snap.a) > ANG_THRESHOLD
   );
 }
