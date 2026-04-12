@@ -36,6 +36,13 @@ export class Network {
   }
 
   // ------------------------------------------------------------------
+  //  setScene(scene) — called by game.js after scene is created
+  // ------------------------------------------------------------------
+  setScene(scene) {
+    this._scene = scene;
+  }
+
+  // ------------------------------------------------------------------
   //  _connect() — creates the socket and sets up core event handlers
   // ------------------------------------------------------------------
   _connect() {
@@ -65,7 +72,6 @@ export class Network {
 
     // another player's sprite state arrived
     this._socket.on("spriteSync", (data) => {
-      console.log("wooot", data);
       this._applyRemoteSync(data);
     });
 
@@ -82,15 +88,12 @@ export class Network {
   }
 
   // ------------------------------------------------------------------
-  //  createRoom(playerName, scene) → Promise<{ code, players }>
+  //  createRoom(playerName) → Promise<{ code, players }>
   //
   //  Creates a new room and returns the 4-letter code to share.
   // ------------------------------------------------------------------
-  createRoom(playerName, scene) {
-    console.log("createRoom");
+  createRoom(playerName) {
     this._playerName = playerName;
-    this._scene = scene;
-    console.log(">" + scene);
 
     return new Promise((resolve) => {
       const doCreate = () => {
@@ -108,15 +111,12 @@ export class Network {
   }
 
   // ------------------------------------------------------------------
-  //  joinRoom(code, playerName, scene) → Promise<{ code, players }>
+  //  joinRoom(code, playerName) → Promise<{ code, players }>
   //
   //  Joins an existing room by 4-letter code.
   // ------------------------------------------------------------------
-  joinRoom(code, playerName, scene) {
-    console.log("joinRoom");
+  joinRoom(code, playerName) {
     this._playerName = playerName;
-    this._scene = scene;
-    console.log(">" + scene);
 
     return new Promise((resolve, reject) => {
       const doJoin = () => {
@@ -187,7 +187,6 @@ export class Network {
     }
 
     if (updates.length > 0) {
-      //console.log('[SYNC] Sending', updates.length, 'sprite(s):', updates.map(u => `id=${u.id} (${u.x},${u.y})`));
       this._socket.emit("spriteSync", {
         room: this._roomName,
         sprites: updates,
@@ -222,18 +221,9 @@ export class Network {
   //  then updates their positions with interpolation.
   // ------------------------------------------------------------------
   _applyRemoteSync(data) {
-    console.log("?" + this._scene);
     if (!this._scene) return;
 
     const { playerId, sprites } = data;
-    console.log(
-      "[RECV] Received",
-      sprites.length,
-      "sprite(s) from",
-      playerId,
-      ":",
-      sprites.map((s) => `id=${s.id} (${s.x},${s.y})`),
-    );
 
     for (const snap of sprites) {
       const key = `${playerId}:${snap.id}`;

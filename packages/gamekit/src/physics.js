@@ -5,20 +5,23 @@
 //  collisions and overlaps, and building tilemap collision shapes.
 // ============================================================
 
-import Matter from 'matter-js';
+import Matter from "matter-js";
 
 export class Physics {
-
   constructor(engine, world) {
-    this._engine  = engine;
-    this._world   = world;
+    this._engine = engine;
+    this._world = world;
 
     // map from Matter body id → { spriteA, spriteB, callback, type }
     this._colliders = [];
 
     // listen for Matter collision events
-    Matter.Events.on(engine, 'collisionStart', (e) => this._handleCollision(e, 'start'));
-    Matter.Events.on(engine, 'collisionActive', (e) => this._handleCollision(e, 'active'));
+    Matter.Events.on(engine, "collisionStart", (e) =>
+      this._handleCollision(e, "start"),
+    );
+    Matter.Events.on(engine, "collisionActive", (e) =>
+      this._handleCollision(e, "active"),
+    );
   }
 
   // ------------------------------------------------------------------
@@ -42,25 +45,28 @@ export class Physics {
     const h = sprite.height;
 
     const bodyOptions = {
-      isStatic:    options.isStatic   ?? false,
-      restitution: options.bounce     ?? 0.2,
-      friction:    options.friction   ?? 0.8,
-      density:     options.density    ?? 0.001,
+      isStatic: options.isStatic ?? false,
+      restitution: options.bounce ?? 0.2,
+      friction: options.friction ?? 0.8,
+      density: options.density ?? 0.001,
       frictionAir: options.airFriction ?? 0.01,
     };
 
     let body;
 
-    if (options.shape === 'circle') {
-      const radius = options.radius ?? (Math.min(w, h) / 2);
+    if (options.shape === "circle") {
+      const radius = options.radius ?? Math.min(w, h) / 2;
       body = Matter.Bodies.circle(x, y, radius, bodyOptions);
     } else {
-      body = Matter.Bodies.rectangle(x, y, w, h, bodyOptions);
+      // addBox uses top-left x/y; Matter needs center coords
+      const cx = sprite._width ? x + w / 2 : x;
+      const cy = sprite._height ? y + h / 2 : y;
+      body = Matter.Bodies.rectangle(cx, cy, w, h, bodyOptions);
     }
 
     // prevent the sprite from rotating (great for player characters)
     if (options.noRotation ?? true) {
-      body.inertia        = Infinity;
+      body.inertia = Infinity;
       body.inverseInertia = 0;
     }
 
@@ -90,7 +96,7 @@ export class Physics {
   //  Fires once when spriteA and spriteB first touch.
   // ------------------------------------------------------------------
   onCollide(spriteA, spriteB, callback) {
-    this._colliders.push({ spriteA, spriteB, callback, type: 'start' });
+    this._colliders.push({ spriteA, spriteB, callback, type: "start" });
   }
 
   // ------------------------------------------------------------------
@@ -100,7 +106,7 @@ export class Physics {
   //  (Used for overlap checks — no physics bounce.)
   // ------------------------------------------------------------------
   onOverlap(spriteA, spriteB, callback) {
-    this._colliders.push({ spriteA, spriteB, callback, type: 'active' });
+    this._colliders.push({ spriteA, spriteB, callback, type: "active" });
   }
 
   // ------------------------------------------------------------------
@@ -112,11 +118,11 @@ export class Physics {
   buildTilemapBodies(solidRects, tileSize) {
     for (const rect of solidRects) {
       const body = Matter.Bodies.rectangle(
-        rect.x + rect.width  / 2,
+        rect.x + rect.width / 2,
         rect.y + rect.height / 2,
         rect.width,
         rect.height,
-        { isStatic: true, friction: 0.8, restitution: 0 }
+        { isStatic: true, friction: 0.8, restitution: 0 },
       );
       Matter.Composite.add(this._world, body);
     }
@@ -137,8 +143,8 @@ export class Physics {
   // ------------------------------------------------------------------
   _handleCollision(event, type) {
     for (const pair of event.pairs) {
-      const bodyA   = pair.bodyA;
-      const bodyB   = pair.bodyB;
+      const bodyA = pair.bodyA;
+      const bodyB = pair.bodyB;
       const spriteA = bodyA._sprite;
       const spriteB = bodyB._sprite;
 

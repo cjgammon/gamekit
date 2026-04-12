@@ -6,16 +6,16 @@
 //  then hands back a simple object your game code uses.
 // ============================================================
 
-import * as PIXI   from 'pixi.js';
-import Matter      from 'matter-js';
+import * as PIXI from "pixi.js";
+import Matter from "matter-js";
 
-import { Scene }   from './scene.js';
-import { Physics } from './physics.js';
-import { Input }   from './input.js';
-import { Network } from './network.js';
-import { Camera }  from './camera.js';
-import { Lobby }   from './lobby.js';
-import { Scoring } from './scoring.js';
+import { Scene } from "./scene.js";
+import { Physics } from "./physics.js";
+import { Input } from "./input.js";
+import { Network } from "./network.js";
+import { Camera } from "./camera.js";
+import { Lobby } from "./lobby.js";
+import { Scoring } from "./scoring.js";
 
 // ------------------------------------------------------------------
 //  createGame(options)
@@ -40,57 +40,59 @@ import { Scoring } from './scoring.js';
 //  }
 // ------------------------------------------------------------------
 export function createGame(options = {}) {
-
   // --- settings with sensible defaults ---
   const config = {
-    width:         options.width         ?? 800,
-    height:        options.height        ?? 600,
-    gravity:       options.gravity       ?? 1,
-    background:    options.background    ?? 0x87ceeb,
-    server:        options.server        ?? 'http://localhost:3000',
-    lobby:         options.lobby         ?? false,
-    maxPlayers:    options.maxPlayers    ?? 2,
-    title:         options.title         ?? 'GAME',
+    width: options.width ?? 800,
+    height: options.height ?? 600,
+    gravity: options.gravity ?? 1,
+    background: options.background ?? 0x87ceeb,
+    server: options.server ?? "http://localhost:3000",
+    lobby: options.lobby ?? false,
+    maxPlayers: options.maxPlayers ?? 2,
+    title: options.title ?? "GAME",
     lobbyElements: options.lobbyElements ?? null,
-    scores:        options.scores        ?? false,
-    winScore:      options.winScore      ?? 7,
-    resetDelay:    options.resetDelay    ?? 1200,
+    scores: options.scores ?? false,
+    winScore: options.winScore ?? 7,
+    resetDelay: options.resetDelay ?? 1200,
   };
 
   // --- pixi renderer ---
   const app = new PIXI.Application({
-    width:           config.width,
-    height:          config.height,
+    width: config.width,
+    height: config.height,
     backgroundColor: config.background,
-    resolution:      window.devicePixelRatio || 1,
-    autoDensity:     true,
-    antialias:       true,
+    resolution: window.devicePixelRatio || 1,
+    autoDensity: true,
+    antialias: true,
   });
 
-  app.renderer.view.style.display = 'block';
+  app.renderer.view.style.display = "block";
   fitToScreen(app, config.width, config.height);
-  window.addEventListener('resize', () => fitToScreen(app, config.width, config.height));
+  window.addEventListener("resize", () =>
+    fitToScreen(app, config.width, config.height),
+  );
   document.body.appendChild(app.view);
-  document.body.style.margin     = '0';
-  document.body.style.overflow   = 'hidden';
-  document.body.style.background = '#000';
+  document.body.style.margin = "0";
+  document.body.style.overflow = "hidden";
+  document.body.style.background = "#000";
 
   // --- matter.js physics world ---
   const engine = Matter.Engine.create({ gravity: { y: config.gravity } });
-  const world  = engine.world;
+  const world = engine.world;
 
   // --- sub-systems ---
   const physics = new Physics(engine, world);
-  const input   = new Input(app.view);
-  const camera  = new Camera(app.stage, config.width, config.height);
+  const input = new Input(app.view);
+  const camera = new Camera(app.stage, config.width, config.height);
   const network = new Network(config.server);
-  const scene   = new Scene(app.stage, physics, network, camera);
+  const scene = new Scene(app.stage, physics, network, camera);
+  network.setScene(scene); // give network access to scene for ghost sprite creation
 
   // --- lobby (optional) ---
   const lobby = config.lobby
     ? new Lobby(network, app.view, {
-        maxPlayers:    config.maxPlayers,
-        title:         config.title,
+        maxPlayers: config.maxPlayers,
+        title: config.title,
         lobbyElements: config.lobbyElements,
       })
     : null;
@@ -98,7 +100,7 @@ export function createGame(options = {}) {
   // --- scoring (optional) ---
   const scoring = config.scores
     ? new Scoring(network, {
-        winScore:   config.winScore,
+        winScore: config.winScore,
         resetDelay: config.resetDelay,
       })
     : null;
@@ -107,9 +109,9 @@ export function createGame(options = {}) {
   let lastTime = performance.now();
 
   app.ticker.add(() => {
-    const now     = performance.now();
-    const delta   = (now - lastTime) / 1000;
-    lastTime      = now;
+    const now = performance.now();
+    const delta = (now - lastTime) / 1000;
+    lastTime = now;
     const deltaMs = Math.min(delta, 0.05) * 1000;
 
     Matter.Engine.update(engine, deltaMs);
@@ -122,7 +124,6 @@ export function createGame(options = {}) {
   //  Public API
   // ------------------------------------------------------------------
   const game = {
-
     // --- scene ---
 
     sprite(imagePath, options = {}) {
@@ -205,12 +206,12 @@ export function createGame(options = {}) {
 
     // Create a room manually (when not using built-in lobby)
     createRoom(playerName) {
-      return network.createRoom(playerName, scene);
+      return network.createRoom(playerName);
     },
 
     // Join a room manually (when not using built-in lobby)
     joinRoom(code, playerName) {
-      return network.joinRoom(code, playerName, scene);
+      return network.joinRoom(code, playerName);
     },
 
     // --- scoring ---
@@ -220,7 +221,9 @@ export function createGame(options = {}) {
     // game.score('left')
     score(side) {
       if (!scoring) {
-        console.warn('[GameKit] score() called but scores option is not enabled.');
+        console.warn(
+          "[GameKit] score() called but scores option is not enabled.",
+        );
         return;
       }
       scoring.score(side);
@@ -271,17 +274,21 @@ export function createGame(options = {}) {
 
     // --- utils ---
 
-    pause()  { app.ticker.stop();  },
-    resume() { app.ticker.start(); },
+    pause() {
+      app.ticker.stop();
+    },
+    resume() {
+      app.ticker.start();
+    },
 
     // Access internals (advanced)
-    _app:     app,
+    _app: app,
     _physics: physics,
-    _scene:   scene,
+    _scene: scene,
     _network: network,
-    _camera:  camera,
-    _input:   input,
-    _lobby:   lobby,
+    _camera: camera,
+    _input: input,
+    _lobby: lobby,
     _scoring: scoring,
   };
 
@@ -293,11 +300,11 @@ export function createGame(options = {}) {
 // ------------------------------------------------------------------
 function fitToScreen(app, gameWidth, gameHeight) {
   const scale = Math.min(
-    window.innerWidth  / gameWidth,
+    window.innerWidth / gameWidth,
     window.innerHeight / gameHeight,
   );
-  app.renderer.view.style.width      = Math.floor(gameWidth  * scale) + 'px';
-  app.renderer.view.style.height     = Math.floor(gameHeight * scale) + 'px';
-  app.renderer.view.style.marginLeft = 'auto';
-  app.renderer.view.style.marginRight = 'auto';
+  app.renderer.view.style.width = Math.floor(gameWidth * scale) + "px";
+  app.renderer.view.style.height = Math.floor(gameHeight * scale) + "px";
+  app.renderer.view.style.marginLeft = "auto";
+  app.renderer.view.style.marginRight = "auto";
 }

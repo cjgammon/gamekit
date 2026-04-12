@@ -210,18 +210,17 @@ const BUILT_IN_HTML = (title) => `
 `;
 
 export class Lobby {
-
   constructor(network, canvas, options = {}) {
-    this._network    = network;
-    this._canvas     = canvas;
+    this._network = network;
+    this._canvas = canvas;
     this._maxPlayers = options.maxPlayers ?? 2;
-    this._title      = options.title      ?? 'GAME';
-    this._custom     = options.lobbyElements ?? null;
-    this._onReady    = null;
+    this._title = options.title ?? "GAME";
+    this._custom = options.lobbyElements ?? null;
+    this._onReady = null;
 
     this._playerCount = 1; // host counts as 1
-    this._isHost      = false;
-    this._players     = [];
+    this._isHost = false;
+    this._players = [];
 
     this._injectUI();
     this._wire();
@@ -242,17 +241,17 @@ export class Lobby {
     if (this._custom) return; // game provides its own HTML
 
     // inject styles
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = BUILT_IN_STYLES;
     document.head.appendChild(style);
 
     // inject HTML before the canvas
-    const wrapper = document.createElement('div');
+    const wrapper = document.createElement("div");
     wrapper.innerHTML = BUILT_IN_HTML(this._title);
     document.body.insertBefore(wrapper, this._canvas);
 
     // hide canvas until game starts
-    this._canvas.style.display = 'none';
+    this._canvas.style.display = "none";
   }
 
   // ------------------------------------------------------------------
@@ -269,27 +268,29 @@ export class Lobby {
   //  _wire — attach event listeners to lobby buttons
   // ------------------------------------------------------------------
   _wire() {
-    const btnCreate  = this._el('gk-btn-create',  'btnCreate');
-    const btnJoin    = this._el('gk-btn-join',     'btnJoin');
-    const codeInput  = this._el('gk-code-input',   'codeInput');
+    const btnCreate = this._el("gk-btn-create", "btnCreate");
+    const btnJoin = this._el("gk-btn-join", "btnJoin");
+    const codeInput = this._el("gk-code-input", "codeInput");
 
-    btnCreate?.addEventListener('click', () => this._handleCreate());
-    btnJoin?.addEventListener('click',   () => this._handleJoin());
+    btnCreate?.addEventListener("click", () => this._handleCreate());
+    btnJoin?.addEventListener("click", () => this._handleJoin());
 
-    codeInput?.addEventListener('input', (e) => {
+    codeInput?.addEventListener("input", (e) => {
       e.target.value = e.target.value.toUpperCase();
     });
 
     // restart button — just reload
-    document.getElementById('gk-btn-restart')?.addEventListener('click', () => {
+    document.getElementById("gk-btn-restart")?.addEventListener("click", () => {
       window.location.reload();
     });
 
     // listen for players joining
-    this._network.on('playerJoined', ({ player }) => {
+    this._network.on("playerJoined", ({ player }) => {
       this._playerCount++;
       this._players.push(player);
-      this._setStatus(`${this._playerCount}/${this._maxPlayers} players joined…`);
+      this._setStatus(
+        `${this._playerCount}/${this._maxPlayers} players joined…`,
+      );
 
       if (this._playerCount >= this._maxPlayers) {
         this._roomFull();
@@ -297,9 +298,9 @@ export class Lobby {
     });
 
     // guest receives gameStart from host
-    this._network.on('gameStart', ({ players }) => {
-      this._players  = players;
-      this._isHost   = false;
+    this._network.on("gameStart", ({ players }) => {
+      this._players = players;
+      this._isHost = false;
       this._startGame();
     });
   }
@@ -308,33 +309,32 @@ export class Lobby {
   //  _handleCreate — create a room
   // ------------------------------------------------------------------
   async _handleCreate() {
-    const name    = this._el('gk-name', 'nameInput')?.value.trim() || 'PLAYER';
-    const btnCreate = this._el('gk-btn-create', 'btnCreate');
+    const name = this._el("gk-name", "nameInput")?.value.trim() || "PLAYER";
+    const btnCreate = this._el("gk-btn-create", "btnCreate");
 
     btnCreate.disabled = true;
-    this._setStatus('Creating room…');
+    this._setStatus("Creating room…");
 
     try {
-      const { code, players } = await this._network.createRoom(name, null);
-      this._isHost   = true;
-      this._players  = players;
+      const { code, players } = await this._network.createRoom(name);
+      this._isHost = true;
+      this._players = players;
 
       // show the code
-      const codeDisplay = document.getElementById('gk-code-display');
-      const codeEl      = document.getElementById('gk-code');
-      if (codeDisplay) codeDisplay.style.display = 'flex';
-      if (codeEl)      codeEl.textContent = code;
+      const codeDisplay = document.getElementById("gk-code-display");
+      const codeEl = document.getElementById("gk-code");
+      if (codeDisplay) codeDisplay.style.display = "flex";
+      if (codeEl) codeEl.textContent = code;
 
       const customCodeDisplay = this._custom?.codeDisplay
         ? document.querySelector(this._custom.codeDisplay)
         : null;
       if (customCodeDisplay) customCodeDisplay.textContent = code;
 
-      this._setStatus('');
-      btnCreate.style.display = 'none';
-
+      this._setStatus("");
+      btnCreate.style.display = "none";
     } catch (err) {
-      this._setStatus('Could not connect. Is the server running?', true);
+      this._setStatus("Could not connect. Is the server running?", true);
       btnCreate.disabled = false;
     }
   }
@@ -343,12 +343,14 @@ export class Lobby {
   //  _handleJoin — join a room by code
   // ------------------------------------------------------------------
   async _handleJoin() {
-    const code    = this._el('gk-code-input', 'codeInput')?.value.trim().toUpperCase();
-    const name    = this._el('gk-name', 'nameInput')?.value.trim() || 'PLAYER';
-    const btnJoin = this._el('gk-btn-join', 'btnJoin');
+    const code = this._el("gk-code-input", "codeInput")
+      ?.value.trim()
+      .toUpperCase();
+    const name = this._el("gk-name", "nameInput")?.value.trim() || "PLAYER";
+    const btnJoin = this._el("gk-btn-join", "btnJoin");
 
     if (!code || code.length !== 4) {
-      this._setStatus('Enter a 4-letter code!', true);
+      this._setStatus("Enter a 4-letter code!", true);
       return;
     }
 
@@ -356,9 +358,9 @@ export class Lobby {
     this._setStatus(`Joining room ${code}…`);
 
     try {
-      const { players } = await this._network.joinRoom(code, name, null);
+      const { players } = await this._network.joinRoom(code, name);
       this._players = players;
-      this._setStatus('Joined! Waiting for host to start…');
+      this._setStatus("Joined! Waiting for host to start…");
     } catch (err) {
       this._setStatus(err.message, true);
       btnJoin.disabled = false;
@@ -369,11 +371,11 @@ export class Lobby {
   //  _roomFull — host sees all players joined, starts the game
   // ------------------------------------------------------------------
   _roomFull() {
-    this._setStatus('All players joined! Starting…');
+    this._setStatus("All players joined! Starting…");
 
     setTimeout(() => {
       // tell all guests to start
-      this._network.send('gameStart', {
+      this._network.send("gameStart", {
         players: this._players,
       });
       this._startGame();
@@ -385,26 +387,26 @@ export class Lobby {
   // ------------------------------------------------------------------
   _startGame() {
     // hide built-in lobby overlay
-    const overlay = document.getElementById('gk-lobby-overlay');
-    if (overlay) overlay.style.display = 'none';
+    const overlay = document.getElementById("gk-lobby-overlay");
+    if (overlay) overlay.style.display = "none";
 
     // hide custom lobby elements if provided
     if (this._custom?.lobbyContainer) {
       const el = document.querySelector(this._custom.lobbyContainer);
-      if (el) el.style.display = 'none';
+      if (el) el.style.display = "none";
     }
 
     // show canvas and HUD
-    this._canvas.style.display = 'block';
-    const hud = document.getElementById('gk-hud');
-    if (hud) hud.classList.add('visible');
+    this._canvas.style.display = "block";
+    const hud = document.getElementById("gk-hud");
+    if (hud) hud.classList.add("visible");
 
     // fire onReady with player info
-    const myId    = this._network._socket?.id;
-    const myIndex = this._players.findIndex(p => p.id === myId);
+    const myId = this._network._socket?.id;
+    const myIndex = this._players.findIndex((p) => p.id === myId);
 
     this._onReady?.({
-      isHost:  this._isHost,
+      isHost: this._isHost,
       players: this._players,
       myIndex: myIndex >= 0 ? myIndex : 0,
     });
@@ -414,9 +416,9 @@ export class Lobby {
   //  _setStatus — update the status message
   // ------------------------------------------------------------------
   _setStatus(msg, isError = false) {
-    const el = this._el('gk-status', 'status');
+    const el = this._el("gk-status", "status");
     if (!el) return;
     el.textContent = msg;
-    el.className   = isError ? 'error' : '';
+    el.className = isError ? "error" : "";
   }
 }
