@@ -210,11 +210,31 @@ export class Scene {
   }
 
   // ------------------------------------------------------------------
-  //  getOwnedSprites() — returns sprites that belong to this player
-  //  (these are the ones that get auto-broadcast to the network)
+  //  syncSprite(sprite) — register a sprite for manual network sync
+  //
+  //  Use for sprites without physics bodies (e.g. static paddles)
+  //  that still need their position sent to other players.
   // ------------------------------------------------------------------
-  getOwnedSprites() {
-    return this._sprites.filter(s => s._owned && s._syncId && !s.destroyed);
+  syncSprite(sprite) {
+    if (!sprite._syncId) {
+      sprite._syncId = String(_nextSyncId++);
+    }
+    sprite._owned  = true;
+    sprite._synced = true;
+  }
+
+  // ------------------------------------------------------------------
+  //  getSyncedSprites() — all sprites that should be broadcast
+  // ------------------------------------------------------------------
+  getSyncedSprites() {
+    const synced = this._sprites.filter(s =>
+      !s.destroyed && s._owned && s._syncId &&
+      (s._body || s._synced)
+    );
+    if (synced.length > 0) {
+      console.log('[SCENE] Synced sprites:', synced.length, '- IDs:', synced.map(s => s._syncId).join(', '));
+    }
+    return synced;
   }
 
   // ------------------------------------------------------------------

@@ -174,6 +174,7 @@ export class Network {
     }
 
     if (updates.length > 0) {
+      console.log('[SYNC] Sending', updates.length, 'sprite(s):', updates.map(u => `id=${u.id} (${u.x},${u.y})`));
       this._socket.emit('spriteSync', {
         room:    this._roomName,
         sprites: updates,
@@ -211,6 +212,7 @@ export class Network {
     if (!this._scene) return;
 
     const { playerId, sprites } = data;
+    console.log('[RECV] Received', sprites.length, 'sprite(s) from', playerId, ':', sprites.map(s => `id=${s.id} (${s.x},${s.y})`));
 
     for (const snap of sprites) {
       const key = `${playerId}:${snap.id}`;

@@ -163,6 +163,7 @@ io.on('connection', (socket) => {
     if (!room || !Array.isArray(sprites)) return;
 
     for (const snap of sprites) {
+      console.log(`[SYNC] Received sprite from ${socket.id}: id=${snap.id} (${snap.x},${snap.y})`);
       room.sprites.set(`${socket.id}:${snap.id}`, { ...snap, _owner: socket.id });
     }
 
