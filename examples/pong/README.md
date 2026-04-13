@@ -34,6 +34,34 @@ npm run dev
 
 This starts both client (http://localhost:5173) and server (port 3000).
 
+### Easy Testing Mode (Default)
+
+**Just open http://localhost:5173 in multiple tabs/windows!**
+
+How it works:
+1. **First tab** → Creates a room, saves code to localStorage
+2. **Second tab** → Reads code from localStorage, joins automatically
+3. Game starts!
+
+Features:
+- ✅ No manual room codes needed
+- ✅ Auto-assigns names ("Player 1", "Player 2")
+- ✅ All tabs on same machine join same room
+- ✅ Perfect for rapid development testing
+
+To reset the test room:
+```javascript
+// In browser console:
+localStorage.clear()
+// Then refresh all tabs
+```
+
+### Production Mode (Custom Rooms)
+
+To create a unique room with a random code:
+1. First browser: http://localhost:5173?room=new
+2. Second browser: http://localhost:5173?room=ABCD (use the code from first browser)
+
 ## How to Play
 
 ### Player 1 (Host)

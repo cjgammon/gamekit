@@ -67,6 +67,7 @@ export class GKSprite {
     }
     setVelocity(x, y) {
         if (this._body) {
+            Matter.Sleeping.set(this._body, false); // Wake body if sleeping
             Matter.Body.setVelocity(this._body, { x, y });
         }
     }
