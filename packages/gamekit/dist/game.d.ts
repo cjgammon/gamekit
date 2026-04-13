@@ -100,4 +100,9 @@ export declare class Game {
      * Get current room code
      */
     getRoomCode(): string | null;
+    /**
+     * Register callback for sprite sync updates from other players
+     * @param callback - Called with { playerId, sprites: [{ id, x, y, angle, velocityX, velocityY }] }
+     */
+    onSpriteSync(callback: Function): void;
 }

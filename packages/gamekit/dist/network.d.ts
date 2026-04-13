@@ -12,6 +12,7 @@ export declare class Network {
     private playerJoinCallbacks;
     private playerLeaveCallbacks;
     private messageCallbacks;
+    private spriteSyncCallbacks;
     private ownedSprites;
     private syncInterval;
     constructor(serverUrl: string);
@@ -68,6 +69,11 @@ export declare class Network {
      * Get room code
      */
     getRoomCode(): string | null;
+    /**
+     * Register callback for sprite sync updates from other players
+     * Callback receives: { playerId: string, sprites: Array<{ id, x, y, angle, velocityX, velocityY }> }
+     */
+    onSpriteSync(callback: Function): void;
     /**
      * Disconnect and clean up
      */

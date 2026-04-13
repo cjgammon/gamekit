@@ -13,6 +13,7 @@ export class Network {
         this.playerJoinCallbacks = [];
         this.playerLeaveCallbacks = [];
         this.messageCallbacks = new Map();
+        this.spriteSyncCallbacks = [];
         // Sprite tracking for sync
         this.ownedSprites = new Set();
         this.syncInterval = null;
@@ -119,14 +120,12 @@ export class Network {
         // Sprite position sync
         let syncReceiveCount = 0;
         this.socket.on('spriteSync', (data) => {
-            // Handle incoming sprite position updates
-            // This will be used to update sprites owned by other players
             syncReceiveCount++;
             if (syncReceiveCount === 1) {
                 console.log(`📡 [Network] Receiving sprite updates from other players`);
             }
-            // For now, just log it
-            // console.log('[Network] Received sprite sync:', data);
+            // Call all sprite sync callbacks with the data
+            this.spriteSyncCallbacks.forEach(cb => cb(data));
         });
         // Custom messages are registered dynamically per event name
         // (handled in onMessage() method)
@@ -247,6 +246,14 @@ export class Network {
      */
     getRoomCode() {
         return this.roomCode;
+    }
+    /**
+     * Register callback for sprite sync updates from other players
+     * Callback receives: { playerId: string, sprites: Array<{ id, x, y, angle, velocityX, velocityY }> }
+     */
+    onSpriteSync(callback) {
+        this.spriteSyncCallbacks.push(callback);
+        console.log('📡 [Network] Sprite sync callback registered');
     }
     /**
      * Disconnect and clean up

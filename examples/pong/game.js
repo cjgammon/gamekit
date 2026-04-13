@@ -1,334 +1,385 @@
 // ============================================================
-//  GameKit Stage 7 Test - Multiplayer Network
-//  Testing: Socket.io room system, sprite sync, messaging
+//  Multiplayer Pong - Complete Game (Stage 8)
+//  Full two-player competitive Pong with scoring and win condition
 // ============================================================
 
 import { Game, GKBox, GKCircle } from "gamekit";
 
-console.log('=== GameKit Stage 7 Test ===');
-console.log('Testing: Multiplayer network with Socket.io\n');
+console.log('=== GameKit Stage 8: Multiplayer Pong ===\n');
+
+// Game constants
+const WINNING_SCORE = 11;
+const BALL_SPEED = 12;
+const PADDLE_SPEED = 8;
+
+// Game state
+let gameState = 'waiting'; // waiting, playing, gameover
+let player1Score = 0;
+let player2Score = 0;
+let isHost = false;
+let playerName = '';
+let opponentName = '';
+
+// UI elements
+const waitingDiv = document.getElementById('waiting');
+const waitingMessage = document.getElementById('waiting-message');
+const roomCodeDisplay = document.getElementById('room-code-display');
+const shareUrl = document.getElementById('share-url');
+const roomInfo = document.getElementById('room-info');
+const player1NameEl = document.getElementById('player1-name');
+const player2NameEl = document.getElementById('player2-name');
+const player1ScoreEl = document.getElementById('player1-score');
+const player2ScoreEl = document.getElementById('player2-score');
+const gameOverDiv = document.getElementById('game-over');
+const winnerNameEl = document.getElementById('winner-name');
+const finalScoreEl = document.getElementById('final-score');
 
 // Create game
-console.log('Test 1: Creating Game...');
 const game = new Game({
   width: 800,
   height: 600,
-  gravity: 1,
-  background: 0x111111,
-  server: 'http://localhost:3000'  // GameKit server
+  gravity: 0,  // No gravity for Pong
+  background: 0x000000,
+  server: 'http://localhost:3000'
 });
 
-// Score tracking
-let hits = 0;
-const updateScore = () => console.log(`💥 Collision! Total hits: ${++hits}`);
+// Create game objects
+console.log('Creating game objects...');
 
-// Test 2: Create static floor
-console.log('\nTest 2: Creating static floor...');
-const floor = new GKBox({
+// Center line (visual only)
+const centerLine = new GKBox({
   x: 400,
-  y: 580,
+  y: 300,
+  width: 4,
+  height: 600,
+  color: 0x333333,
+  isStatic: true
+});
+game.add(centerLine);
+
+// Top and bottom walls
+const topWall = new GKBox({
+  x: 400,
+  y: 10,
   width: 800,
-  height: 40,
+  height: 20,
   color: 0x444444,
   isStatic: true
 });
-game.add(floor);
+game.add(topWall);
 
-// Test 3: Create static walls
-console.log('\nTest 3: Creating walls...');
-const leftWall = new GKBox({
-  x: 10,
-  y: 300,
-  width: 20,
-  height: 600,
+const bottomWall = new GKBox({
+  x: 400,
+  y: 590,
+  width: 800,
+  height: 20,
   color: 0x444444,
   isStatic: true
 });
-game.add(leftWall);
+game.add(bottomWall);
 
-const rightWall = new GKBox({
-  x: 790,
+// Player paddle (will be positioned based on player number)
+const myPaddle = new GKBox({
+  x: 50, // Will be repositioned
   y: 300,
-  width: 20,
-  height: 600,
-  color: 0x444444,
-  isStatic: true
-});
-game.add(rightWall);
-
-// Test 4: Create controllable paddle
-console.log('\nTest 4: Creating controllable paddle...');
-const paddle = new GKBox({
-  x: 100,
-  y: 300,
-  width: 20,
+  width: 15,
   height: 100,
   color: 0xffffff,
   isStatic: true
 });
-game.add(paddle);
+game.add(myPaddle);
 
-// Test 5: Keyboard controls
-console.log('\nTest 5: Setting up keyboard controls...');
-const paddleSpeed = 8;
-
-game.onUpdate(() => {
-  // Arrow keys or WASD
-  if (game.isKeyDown('ArrowUp') || game.isKeyDown('w') || game.isKeyDown('W')) {
-    paddle.moveUp(paddleSpeed);
-  }
-  if (game.isKeyDown('ArrowDown') || game.isKeyDown('s') || game.isKeyDown('S')) {
-    paddle.moveDown(paddleSpeed);
-  }
-
-  // Keep paddle on screen (accounting for paddle height)
-  const paddleHalfHeight = 50; // paddle height is 100, so half is 50
-  if (paddle.y < paddleHalfHeight) paddle.y = paddleHalfHeight;
-  if (paddle.y > 560 - paddleHalfHeight) paddle.y = 560 - paddleHalfHeight; // floor top is at 560
-});
-
-// Test 6: Create ball
-console.log('\nTest 6: Creating ball...');
+// Ball (only host creates and controls it)
 const ball = new GKCircle({
   x: 400,
-  y: 100,
-  radius: 15,
-  color: 0xff0000,  // Red
-  isStatic: false,
-  bounce: 0.9,
-  friction: 0.01
+  y: 300,
+  radius: 8,
+  color: 0xffffff,
+  bounce: 1.0,  // Perfect bounce
+  friction: 0,
+  isStatic: false
 });
 game.add(ball);
 
-// Ball collision detection
-ball.onCollide(floor, () => {
-  console.log('🔴 Ball hit floor!');
-  updateScore();
-});
+// Remote player sprites (tracked by playerId and syncId)
+const remoteSprites = new Map(); // key: "playerId:syncId", value: sprite
 
-ball.onCollide(paddle, () => {
-  console.log('🏓 Ball hit paddle!');
-  updateScore();
-});
+// Paddle controls
+game.onUpdate(() => {
+  if (gameState !== 'playing') return;
 
-ball.onCollide(leftWall, () => {
-  console.log('⬅️  Ball hit left wall!');
-  updateScore();
-});
-
-ball.onCollide(rightWall, () => {
-  console.log('➡️  Ball hit right wall!');
-  updateScore();
-});
-
-// Test 7: Key press events
-console.log('\nTest 7: Setting up key press events...');
-let ballLaunched = false;
-
-game.onKey(' ', () => {
-  if (!ballLaunched) {
-    console.log('🚀 Space pressed - launching ball!');
-    ballLaunched = true;
-    ball.setVelocity(10, -5);
+  if (game.isKeyDown('ArrowUp') || game.isKeyDown('w') || game.isKeyDown('W')) {
+    myPaddle.moveUp(PADDLE_SPEED);
   }
-});
+  if (game.isKeyDown('ArrowDown') || game.isKeyDown('s') || game.isKeyDown('S')) {
+    myPaddle.moveDown(PADDLE_SPEED);
+  }
 
-game.onKey('r', () => {
-  console.log('🔄 R pressed - resetting ball');
-  ball.x = 400;
-  ball.y = 100;
-  ball.setVelocity(0, 0);
-  ballLaunched = false;
-});
-
-game.onKey('R', () => {
-  console.log('🔄 R pressed - resetting ball');
-  ball.x = 400;
-  ball.y = 100;
-  ball.setVelocity(0, 0);
-  ballLaunched = false;
-});
-
-// Test 8: Mouse/tap events
-console.log('\nTest 8: Setting up mouse click events...');
-game.onTap((x, y) => {
-  console.log(`🖱️  Click at (${x}, ${y}) - moving paddle`);
-  paddle.y = y;
-
+  // Keep paddle in bounds
   const paddleHalfHeight = 50;
-  if (paddle.y < paddleHalfHeight) paddle.y = paddleHalfHeight;
-  if (paddle.y > 560 - paddleHalfHeight) paddle.y = 560 - paddleHalfHeight;
+  if (myPaddle.y < 30 + paddleHalfHeight) myPaddle.y = 30 + paddleHalfHeight;
+  if (myPaddle.y > 570 - paddleHalfHeight) myPaddle.y = 570 - paddleHalfHeight;
 });
 
-// Test 9: MULTIPLAYER (NEW - Stage 7)
-console.log('\n=== TEST 9: MULTIPLAYER SETUP (NEW) ===');
+// Ball collision with paddles (only host handles scoring)
+if (isHost) {
+  ball.onCollide(myPaddle, () => {
+    console.log('Ball hit player 1 paddle');
+    // Add some angle variation based on where it hits
+    const hitPos = (ball.y - myPaddle.y) / 50; // -1 to 1
+    ball.setVelocity(BALL_SPEED, hitPos * BALL_SPEED * 0.7);
+  });
+}
 
-// Check URL parameters for room code
+// Score tracking (only host)
+function checkScoring() {
+  if (!isHost || gameState !== 'playing') return;
+
+  // Ball went off left side (player 2 scores)
+  if (ball.x < -10) {
+    player2Score++;
+    updateScores();
+    game.send('scoreUpdate', { player1: player1Score, player2: player2Score });
+
+    if (player2Score >= WINNING_SCORE) {
+      endGame(opponentName);
+    } else {
+      resetBall();
+    }
+  }
+  // Ball went off right side (player 1 scores)
+  else if (ball.x > 810) {
+    player1Score++;
+    updateScores();
+    game.send('scoreUpdate', { player1: player1Score, player2: player2Score });
+
+    if (player1Score >= WINNING_SCORE) {
+      endGame(playerName);
+    } else {
+      resetBall();
+    }
+  }
+}
+
+game.onUpdate(() => {
+  checkScoring();
+});
+
+function resetBall() {
+  ball.x = 400;
+  ball.y = 300;
+
+  // Random direction
+  const direction = Math.random() > 0.5 ? 1 : -1;
+  const angle = (Math.random() - 0.5) * 0.5; // -0.25 to 0.25
+  ball.setVelocity(BALL_SPEED * direction, BALL_SPEED * angle);
+}
+
+function updateScores() {
+  player1ScoreEl.textContent = player1Score;
+  player2ScoreEl.textContent = player2Score;
+}
+
+function startGame() {
+  gameState = 'playing';
+  waitingDiv.style.display = 'none';
+
+  console.log('🎮 Game starting!');
+
+  // Host launches the ball
+  if (isHost) {
+    setTimeout(() => {
+      resetBall();
+    }, 1000);
+  }
+}
+
+function endGame(winner) {
+  gameState = 'gameover';
+
+  gameOverDiv.style.display = 'block';
+  winnerNameEl.textContent = `${winner} Wins!`;
+  finalScoreEl.textContent = `Final Score: ${player1Score} - ${player2Score}`;
+
+  game.send('gameOver', { winner });
+
+  console.log(`🏆 Game Over! ${winner} wins ${player1Score}-${player2Score}`);
+}
+
+// Multiplayer setup
 const urlParams = new URLSearchParams(window.location.search);
 const roomCodeParam = urlParams.get('room');
 
 if (roomCodeParam) {
-  // Join existing room
-  console.log(`\n🌐 Joining room: ${roomCodeParam}`);
-  const playerName = prompt('Enter your name:', 'Player 2') || 'Player 2';
+  // Join existing room as Player 2
+  console.log(`Joining room: ${roomCodeParam}`);
+  playerName = prompt('Enter your name:', 'Player 2') || 'Player 2';
 
   game.joinRoom(roomCodeParam, playerName)
     .then(() => {
-      console.log('✅ Successfully joined room!');
-      console.log(`Room code: ${game.getRoomCode()}`);
-      console.log(`You are: ${game.getPlayer()?.name}`);
+      console.log('✅ Joined successfully!');
+      isHost = false;
 
-      // As guest, you don't own the ball
-      // Mark your paddle as owned (will be synced)
-      game.setOwner(paddle);
-      console.log('📡 Your paddle will be synced to other players');
+      // Position paddle on right side
+      myPaddle.x = 750;
+
+      // Mark paddle as owned (will be synced)
+      game.setOwner(myPaddle);
+
+      // Update UI
+      roomInfo.style.display = 'block';
+      roomInfo.textContent = `Room: ${roomCodeParam}`;
+      player2NameEl.textContent = playerName;
+
+      waitingMessage.textContent = 'Waiting for host to start...';
     })
     .catch(err => {
-      console.error('❌ Failed to join room:', err);
-      alert('Failed to join room. Make sure the server is running!');
+      console.error('Failed to join:', err);
+      alert('Failed to join room. Make sure the code is correct and server is running!');
     });
 } else {
-  // Create new room
-  console.log('\n🌐 Creating new room...');
-  const playerName = prompt('Enter your name:', 'Player 1') || 'Player 1';
+  // Create new room as Player 1 (Host)
+  console.log('Creating new room...');
+  playerName = prompt('Enter your name:', 'Player 1') || 'Player 1';
 
   game.createRoom(playerName)
     .then(({ code }) => {
-      console.log('✅ Room created successfully!');
-      console.log(`📋 Room code: ${code}`);
-      console.log(`🔗 Share this URL: ${window.location.href}?room=${code}`);
-      console.log(`You are: ${game.getPlayer()?.name} (HOST)`);
+      console.log(`✅ Room created: ${code}`);
+      isHost = true;
 
-      // As host, you own the ball and paddle
-      game.setOwner(paddle);
+      // Position paddle on left side
+      myPaddle.x = 50;
+
+      // Mark paddle and ball as owned (will be synced)
+      game.setOwner(myPaddle);
       game.setOwner(ball);
-      console.log('📡 Your paddle and ball will be synced to other players');
 
-      // Show room code on screen
-      const roomDisplay = document.createElement('div');
-      roomDisplay.style.cssText = `
-        position: fixed;
-        top: 60px;
-        left: 20px;
-        background: #2a6;
-        color: #fff;
-        padding: 12px 20px;
-        border-radius: 6px;
-        font-family: monospace;
-        font-size: 16px;
-        font-weight: bold;
-        z-index: 1000;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      `;
-      roomDisplay.textContent = `Room Code: ${code}`;
-      document.body.appendChild(roomDisplay);
+      // Update UI
+      roomInfo.style.display = 'block';
+      roomInfo.textContent = `Room: ${code}`;
+      player1NameEl.textContent = playerName;
+
+      roomCodeDisplay.style.display = 'block';
+      roomCodeDisplay.textContent = code;
+      shareUrl.style.display = 'block';
+      shareUrl.textContent = `Share: ${window.location.href}?room=${code}`;
+      waitingMessage.textContent = 'Waiting for opponent to join...';
     })
     .catch(err => {
-      console.error('❌ Failed to create room:', err);
+      console.error('Failed to create room:', err);
       alert('Failed to create room. Make sure the server is running on port 3000!');
     });
 }
 
-// Test 10: Player join/leave events (NEW - Stage 7)
-console.log('\nTest 10: Registering player events...');
-
+// Player join/leave events
 game.onPlayerJoin((player) => {
-  console.log(`👋 ${player.name} joined the game!`);
+  console.log(`👋 ${player.name} joined!`);
+  opponentName = player.name;
 
-  // Show notification
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #4a8;
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 6px;
-    font-family: monospace;
-    font-size: 14px;
-    z-index: 1000;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  `;
-  notification.textContent = `${player.name} joined!`;
-  document.body.appendChild(notification);
+  if (isHost) {
+    player2NameEl.textContent = player.name;
 
-  setTimeout(() => notification.remove(), 3000);
-});
-
-game.onPlayerLeave((player) => {
-  console.log(`👋 ${player.name} left the game`);
-});
-
-// Test 11: Custom messaging (NEW - Stage 7)
-console.log('\nTest 11: Setting up custom messaging...');
-
-// Send score updates to other players
-let lastScore = 0;
-game.onUpdate(() => {
-  if (hits > lastScore) {
-    lastScore = hits;
-    game.send('scoreUpdate', { hits });
+    // Host starts game when player 2 joins
+    setTimeout(() => {
+      game.send('gameStart', {});
+      startGame();
+    }, 2000);
+  } else {
+    player1NameEl.textContent = player.name;
   }
 });
 
-// Receive score updates
+game.onPlayerLeave((player) => {
+  console.log(`👋 Player left`);
+  if (gameState === 'playing') {
+    gameState = 'waiting';
+    waitingDiv.style.display = 'block';
+    waitingMessage.textContent = 'Opponent disconnected';
+  }
+});
+
+// Custom messages
+game.onMessage('gameStart', () => {
+  console.log('🎮 Received game start signal');
+  startGame();
+});
+
 game.onMessage('scoreUpdate', (data) => {
-  console.log(`📨 Received score update from other player: ${data.hits} hits`);
+  console.log('📊 Score update received:', data);
+  player1Score = data.player1;
+  player2Score = data.player2;
+  updateScores();
 });
 
-// Extra bouncing objects
-const greenBox = new GKBox({
-  x: 200,
-  y: 50,
-  width: 40,
-  height: 40,
-  color: 0x00ff00,
-  isStatic: false,
-  bounce: 0.6
+game.onMessage('gameOver', (data) => {
+  console.log('🏆 Game over:', data.winner);
+  if (gameState !== 'gameover') {
+    endGame(data.winner);
+  }
 });
-game.add(greenBox);
 
-const blueBox = new GKBox({
-  x: 600,
-  y: 150,
-  width: 40,
-  height: 40,
-  color: 0x0000ff,
-  isStatic: false,
-  bounce: 0.7
+// Remote sprite sync (NEW in Stage 8!)
+game.onSpriteSync((data) => {
+  const { playerId, sprites } = data;
+
+  console.log(`📡 Received sprite sync from ${playerId}:`, sprites.length, 'sprites');
+
+  for (const spriteData of sprites) {
+    const key = `${playerId}:${spriteData.id}`;
+
+    let remoteSprite = remoteSprites.get(key);
+
+    if (!remoteSprite) {
+      // Create new sprite for remote player
+      console.log(`📡 Creating remote sprite: ${key} at (${spriteData.x}, ${spriteData.y})`);
+
+      // Detect type by position (ball is usually center, paddles are left/right)
+      const isBall = spriteData.x > 200 && spriteData.x < 600;
+
+      if (isBall) {
+        // This is likely the ball
+        console.log('  → Creating remote ball');
+        remoteSprite = new GKCircle({
+          x: spriteData.x,
+          y: spriteData.y,
+          radius: 8,
+          color: 0xaaaaaa,
+          isStatic: true  // Remote sprites don't need physics
+        });
+      } else {
+        // This is a paddle
+        console.log('  → Creating remote paddle');
+        remoteSprite = new GKBox({
+          x: spriteData.x,
+          y: spriteData.y,
+          width: 15,
+          height: 100,
+          color: 0xffaa00,  // Orange color so you can see it clearly
+          isStatic: true
+        });
+
+        // Add collision for non-host
+        if (!isHost) {
+          ball.onCollide(remoteSprite, () => {
+            console.log('Ball hit remote paddle');
+          });
+        }
+      }
+
+      game.add(remoteSprite);
+      remoteSprites.set(key, remoteSprite);
+    }
+
+    // Update position
+    if (remoteSprite) {
+      remoteSprite.x = spriteData.x;
+      remoteSprite.y = spriteData.y;
+    }
+  }
 });
-game.add(blueBox);
 
-console.log('\n=== Stage 7 Test Instructions ===');
-console.log('✓ Visual elements:');
-console.log('  - Gray floor and walls');
-console.log('  - White paddle on left (controllable)');
-console.log('  - Red ball in center');
-console.log('  - Green and blue boxes falling');
-console.log('');
-console.log('✓ Single player controls:');
-console.log('  - Arrow Up/Down or W/S → Move paddle');
-console.log('  - Space → Launch ball');
-console.log('  - R → Reset ball');
-console.log('  - Click → Teleport paddle');
-console.log('');
-console.log('✓ MULTIPLAYER (NEW):');
-console.log('  - First player creates room → gets room code');
-console.log('  - Second player joins with ?room=CODE in URL');
-console.log('  - Host controls ball physics');
-console.log('  - Each player controls their own paddle');
-console.log('  - Sprite positions sync automatically (20Hz)');
-console.log('  - Custom messages: score updates sent between players');
-console.log('  - Player join/leave events fire');
-console.log('');
-console.log('✓ To test multiplayer:');
-console.log('  1. Start server: cd packages/gamekit-server && node server.js');
-console.log('  2. Open first browser → creates room');
-console.log('  3. Copy room code from console');
-console.log('  4. Open second browser with ?room=CODE');
-console.log('  5. Both players see each other\'s paddles move!');
-console.log('');
-console.log('✓ Previous features still work:');
-console.log('  - Rendering, physics, collisions, input');
-console.log('\nNext: Stage 8 will build complete multiplayer Pong game');
+console.log('\n=== Multiplayer Pong Ready ===');
+console.log('✓ Two-player competitive gameplay');
+console.log('✓ Real-time sprite synchronization');
+console.log('✓ Score tracking and win condition');
+console.log('✓ First to 11 points wins!');

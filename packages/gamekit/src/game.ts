@@ -257,4 +257,12 @@ export class Game {
   getRoomCode(): string | null {
     return this.network.getRoomCode();
   }
+
+  /**
+   * Register callback for sprite sync updates from other players
+   * @param callback - Called with { playerId, sprites: [{ id, x, y, angle, velocityX, velocityY }] }
+   */
+  onSpriteSync(callback: Function): void {
+    this.network.onSpriteSync(callback);
+  }
 }
