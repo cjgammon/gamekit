@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameKit Stage 5 - Input Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #fff;
+      font-family: monospace;
+    }
+    #instructions {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 14px;
+      z-index: 100;
+      color: #fff;
+      text-shadow: 2px 2px 4px #000;
+      line-height: 1.6;
+    }
+    .key {
+      display: inline-block;
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid #666;
+    }
+  </style>
+</head>
+<body>
+  <div id="instructions">
+    <strong>🎮 CONTROLS:</strong><br>
+    <span class="key">↑</span> <span class="key">↓</span> or <span class="key">W</span> <span class="key">S</span> - Move paddle<br>
+    <span class="key">Space</span> - Launch ball<br>
+    <span class="key">R</span> - Reset ball<br>
+    🖱️ Click - Teleport paddle to Y
+  </div>
+
+  <script type="module">
+    import { Game, GKBox, GKCircle } from '../../packages/gamekit/dist/index.js';
+
+    console.log('=== GameKit Stage 5 Test ===');
+    console.log('Testing: Input system with keyboard and mouse\n');
+
+    // Create game
+    const game = new Game({
+      width: 800,
+      height: 600,
+      gravity: 1,
+      background: 0x111111
+    });
+
+    // Score tracking
+    let hits = 0;
+    const updateScore = () => console.log(`💥 Collision! Total hits: ${++hits}`);
+
+    // Floor
+    const floor = new GKBox({
+      x: 400,
+      y: 580,
+      width: 800,
+      height: 40,
+      color: 0x444444,
+      isStatic: true
+    });
+    game.add(floor);
+
+    // Walls
+    const leftWall = new GKBox({
+      x: 10,
+      y: 300,
+      width: 20,
+      height: 600,
+      color: 0x444444,
+      isStatic: true
+    });
+    game.add(leftWall);
+
+    const rightWall = new GKBox({
+      x: 790,
+      y: 300,
+      width: 20,
+      height: 600,
+      color: 0x444444,
+      isStatic: true
+    });
+    game.add(rightWall);
+
+    // Controllable paddle
+    console.log('Creating controllable paddle...');
+    const paddle = new GKBox({
+      x: 100,
+      y: 300,
+      width: 20,
+      height: 100,
+      color: 0xffffff,
+      isStatic: true
+    });
+    game.add(paddle);
+
+    // Keyboard controls - smooth movement with isKeyDown()
+    console.log('Setting up keyboard controls...');
+    const paddleSpeed = 8;
+
+    game.onUpdate(() => {
+      // Arrow keys
+      if (game.isKeyDown('ArrowUp')) {
+        paddle.moveUp(paddleSpeed);
+      }
+      if (game.isKeyDown('ArrowDown')) {
+        paddle.moveDown(paddleSpeed);
+      }
+
+      // WASD keys
+      if (game.isKeyDown('w') || game.isKeyDown('W')) {
+        paddle.moveUp(paddleSpeed);
+      }
+      if (game.isKeyDown('s') || game.isKeyDown('S')) {
+        paddle.moveDown(paddleSpeed);
+      }
+
+      // Keep paddle on screen (accounting for paddle height)
+      const paddleHalfHeight = 50; // paddle height is 100, so half is 50
+      if (paddle.y < paddleHalfHeight) paddle.y = paddleHalfHeight;
+      if (paddle.y > 560 - paddleHalfHeight) paddle.y = 560 - paddleHalfHeight; // floor top is at 560
+    });
+
+    // Key press events - discrete actions with onKey()
+    console.log('Setting up key press events...');
+    let ballLaunched = false;
+
+    game.onKey(' ', () => {
+      if (!ballLaunched) {
+        console.log('🚀 Space pressed - launching ball!');
+        ballLaunched = true;
+        bouncyBall.setVelocity(10, -5);
+      }
+    });
+
+    game.onKey('r', () => {
+      console.log('🔄 R pressed - resetting ball position');
+      bouncyBall.x = 400;
+      bouncyBall.y = 100;
+      bouncyBall.setVelocity(0, 0);
+      ballLaunched = false;
+    });
+
+    game.onKey('R', () => {
+      console.log('🔄 R pressed - resetting ball position');
+      bouncyBall.x = 400;
+      bouncyBall.y = 100;
+      bouncyBall.setVelocity(0, 0);
+      ballLaunched = false;
+    });
+
+    // Ball
+    const bouncyBall = new GKCircle({
+      x: 400,
+      y: 100,
+      radius: 15,
+      color: 0xff0000,
+      isStatic: false,
+      bounce: 0.9,
+      friction: 0.01
+    });
+    game.add(bouncyBall);
+
+    // Ball collision detection
+    bouncyBall.onCollide(floor, () => {
+      console.log('🔴 Ball hit floor!');
+      updateScore();
+    });
+
+    bouncyBall.onCollide(paddle, () => {
+      console.log('🏓 Ball hit paddle!');
+      updateScore();
+    });
+
+    bouncyBall.onCollide(leftWall, () => {
+      console.log('⬅️  Ball hit left wall!');
+      updateScore();
+    });
+
+    bouncyBall.onCollide(rightWall, () => {
+      console.log('➡️  Ball hit right wall!');
+      updateScore();
+    });
+
+    // Mouse/tap events - paddle teleport
+    console.log('Setting up mouse click events...');
+    game.onTap((x, y) => {
+      console.log(`🖱️  Click at (${x}, ${y}) - moving paddle`);
+      paddle.y = y;
+
+      // Keep paddle on screen (accounting for paddle height)
+      const paddleHalfHeight = 50; // paddle height is 100, so half is 50
+      if (paddle.y < paddleHalfHeight) paddle.y = paddleHalfHeight;
+      if (paddle.y > 560 - paddleHalfHeight) paddle.y = 560 - paddleHalfHeight; // floor top is at 560
+    });
+
+    // Extra bouncing objects
+    const greenBox = new GKBox({
+      x: 200,
+      y: 50,
+      width: 40,
+      height: 40,
+      color: 0x00ff00,
+      isStatic: false,
+      bounce: 0.6
+    });
+    game.add(greenBox);
+
+    const blueBox = new GKBox({
+      x: 600,
+      y: 150,
+      width: 40,
+      height: 40,
+      color: 0x0000ff,
+      isStatic: false,
+      bounce: 0.7
+    });
+    game.add(blueBox);
+
+    console.log('\n=== Stage 5 Test Instructions ===');
+    console.log('✓ Visual elements:');
+    console.log('  - Gray floor and walls');
+    console.log('  - White paddle on left (controllable)');
+    console.log('  - Red ball in center');
+    console.log('  - Green and blue boxes falling');
+    console.log('');
+    console.log('✓ Keyboard controls:');
+    console.log('  - Arrow Up/Down or W/S → Move paddle smoothly');
+    console.log('  - Space → Launch ball (first time only)');
+    console.log('  - R → Reset ball position');
+    console.log('');
+    console.log('✓ Mouse controls:');
+    console.log('  - Click anywhere → Paddle jumps to Y position');
+    console.log('');
+    console.log('✓ Input system working:');
+    console.log('  - game.isKeyDown() detects held keys (smooth movement)');
+    console.log('  - game.onKey() fires once per key press (discrete actions)');
+    console.log('  - game.onTap() detects mouse clicks with coordinates');
+  </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameKit Stage 4 - Collision Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #fff;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <script type="module">
+    import { Game, GKBox, GKCircle } from '../../packages/gamekit/dist/index.js';
+
+    console.log('=== GameKit Stage 4 Test ===');
+    console.log('Testing: Collision detection with onCollide()\n');
+
+    // Create game with gravity
+    console.log('Test 1: Creating Game with gravity...');
+    const game = new Game({
+      width: 800,
+      height: 600,
+      gravity: 1,  // 1 = normal gravity
+      background: 0x111111
+    });
+
+    // Score tracking
+    let hits = 0;
+    const updateScore = () => console.log(`💥 Collision! Total hits: ${++hits}`);
+
+    // Test 2: Create static floor (won't move)
+    console.log('\nTest 2: Creating static floor...');
+    const floor = new GKBox({
+      x: 400,
+      y: 580,
+      width: 800,
+      height: 40,
+      color: 0x444444,
+      isStatic: true  // Static = won't move
+    });
+    game.add(floor);
+
+    // Test 3: Create static walls
+    console.log('\nTest 3: Creating walls...');
+    const leftWall = new GKBox({
+      x: 10,
+      y: 300,
+      width: 20,
+      height: 600,
+      color: 0x444444,
+      isStatic: true
+    });
+    game.add(leftWall);
+
+    const rightWall = new GKBox({
+      x: 790,
+      y: 300,
+      width: 20,
+      height: 600,
+      color: 0x444444,
+      isStatic: true
+    });
+    game.add(rightWall);
+
+    // Test 4: Create bouncy ball with collision detection
+    console.log('\nTest 4: Creating bouncy ball with collision callbacks...');
+    const bouncyBall = new GKCircle({
+      x: 400,
+      y: 100,
+      radius: 15,
+      color: 0xff0000,  // Red
+      isStatic: false,
+      bounce: 0.8,  // High bounce
+      friction: 0.01
+    });
+    game.add(bouncyBall);
+
+    // Red ball detects floor collisions
+    bouncyBall.onCollide(floor, () => {
+      console.log('🔴 Red ball hit floor!');
+      updateScore();
+    });
+
+    // Test 5: Create boxes that fall and detect each other
+    console.log('\nTest 5: Creating falling boxes with mutual detection...');
+    const fallingBox1 = new GKBox({
+      x: 200,
+      y: 50,
+      width: 40,
+      height: 40,
+      color: 0x00ff00,  // Green
+      isStatic: false,
+      bounce: 0.3
+    });
+    game.add(fallingBox1);
+
+    const fallingBox2 = new GKBox({
+      x: 600,
+      y: 150,
+      width: 40,
+      height: 40,
+      color: 0x0000ff,  // Blue
+      isStatic: false,
+      bounce: 0.5
+    });
+    game.add(fallingBox2);
+
+    // Green box detects blue box
+    fallingBox1.onCollide(fallingBox2, () => {
+      console.log('🟢 Green box hit blue box!');
+      updateScore();
+    });
+
+    // Blue box detects green box
+    fallingBox2.onCollide(fallingBox1, () => {
+      console.log('🔵 Blue box hit green box!');
+      updateScore();
+    });
+
+    // Test 6: Create low-bounce circle with floor detection
+    console.log('\nTest 6: Creating low-bounce circle...');
+    const heavyBall = new GKCircle({
+      x: 100,
+      y: 50,
+      radius: 20,
+      color: 0xffff00,  // Yellow
+      isStatic: false,
+      bounce: 0.1,  // Low bounce
+      density: 0.01  // Heavier
+    });
+    game.add(heavyBall);
+
+    // Heavy ball detects floor
+    heavyBall.onCollide(floor, () => {
+      console.log('🟡 Yellow ball hit floor!');
+      updateScore();
+    });
+
+    // Test 7: Add a ball with velocity and wall detection
+    console.log('\nTest 7: Creating ball with wall collision callbacks...');
+    const movingBall = new GKCircle({
+      x: 50,
+      y: 300,
+      radius: 12,
+      color: 0x00ffff,  // Cyan
+      isStatic: false,
+      bounce: 0.9
+    });
+    game.add(movingBall);
+
+    // Cyan ball detects walls
+    movingBall.onCollide(leftWall, () => {
+      console.log('⬅️  Cyan ball hit left wall!');
+      updateScore();
+    });
+
+    movingBall.onCollide(rightWall, () => {
+      console.log('➡️  Cyan ball hit right wall!');
+      updateScore();
+    });
+
+    // Give it horizontal velocity after a moment
+    setTimeout(() => {
+      console.log('Launching cyan ball horizontally...');
+      movingBall.setVelocity(15, -5);
+    }, 500);
+
+    // Test 8: Perfect bounce ball with wall detection
+    console.log('\nTest 8: Creating perfect-bounce ball...');
+    const perfectBall = new GKCircle({
+      x: 700,
+      y: 100,
+      radius: 10,
+      color: 0xff00ff,  // Magenta
+      isStatic: false,
+      bounce: 1.0,  // Perfect bounce (no energy loss)
+      friction: 0
+    });
+    game.add(perfectBall);
+
+    // Perfect ball detects walls
+    perfectBall.onCollide(leftWall, () => {
+      console.log('💜 Magenta ball hit left wall!');
+      updateScore();
+    });
+
+    perfectBall.onCollide(rightWall, () => {
+      console.log('➡️  Magenta ball hit right wall!');
+      updateScore();
+    });
+
+    console.log('\n=== Stage 4 Test Instructions ===');
+    console.log('✓ You should see:');
+    console.log('  - Gray floor at bottom');
+    console.log('  - Gray walls on left and right');
+    console.log('  - Multiple colored sprites falling with gravity');
+    console.log('  - Red ball bouncing high (bounce: 0.8)');
+    console.log('  - Green and blue boxes bouncing medium');
+    console.log('  - Yellow ball barely bouncing (heavy)');
+    console.log('  - Cyan ball launching horizontally after 0.5s');
+    console.log('  - Magenta ball bouncing forever (perfect bounce)');
+    console.log('');
+    console.log('✓ Physics working:');
+    console.log('  - All dynamic sprites fall with gravity');
+    console.log('  - Static sprites (floor, walls) stay in place');
+    console.log('  - Collisions work (sprites bounce off floor/walls)');
+    console.log('  - Different bounce values create different behaviors');
+    console.log('');
+    console.log('✓ Collision system working:');
+    console.log('  - onCollide() callbacks fire when sprites touch');
+    console.log('  - Multiple collision pairs work simultaneously');
+    console.log('  - Score counter increments with each hit');
+    console.log('  - Console shows detailed collision events');
+  </script>
+</body>
+</html>
