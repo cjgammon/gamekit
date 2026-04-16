@@ -115,4 +115,11 @@ export class RoomManager {
     room.hostId = newHostId;
     return true;
   }
+
+  /**
+   * Get all rooms (for testing)
+   */
+  getAllRooms(): Map<string, Room> {
+    return this.rooms;
+  }
 }
