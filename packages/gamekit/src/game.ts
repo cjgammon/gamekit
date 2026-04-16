@@ -26,6 +26,7 @@ export class Game {
   // Game loop
   private updateCallbacks: Function[] = [];
   private lastTime: number = performance.now();
+  private frameCount: number = 0;
 
   constructor(options: GameOptions = {}) {
     // Set defaults
@@ -72,6 +73,7 @@ export class Game {
       const now = performance.now();
       const delta = (now - this.lastTime) / 1000;
       this.lastTime = now;
+      this.frameCount++;
 
       // Cap delta to prevent physics instability
       const deltaMs = Math.min(delta, 0.05) * 1000;
