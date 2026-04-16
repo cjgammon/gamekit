@@ -267,4 +267,40 @@ export class Game {
   onSpriteSync(callback: Function): void {
     this.network.onSpriteSync(callback);
   }
+
+  // ============================================================
+  // Test API (test mode only)
+  // ============================================================
+
+  /**
+   * Get test API for E2E testing
+   * Returns game state for assertions
+   */
+  getTestAPI() {
+    return {
+      // Sprite state
+      getSprites: () => this.sprites.map(s => ({
+        syncId: s.syncId,
+        x: s.x,
+        y: s.y,
+        angle: s.angle,
+        velocityX: s.velocityX,
+        velocityY: s.velocityY,
+        isOwned: s.isOwned,
+      })),
+
+      // Network state
+      getNetworkState: () => ({
+        isConnected: this.network['socket'] !== null,
+        roomCode: this.network.getRoomCode(),
+        player: this.network.getPlayer(),
+      }),
+
+      // Message history
+      getMessageHistory: () => this.network.getMessageHistory(),
+
+      // Frame count for timing verification
+      getFrameCount: () => this.frameCount,
+    };
+  }
 }

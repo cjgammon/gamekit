@@ -13,6 +13,7 @@ export declare class Game {
     private sprites;
     private updateCallbacks;
     private lastTime;
+    private frameCount;
     constructor(options?: GameOptions);
     /**
      * Start the main game loop
@@ -105,4 +106,33 @@ export declare class Game {
      * @param callback - Called with { playerId, sprites: [{ id, x, y, angle, velocityX, velocityY }] }
      */
     onSpriteSync(callback: Function): void;
+    /**
+     * Get test API for E2E testing
+     * Returns game state for assertions
+     */
+    getTestAPI(): {
+        getSprites: () => {
+            syncId: string;
+            x: number;
+            y: number;
+            angle: number;
+            velocityX: number;
+            velocityY: number;
+            isOwned: boolean;
+        }[];
+        getNetworkState: () => {
+            isConnected: boolean;
+            roomCode: string | null;
+            player: {
+                name: string;
+                isHost: boolean;
+            } | null;
+        };
+        getMessageHistory: () => {
+            timestamp: number;
+            event: string;
+            data: any;
+        }[];
+        getFrameCount: () => number;
+    };
 }
