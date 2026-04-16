@@ -292,6 +292,13 @@ export class Network {
         return this.roomCode;
     }
     /**
+     * Check if connected to server
+     * @returns true if socket is connected, false otherwise
+     */
+    isConnected() {
+        return this.socket !== null;
+    }
+    /**
      * Register callback for sprite sync updates from other players
      * Callback receives: { playerId: string, sprites: Array<{ id, x, y, angle, velocityX, velocityY }> }
      */

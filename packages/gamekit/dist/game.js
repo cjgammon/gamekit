@@ -231,7 +231,7 @@ export class Game {
             })),
             // Network state
             getNetworkState: () => ({
-                isConnected: this.network['socket'] !== null,
+                isConnected: this.network.isConnected(),
                 roomCode: this.network.getRoomCode(),
                 player: this.network.getPlayer(),
             }),

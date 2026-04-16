@@ -346,6 +346,14 @@ export class Network {
   }
 
   /**
+   * Check if connected to server
+   * @returns true if socket is connected, false otherwise
+   */
+  isConnected(): boolean {
+    return this.socket !== null;
+  }
+
+  /**
    * Register callback for sprite sync updates from other players
    * Callback receives: { playerId: string, sprites: Array<{ id, x, y, angle, velocityX, velocityY }> }
    */
