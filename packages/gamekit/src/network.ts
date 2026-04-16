@@ -24,12 +24,19 @@ export class Network {
   private ownedSprites: Set<GKSprite> = new Set();
   private syncInterval: number | null = null;
 
-  // Message history for test debugging
+  // Message history for test debugging (test mode only)
   private messageHistory: Array<{
     timestamp: number;
     event: string;
     data: any;
   }> = [];
+  private readonly MAX_HISTORY_SIZE = 100; // Limit history to prevent memory growth
+
+  // Test mode flag - only track messages in test environment
+  // Set by test harness via window.__GAMEKIT_TEST_MODE__ = true
+  private get testMode(): boolean {
+    return typeof window !== 'undefined' && (window as any).__GAMEKIT_TEST_MODE__ === true;
+  }
 
   constructor(serverUrl: string) {
     this.serverUrl = serverUrl;
@@ -139,11 +146,18 @@ export class Network {
 
     // Player joined (server sends { player: ... })
     this.socket.on('playerJoined', (data: { player: Player }) => {
-      this.messageHistory.push({
-        timestamp: Date.now(),
-        event: 'playerJoined',
-        data: data,
-      });
+      // Track for tests (test mode only)
+      if (this.testMode) {
+        this.messageHistory.push({
+          timestamp: Date.now(),
+          event: 'playerJoined',
+          data: data,
+        });
+        // Circular buffer: keep only last MAX_HISTORY_SIZE entries
+        if (this.messageHistory.length > this.MAX_HISTORY_SIZE) {
+          this.messageHistory.shift();
+        }
+      }
 
       console.log(`👋 [Network] Player joined: ${data.player.name}`);
       this.playerJoinCallbacks.forEach(cb => cb(data.player));
@@ -151,11 +165,18 @@ export class Network {
 
     // Player left (server sends { playerId: ... })
     this.socket.on('playerLeft', (data: { playerId: string }) => {
-      this.messageHistory.push({
-        timestamp: Date.now(),
-        event: 'playerLeft',
-        data: data,
-      });
+      // Track for tests (test mode only)
+      if (this.testMode) {
+        this.messageHistory.push({
+          timestamp: Date.now(),
+          event: 'playerLeft',
+          data: data,
+        });
+        // Circular buffer: keep only last MAX_HISTORY_SIZE entries
+        if (this.messageHistory.length > this.MAX_HISTORY_SIZE) {
+          this.messageHistory.shift();
+        }
+      }
 
       console.log(`👋 [Network] Player left: ${data.playerId}`);
       this.playerLeaveCallbacks.forEach(cb => cb({ id: data.playerId }));
@@ -164,12 +185,18 @@ export class Network {
     // Sprite position sync
     let syncReceiveCount = 0;
     this.socket.on('spriteSync', (data: { playerId: string; sprites: any[] }) => {
-      // Track for tests
-      this.messageHistory.push({
-        timestamp: Date.now(),
-        event: 'spriteSync',
-        data: data,
-      });
+      // Track for tests (test mode only)
+      if (this.testMode) {
+        this.messageHistory.push({
+          timestamp: Date.now(),
+          event: 'spriteSync',
+          data: data,
+        });
+        // Circular buffer: keep only last MAX_HISTORY_SIZE entries
+        if (this.messageHistory.length > this.MAX_HISTORY_SIZE) {
+          this.messageHistory.shift();
+        }
+      }
 
       syncReceiveCount++;
       if (syncReceiveCount === 1) {

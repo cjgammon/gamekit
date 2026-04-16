@@ -4,6 +4,11 @@
  */
 import { io } from 'socket.io-client';
 export class Network {
+    // Test mode flag - only track messages in test environment
+    // Set by test harness via window.__GAMEKIT_TEST_MODE__ = true
+    get testMode() {
+        return typeof window !== 'undefined' && window.__GAMEKIT_TEST_MODE__ === true;
+    }
     constructor(serverUrl) {
         this.socket = null;
         this.roomCode = null;
@@ -17,6 +22,9 @@ export class Network {
         // Sprite tracking for sync
         this.ownedSprites = new Set();
         this.syncInterval = null;
+        // Message history for test debugging (test mode only)
+        this.messageHistory = [];
+        this.MAX_HISTORY_SIZE = 100; // Limit history to prevent memory growth
         this.serverUrl = serverUrl;
         console.log(`[Network] Initialized with server: ${serverUrl}`);
     }
@@ -109,17 +117,53 @@ export class Network {
             return;
         // Player joined (server sends { player: ... })
         this.socket.on('playerJoined', (data) => {
+            // Track for tests (test mode only)
+            if (this.testMode) {
+                this.messageHistory.push({
+                    timestamp: Date.now(),
+                    event: 'playerJoined',
+                    data: data,
+                });
+                // Circular buffer: keep only last MAX_HISTORY_SIZE entries
+                if (this.messageHistory.length > this.MAX_HISTORY_SIZE) {
+                    this.messageHistory.shift();
+                }
+            }
             console.log(`👋 [Network] Player joined: ${data.player.name}`);
             this.playerJoinCallbacks.forEach(cb => cb(data.player));
         });
         // Player left (server sends { playerId: ... })
         this.socket.on('playerLeft', (data) => {
+            // Track for tests (test mode only)
+            if (this.testMode) {
+                this.messageHistory.push({
+                    timestamp: Date.now(),
+                    event: 'playerLeft',
+                    data: data,
+                });
+                // Circular buffer: keep only last MAX_HISTORY_SIZE entries
+                if (this.messageHistory.length > this.MAX_HISTORY_SIZE) {
+                    this.messageHistory.shift();
+                }
+            }
             console.log(`👋 [Network] Player left: ${data.playerId}`);
             this.playerLeaveCallbacks.forEach(cb => cb({ id: data.playerId }));
         });
         // Sprite position sync
         let syncReceiveCount = 0;
         this.socket.on('spriteSync', (data) => {
+            // Track for tests (test mode only)
+            if (this.testMode) {
+                this.messageHistory.push({
+                    timestamp: Date.now(),
+                    event: 'spriteSync',
+                    data: data,
+                });
+                // Circular buffer: keep only last MAX_HISTORY_SIZE entries
+                if (this.messageHistory.length > this.MAX_HISTORY_SIZE) {
+                    this.messageHistory.shift();
+                }
+            }
             syncReceiveCount++;
             if (syncReceiveCount === 1) {
                 console.log(`📡 [Network] Receiving sprite updates from other players`);
@@ -268,5 +312,11 @@ export class Network {
             this.socket = null;
         }
         console.log('[Network] Disconnected');
+    }
+    /**
+     * Get message history (for testing)
+     */
+    getMessageHistory() {
+        return this.messageHistory.slice(); // Return copy
     }
 }

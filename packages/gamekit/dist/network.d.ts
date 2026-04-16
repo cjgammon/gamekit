@@ -15,6 +15,9 @@ export declare class Network {
     private spriteSyncCallbacks;
     private ownedSprites;
     private syncInterval;
+    private messageHistory;
+    private readonly MAX_HISTORY_SIZE;
+    private get testMode();
     constructor(serverUrl: string);
     /**
      * Create a new room (become host)
@@ -78,4 +81,12 @@ export declare class Network {
      * Disconnect and clean up
      */
     disconnect(): void;
+    /**
+     * Get message history (for testing)
+     */
+    getMessageHistory(): Array<{
+        timestamp: number;
+        event: string;
+        data: any;
+    }>;
 }
