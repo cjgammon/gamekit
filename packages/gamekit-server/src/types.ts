@@ -29,6 +29,12 @@ export interface Room {
   players: Map<string, Player>;
   sprites: Map<string, SpriteSnapshot>;
   createdAt: Date;
+  messageHistory?: Array<{
+    timestamp: number;
+    type: 'spriteSync' | 'gameEvent' | 'playerJoined' | 'playerLeft';
+    playerId: string;
+    data: any;
+  }>;
 }
 
 /**
@@ -111,6 +117,11 @@ export interface ServerOptions {
    * Hook functions for customizing behavior
    */
   hooks?: ServerHooks;
+
+  /**
+   * Enable test endpoints (default: false)
+   */
+  testMode?: boolean;
 }
 
 /**
