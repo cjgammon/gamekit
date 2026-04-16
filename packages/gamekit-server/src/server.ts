@@ -3,6 +3,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import type { ServerOptions, GameKitServer as IGameKitServer } from './types.js';
 import { RoomManager } from './room-manager.js';
 import { EventHandlers } from './event-handlers.js';
+import { TestEndpoints } from './test-endpoints.js';
 
 /**
  * GameKit multiplayer server
@@ -13,6 +14,7 @@ export class GameKitServer implements IGameKitServer {
   private io: SocketIOServer;
   private roomManager: RoomManager;
   private eventHandlers: EventHandlers;
+  private testEndpoints?: TestEndpoints;
 
   constructor(options: ServerOptions = {}) {
     this.port = options.port || 3000;
@@ -45,6 +47,13 @@ export class GameKitServer implements IGameKitServer {
     // Create room manager and event handlers
     this.roomManager = new RoomManager();
     this.eventHandlers = new EventHandlers(this.roomManager, this.io, options.hooks);
+
+    // Set up test endpoints if enabled
+    if (options.testMode) {
+      console.log('[TEST MODE] Enabling test endpoints at /test/*');
+      this.testEndpoints = new TestEndpoints(this.httpServer, this.roomManager);
+      this.testEndpoints.setup();
+    }
   }
 
   /**

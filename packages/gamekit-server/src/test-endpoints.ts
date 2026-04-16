@@ -82,10 +82,7 @@ export class TestEndpoints {
     }
 
     // Convert Map to object for JSON serialization
-    const spriteStateObj: Record<string, any[]> = {};
-    for (const [playerId, sprites] of room.spriteState.entries()) {
-      spriteStateObj[playerId] = sprites;
-    }
+    const spritesArray = Array.from(room.sprites.values());
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
@@ -96,8 +93,8 @@ export class TestEndpoints {
         name: player.name,
         score: player.score,
       })),
-      sprites: spriteStateObj,
-      createdAt: room.createdAt,
+      sprites: spritesArray,
+      messageHistory: room.messageHistory || [],
     }));
   }
 
