@@ -24,6 +24,13 @@ export class Network {
   private ownedSprites: Set<GKSprite> = new Set();
   private syncInterval: number | null = null;
 
+  // Message history for test debugging
+  private messageHistory: Array<{
+    timestamp: number;
+    event: string;
+    data: any;
+  }> = [];
+
   constructor(serverUrl: string) {
     this.serverUrl = serverUrl;
     console.log(`[Network] Initialized with server: ${serverUrl}`);
@@ -132,12 +139,24 @@ export class Network {
 
     // Player joined (server sends { player: ... })
     this.socket.on('playerJoined', (data: { player: Player }) => {
+      this.messageHistory.push({
+        timestamp: Date.now(),
+        event: 'playerJoined',
+        data: data,
+      });
+
       console.log(`👋 [Network] Player joined: ${data.player.name}`);
       this.playerJoinCallbacks.forEach(cb => cb(data.player));
     });
 
     // Player left (server sends { playerId: ... })
     this.socket.on('playerLeft', (data: { playerId: string }) => {
+      this.messageHistory.push({
+        timestamp: Date.now(),
+        event: 'playerLeft',
+        data: data,
+      });
+
       console.log(`👋 [Network] Player left: ${data.playerId}`);
       this.playerLeaveCallbacks.forEach(cb => cb({ id: data.playerId }));
     });
@@ -145,6 +164,13 @@ export class Network {
     // Sprite position sync
     let syncReceiveCount = 0;
     this.socket.on('spriteSync', (data: { playerId: string; sprites: any[] }) => {
+      // Track for tests
+      this.messageHistory.push({
+        timestamp: Date.now(),
+        event: 'spriteSync',
+        data: data,
+      });
+
       syncReceiveCount++;
       if (syncReceiveCount === 1) {
         console.log(`📡 [Network] Receiving sprite updates from other players`);
@@ -316,5 +342,12 @@ export class Network {
     }
 
     console.log('[Network] Disconnected');
+  }
+
+  /**
+   * Get message history (for testing)
+   */
+  getMessageHistory(): Array<{ timestamp: number; event: string; data: any }> {
+    return this.messageHistory.slice(); // Return copy
   }
 }
