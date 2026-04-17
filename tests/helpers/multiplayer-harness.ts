@@ -159,7 +159,9 @@ export class MultiplayerTestHarness {
     }
 
     await this.openBrowser(sessionId, this.info.appUrl);
-    await this.exec(sessionId, 'sleep 2');
+
+    // Wait for page to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Enable test mode for message history tracking
     await this.exec(sessionId, `eval "window.__GAMEKIT_TEST_MODE__ = true"`);
@@ -192,7 +194,9 @@ export class MultiplayerTestHarness {
 
     const url = `${this.info.appUrl}?room=${roomCode}`;
     await this.openBrowser(sessionId, url);
-    await this.exec(sessionId, 'sleep 2');
+
+    // Wait for page to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Enable test mode for message history tracking
     await this.exec(sessionId, `eval "window.__GAMEKIT_TEST_MODE__ = true"`);
