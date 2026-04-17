@@ -66,6 +66,7 @@ export class GKCircle extends GKSprite {
         friction: this._friction,
         density: this._density,
         noRotation: this._noRotation,
+        frictionAir: this._frictionAir,
       }
     );
 

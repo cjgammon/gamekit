@@ -147,10 +147,16 @@ export class MultiplayerTestHarness {
           // Extract just the result between the first two ### markers
           const resultMatch = output.match(/### Result\s*\n(.*?)\n###/s);
           if (resultMatch) {
-            // Remove quotes if present and unescape
             let result = resultMatch[1].trim();
+            // If it's a JSON string (starts and ends with quotes), parse it to handle escaping
             if (result.startsWith('"') && result.endsWith('"')) {
-              result = result.slice(1, -1);
+              try {
+                // This will properly handle escaped characters like \", \\, etc.
+                result = JSON.parse(result);
+              } catch (e) {
+                // If JSON parse fails, fall back to simple slice
+                result = result.slice(1, -1);
+              }
             }
             resolve(result);
           } else {
@@ -178,7 +184,8 @@ export class MultiplayerTestHarness {
       throw new Error('Server not started - call startServer() first');
     }
 
-    await this.openBrowser(sessionId, this.info.appUrl);
+    const url = `${this.info.appUrl}?server=${encodeURIComponent(this.info.serverUrl)}`;
+    await this.openBrowser(sessionId, url);
 
     // Wait for page to load
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -218,7 +225,7 @@ export class MultiplayerTestHarness {
       throw new Error('Server not started');
     }
 
-    const url = `${this.info.appUrl}?room=${roomCode}`;
+    const url = `${this.info.appUrl}?room=${roomCode}&server=${encodeURIComponent(this.info.serverUrl)}`;
     await this.openBrowser(sessionId, url);
 
     // Wait for page to load
@@ -236,15 +243,58 @@ export class MultiplayerTestHarness {
 
   /**
    * Extract game state from browser
+   * Returns test API with callable methods
    */
   async getGameState(sessionId: string): Promise<any> {
-    const stateJson = await this.exec(
-      sessionId,
-      'eval',
-      'JSON.stringify(window.game?.getTestAPI() || {})'
-    );
-
-    return JSON.parse(stateJson || '{}');
+    // Return a proxy object that makes remote calls for each method
+    return {
+      getSprites: async () => {
+        const raw = await this.exec(
+          sessionId,
+          'eval',
+          'JSON.stringify(window.game?.getTestAPI().getSprites() || [])'
+        );
+        // Handle potential double-stringification
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          // If first parse fails, try parsing as a JSON string
+          return JSON.parse(JSON.parse(raw));
+        }
+      },
+      getMessageHistory: async () => {
+        const raw = await this.exec(
+          sessionId,
+          'eval',
+          'JSON.stringify(window.game?.getTestAPI().getMessageHistory() || [])'
+        );
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          return JSON.parse(JSON.parse(raw));
+        }
+      },
+      getNetworkState: async () => {
+        const raw = await this.exec(
+          sessionId,
+          'eval',
+          'JSON.stringify(window.game?.getTestAPI().getNetworkState() || {})'
+        );
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          return JSON.parse(JSON.parse(raw));
+        }
+      },
+      getFrameCount: async () => {
+        const result = await this.exec(
+          sessionId,
+          'eval',
+          'window.game?.getTestAPI().getFrameCount() || 0'
+        );
+        return parseInt(result);
+      },
+    };
   }
 
   /**
@@ -270,9 +320,16 @@ export class MultiplayerTestHarness {
    * Cleanup - close browsers and stop servers
    */
   async cleanup(): Promise<void> {
+    // Close all browser sessions
     for (const session of this.sessions) {
       try {
-        await this.exec(session.sessionId, 'close');
+        // Use spawn directly for close command (doesn't return structured output)
+        await new Promise<void>((resolve) => {
+          const proc = spawn('playwright-cli', ['-s', session.sessionId, 'close']);
+          proc.on('close', () => resolve());
+          // Timeout after 2 seconds
+          setTimeout(() => resolve(), 2000);
+        });
       } catch (e) {
         console.warn(`Failed to close session ${session.sessionId}`);
       }

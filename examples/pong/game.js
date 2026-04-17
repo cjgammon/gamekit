@@ -34,17 +34,29 @@ const gameOverDiv = document.getElementById('game-over');
 const winnerNameEl = document.getElementById('winner-name');
 const finalScoreEl = document.getElementById('final-score');
 
+// Get server URL from URL parameter or use default
+const serverUrl = new URLSearchParams(window.location.search).get('server') || 'http://localhost:3000';
+console.log(`Server URL: ${serverUrl}`);
+
 // Create game
 const game = new Game({
   width: 800,
   height: 600,
   gravity: 0,  // No gravity for Pong
   background: 0x000000,
-  server: 'http://localhost:3000'
+  server: serverUrl
 });
+
+// Expose game to window for E2E testing
+window.game = game;
+window.myPaddle = null; // Will be set after creation
+window.ball = null; // Will be set after creation
 
 // Create game objects
 console.log('Creating game objects...');
+
+// Map syncId to local sprites for direct updates during sync
+const localSprites = new Map(); // key: syncId, value: sprite
 
 // Top and bottom walls (ball bounces off these)
 const topWall = new GKBox({
@@ -79,6 +91,7 @@ const myPaddle = new GKBox({
   isStatic: true
 });
 game.add(myPaddle);
+localSprites.set(myPaddle.syncId, myPaddle);
 
 // Ball (only host creates and controls it)
 const ball = new GKCircle({
@@ -88,9 +101,13 @@ const ball = new GKCircle({
   color: 0xffffff,
   bounce: 1.0,  // Perfect bounce
   friction: 0,
-  isStatic: false  // Will be set to true for guest later
+  frictionAir: 0, // No air resistance - ball maintains velocity
+  isStatic: false,  // Will be set to true for guest later
+  syncId: 'ball'  // Deterministic ID for cross-client syncing
 });
 game.add(ball);
+localSprites.set(ball.syncId, ball);
+window.ball = ball; // Expose for E2E testing
 
 // Remote player sprites (tracked by playerId and syncId)
 const remoteSprites = new Map(); // key: "playerId:syncId", value: sprite
@@ -280,14 +297,18 @@ if (roomCodeParam && roomCodeParam !== 'new') {
       // Position paddle on right side
       myPaddle.x = 750;
 
+      // Expose to window for E2E testing
+      window.myPaddle = myPaddle;
+
       // Mark paddle as owned (will be synced)
       game.setOwner(myPaddle);
 
-      // Guest doesn't control the ball - hide it and wait for synced version
-      // The ball will appear as a gray remote sprite from the host
-      ball.x = -1000; // Move offscreen
-      ball.y = -1000;
-      ball.setVelocity(0, 0); // Stop any physics
+      // Guest's ball is not owned - position will be synced from host
+      // Make ball static to prevent double physics simulation
+      if (ball._body) {
+        ball._body.isStatic = true;
+      }
+      console.log('✓ Guest: Ball created as static (will receive sync from host)');
 
       // Update UI
       roomInfo.style.display = 'block';
@@ -333,6 +354,9 @@ function createTestRoom() {
 
       // Position paddle on left side
       myPaddle.x = 50;
+
+      // Expose to window for E2E testing
+      window.myPaddle = myPaddle;
 
       // Mark paddle and ball as owned (will be synced)
       game.setOwner(myPaddle);
@@ -408,83 +432,70 @@ game.onMessage('gameOver', (data) => {
   }
 });
 
-// Track ball syncId so we can detect it reliably
-let ballSyncId = null;
-if (isHost) {
-  ballSyncId = ball.syncId;
-  console.log(`🎯 Ball syncId: ${ballSyncId}`);
-}
-
-// Remote sprite sync (NEW in Stage 8!)
+// Remote sprite sync (Stage 8 - Single Source of Truth)
 game.onSpriteSync((data) => {
   const { playerId, sprites } = data;
 
   console.log(`📡 Received sprite sync from ${playerId}:`, sprites.length, 'sprite(s)');
 
-  // Debug: show what sprites we received
-  sprites.forEach((s, i) => {
-    console.log(`  [${i}] id=${s.id}, pos=(${Math.round(s.x)}, ${Math.round(s.y)})`);
-  });
-
   for (const spriteData of sprites) {
-    const key = `${playerId}:${spriteData.id}`;
+    const syncId = spriteData.id;
 
-    let remoteSprite = remoteSprites.get(key);
+    // PHASE 1: Check if this is one of our LOCAL sprites
+    if (localSprites.has(syncId)) {
+      const localSprite = localSprites.get(syncId);
 
-    if (!remoteSprite) {
-      // Create new sprite for remote player
-      console.log(`📡 Creating remote sprite: ${key}`);
-      console.log(`   Position: (${Math.round(spriteData.x)}, ${Math.round(spriteData.y)})`);
-
-      // Detect type: if it's near the center initially, it's probably the ball
-      // Paddles are at x=50 (left) or x=750 (right)
-      const isNearCenter = spriteData.x > 100 && spriteData.x < 700;
-      const isNearSide = spriteData.x < 100 || spriteData.x > 700;
-
-      // Better heuristic: paddles are always at edges, ball starts center
-      const isBall = isNearCenter && !isNearSide;
-
-      if (isBall) {
-        // This is the ball from host
-        console.log('  → Type: BALL (remote, synced from host)');
-        remoteSprite = new GKCircle({
-          x: spriteData.x,
-          y: spriteData.y,
-          radius: 8,
-          color: 0xaaaaaa,  // Gray
-          isStatic: true  // Remote sprites don't need physics
-        });
-      } else {
-        // This is a paddle from other player
-        console.log('  → Type: PADDLE (remote, from other player)');
-        remoteSprite = new GKBox({
-          x: spriteData.x,
-          y: spriteData.y,
-          width: 15,
-          height: 100,
-          color: 0xffaa00,  // Orange
-          isStatic: true
-        });
+      // Skip if we own this sprite (it's being echoed back from server)
+      if (localSprite.isOwned) {
+        continue;
       }
 
-      game.add(remoteSprite);
-      remoteSprites.set(key, remoteSprite);
-
-      // Host: add collision between ball and remote paddle (Player 2's paddle)
-      if (isHost && !isBall) {
-        ball.onCollide(remoteSprite, () => {
-          console.log('Ball hit player 2 paddle (remote)');
-          // Add angle variation based on hit position
-          const hitPos = (ball.y - remoteSprite.y) / 50; // -1 to 1
-          ball.setVelocity(-BALL_SPEED, hitPos * BALL_SPEED * 0.7);
-        });
-      }
+      // Update our non-owned local sprite (guest's ball receiving host's position)
+      console.log(`📡 Updating local sprite ${syncId}: (${Math.round(spriteData.x)}, ${Math.round(spriteData.y)})`);
+      localSprite.x = spriteData.x;
+      localSprite.y = spriteData.y;
+      continue;
     }
 
-    // Update position for all remote sprites
+    // PHASE 2: Check if this is an already-known remote sprite
+    const key = `${playerId}:${syncId}`;
+    let remoteSprite = remoteSprites.get(key);
+
     if (remoteSprite) {
+      // Update existing remote sprite position
       remoteSprite.x = spriteData.x;
       remoteSprite.y = spriteData.y;
+      continue;
+    }
+
+    // PHASE 3: Create new remote sprite (first time seeing this sprite)
+    // This should ONLY happen for other player's paddles, never for the ball
+    console.log(`📡 Creating remote sprite: ${key}`);
+    console.log(`   Position: (${Math.round(spriteData.x)}, ${Math.round(spriteData.y)})`);
+    console.log('  → Type: PADDLE (remote, from other player)');
+
+    remoteSprite = new GKBox({
+      x: spriteData.x,
+      y: spriteData.y,
+      width: 15,
+      height: 100,
+      color: 0xffaa00,  // Orange
+      isStatic: true
+    });
+
+    game.add(remoteSprite);
+    remoteSprites.set(key, remoteSprite);
+
+    // Host: add collision between ball and remote paddle (Player 2's paddle)
+    // Defer to next frame to ensure physics body is fully initialized
+    if (isHost) {
+      requestAnimationFrame(() => {
+        ball.onCollide(remoteSprite, () => {
+          console.log('Ball hit player 2 paddle (remote)');
+          const hitPos = (ball.y - remoteSprite.y) / 50;
+          ball.setVelocity(-BALL_SPEED, hitPos * BALL_SPEED * 0.7);
+        });
+      });
     }
   }
 });

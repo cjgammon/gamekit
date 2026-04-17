@@ -102,4 +102,10 @@ export class RoomManager {
         room.hostId = newHostId;
         return true;
     }
+    /**
+     * Get all rooms (for testing)
+     */
+    getAllRooms() {
+        return this.rooms;
+    }
 }

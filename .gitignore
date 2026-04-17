@@ -6,3 +6,6 @@ test-artifacts/
 
 # Test environment
 .env.test.local
+
+# Playwright CLI artifacts
+.playwright-cli/

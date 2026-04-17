@@ -40,4 +40,8 @@ export declare class RoomManager {
      * Transfer host role to another player
      */
     transferHost(code: string, newHostId: string): boolean;
+    /**
+     * Get all rooms (for testing)
+     */
+    getAllRooms(): Map<string, Room>;
 }

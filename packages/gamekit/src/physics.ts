@@ -109,6 +109,7 @@ export class Physics {
       friction?: number;
       density?: number;
       noRotation?: boolean;
+      frictionAir?: number;
     } = {}
   ): Matter.Body {
     console.log(`[Physics] Creating rectangle body at (${x}, ${y}), size ${width}x${height}`);
@@ -118,7 +119,7 @@ export class Physics {
       restitution: options.bounce ?? 0.2,
       friction: options.friction ?? 0.8,
       density: options.density ?? 0.001,
-      frictionAir: 0.01,
+      frictionAir: options.frictionAir ?? 0.01,
     };
 
     const body = Matter.Bodies.rectangle(x, y, width, height, bodyOptions);
@@ -145,6 +146,7 @@ export class Physics {
       friction?: number;
       density?: number;
       noRotation?: boolean;
+      frictionAir?: number;
     } = {}
   ): Matter.Body {
     console.log(`[Physics] Creating circle body at (${x}, ${y}), radius ${radius}`);
@@ -154,7 +156,7 @@ export class Physics {
       restitution: options.bounce ?? 0.2,
       friction: options.friction ?? 0.8,
       density: options.density ?? 0.001,
-      frictionAir: 0.01,
+      frictionAir: options.frictionAir ?? 0.01,
     };
 
     const body = Matter.Bodies.circle(x, y, radius, bodyOptions);

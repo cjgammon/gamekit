@@ -17,6 +17,7 @@ export abstract class GKSprite {
   protected _friction: number;
   protected _density: number;
   protected _noRotation: boolean;
+  protected _frictionAir: number;
 
   // Will be set when added to game (public for Game class access)
   _pixi: any = null;       // PixiJS display object
@@ -41,7 +42,8 @@ export abstract class GKSprite {
     this._friction = options.friction ?? 0.8;
     this._density = options.density ?? 0.001;
     this._noRotation = options.noRotation ?? true;
-    this._syncId = Math.random().toString(36).substr(2, 9);
+    this._frictionAir = options.frictionAir ?? 0.01;
+    this._syncId = options.syncId ?? Math.random().toString(36).substr(2, 9);
 
     console.log(`[${this.constructor.name}] Created at (${this._x}, ${this._y})`);
   }
@@ -62,18 +64,46 @@ export abstract class GKSprite {
   // Position & Transform
   // ============================================================
 
-  get x(): number { return this._x; }
+  get x(): number {
+    // For owned sprites, read from physics body (source of truth)
+    // For non-owned sprites, read from _x (updated via network sync)
+    if (this._isOwned && this._body) {
+      return this._body.position.x;
+    }
+    return this._x;
+  }
   set x(v: number) {
     this._x = v;
     if (this._pixi) this._pixi.x = v;
-    if (this._body) this._body.position.x = v;
+    if (this._body) {
+      // Use Matter.js API to properly update physics body position
+      // This works correctly for both static and dynamic bodies
+      Matter.Body.setPosition(this._body, {
+        x: v,
+        y: this._body.position.y
+      });
+    }
   }
 
-  get y(): number { return this._y; }
+  get y(): number {
+    // For owned sprites, read from physics body (source of truth)
+    // For non-owned sprites, read from _y (updated via network sync)
+    if (this._isOwned && this._body) {
+      return this._body.position.y;
+    }
+    return this._y;
+  }
   set y(v: number) {
     this._y = v;
     if (this._pixi) this._pixi.y = v;
-    if (this._body) this._body.position.y = v;
+    if (this._body) {
+      // Use Matter.js API to properly update physics body position
+      // This works correctly for both static and dynamic bodies
+      Matter.Body.setPosition(this._body, {
+        x: this._body.position.x,
+        y: v
+      });
+    }
   }
 
   get angle(): number {
@@ -201,6 +231,9 @@ export abstract class GKSprite {
    * Called every frame by Game loop
    */
   _syncPhysicsToRender(): void {
+    // Skip sync for non-owned sprites - they receive positions via network
+    if (!this._isOwned) return;
+
     if (this._body && this._pixi) {
       this._pixi.x = this._body.position.x;
       this._pixi.y = this._body.position.y;

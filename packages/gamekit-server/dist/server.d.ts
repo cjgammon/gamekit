@@ -8,6 +8,7 @@ export declare class GameKitServer implements IGameKitServer {
     private io;
     private roomManager;
     private eventHandlers;
+    private testEndpoints?;
     constructor(options?: ServerOptions);
     /**
      * Start the server
