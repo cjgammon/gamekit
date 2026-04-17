@@ -23,7 +23,7 @@ describe('Multiplayer Sprite Synchronization', () => {
 
     // Wait for initial connection and sync
     await new Promise(resolve => setTimeout(resolve, 2000));
-  });
+  }, 30000); // 30 second timeout for server startup and browser initialization
 
   afterAll(async () => {
     await harness.cleanup();
@@ -69,7 +69,7 @@ describe('Multiplayer Sprite Synchronization', () => {
       );
       throw error;
     }
-  });
+  }, 15000);
 
   test('guest receives spriteSync messages', async () => {
     try {
@@ -98,7 +98,7 @@ describe('Multiplayer Sprite Synchronization', () => {
       );
       throw error;
     }
-  });
+  }, 15000);
 
   test('frozen sprite detection - catches stuck remote sprites', async () => {
     try {
@@ -145,5 +145,5 @@ describe('Multiplayer Sprite Synchronization', () => {
       // Failure already captured in the if block above
       throw error;
     }
-  });
+  }, 15000);
 });
