@@ -32,7 +32,7 @@ describe('Multiplayer Sprite Synchronization', () => {
   test('paddle position syncs from host to guest', async () => {
     try {
       // Host moves paddle
-      await harness.exec(HOST_SESSION, 'eval "window.myPaddle.y = 400"');
+      await harness.exec(HOST_SESSION, 'eval', 'window.myPaddle.y = 400');
 
       // Wait for sync cycle
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -74,7 +74,7 @@ describe('Multiplayer Sprite Synchronization', () => {
   test('guest receives spriteSync messages', async () => {
     try {
       // Host moves paddle
-      await harness.exec(HOST_SESSION, 'eval "window.myPaddle.y = 200"');
+      await harness.exec(HOST_SESSION, 'eval', 'window.myPaddle.y = 200');
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
@@ -103,7 +103,7 @@ describe('Multiplayer Sprite Synchronization', () => {
   test('frozen sprite detection - catches stuck remote sprites', async () => {
     try {
       // Move paddle to position 1
-      await harness.exec(HOST_SESSION, 'eval "window.myPaddle.y = 100"');
+      await harness.exec(HOST_SESSION, 'eval', 'window.myPaddle.y = 100');
       await new Promise(resolve => setTimeout(resolve, 200));
 
       const state1 = await harness.getGameState(GUEST_SESSION);
@@ -111,7 +111,7 @@ describe('Multiplayer Sprite Synchronization', () => {
       const paddle1 = sprites1.find((s: any) => !s.isOwned);
 
       // Move paddle to position 2
-      await harness.exec(HOST_SESSION, 'eval "window.myPaddle.y = 500"');
+      await harness.exec(HOST_SESSION, 'eval', 'window.myPaddle.y = 500');
       await new Promise(resolve => setTimeout(resolve, 200));
 
       const state2 = await harness.getGameState(GUEST_SESSION);

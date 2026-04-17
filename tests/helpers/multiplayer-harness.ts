@@ -127,10 +127,11 @@ export class MultiplayerTestHarness {
   /**
    * Execute playwright-cli command
    */
-  private async exec(sessionId: string, command: string): Promise<string> {
+  private async exec(sessionId: string, command: string, ...args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
-      const args = command.split(' ');
-      const proc = spawn('playwright-cli', ['-s', sessionId, ...args]);
+      // If args are provided, use them directly; otherwise parse command string
+      const commandArgs = args.length > 0 ? [command, ...args] : command.split(' ');
+      const proc = spawn('playwright-cli', ['-s', sessionId, ...commandArgs]);
 
       let output = '';
       proc.stdout?.on('data', (data) => output += data.toString());
@@ -164,12 +165,10 @@ export class MultiplayerTestHarness {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Enable test mode for message history tracking
-    await this.exec(sessionId, `eval "window.__GAMEKIT_TEST_MODE__ = true"`);
+    await this.exec(sessionId, 'eval', 'window.__GAMEKIT_TEST_MODE__ = true');
 
     // Extract room code from game
-    const roomCode = await this.exec(sessionId,
-      `eval "window.game?.getRoomCode() || ''"`
-    );
+    const roomCode = await this.exec(sessionId, 'eval', "window.game?.getRoomCode() || ''");
 
     if (!roomCode.trim()) {
       throw new Error('Failed to create room - no room code returned');
@@ -199,7 +198,7 @@ export class MultiplayerTestHarness {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Enable test mode for message history tracking
-    await this.exec(sessionId, `eval "window.__GAMEKIT_TEST_MODE__ = true"`);
+    await this.exec(sessionId, 'eval', 'window.__GAMEKIT_TEST_MODE__ = true');
 
     this.sessions.push({
       sessionId,
@@ -212,8 +211,10 @@ export class MultiplayerTestHarness {
    * Extract game state from browser
    */
   async getGameState(sessionId: string): Promise<any> {
-    const stateJson = await this.exec(sessionId,
-      `eval "JSON.stringify(window.game?.getTestAPI() || {})"`
+    const stateJson = await this.exec(
+      sessionId,
+      'eval',
+      'JSON.stringify(window.game?.getTestAPI() || {})'
     );
 
     return JSON.parse(stateJson || '{}');
