@@ -186,11 +186,19 @@ export class MultiplayerTestHarness {
     // Enable test mode for message history tracking
     await this.exec(sessionId, 'eval', 'window.__GAMEKIT_TEST_MODE__ = true');
 
-    // Extract room code from game
-    const roomCode = await this.exec(sessionId, 'eval', "window.game?.getRoomCode() || ''");
+    // Wait for room to be created (retry up to 10 times with 500ms delay)
+    let roomCode = '';
+    for (let i = 0; i < 10; i++) {
+      roomCode = await this.exec(sessionId, 'eval', "window.game?.getRoomCode() || ''");
+      if (roomCode.trim()) {
+        break;
+      }
+      console.log(`  Waiting for room creation... (attempt ${i + 1}/10)`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
 
     if (!roomCode.trim()) {
-      throw new Error('Failed to create room - no room code returned');
+      throw new Error('Failed to create room - no room code returned after 10 attempts');
     }
 
     this.sessions.push({
