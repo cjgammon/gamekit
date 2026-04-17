@@ -138,8 +138,27 @@ export class MultiplayerTestHarness {
       proc.stderr?.on('data', (data) => output += data.toString());
 
       proc.on('close', (code) => {
-        if (code === 0) resolve(output);
-        else reject(new Error(`Command failed: ${command}\n${output}`));
+        if (code === 0) {
+          // playwright-cli returns output like:
+          // ### Result
+          // "actual result"
+          // ### Ran Playwright code
+          // ...
+          // Extract just the result between the first two ### markers
+          const resultMatch = output.match(/### Result\s*\n(.*?)\n###/s);
+          if (resultMatch) {
+            // Remove quotes if present and unescape
+            let result = resultMatch[1].trim();
+            if (result.startsWith('"') && result.endsWith('"')) {
+              result = result.slice(1, -1);
+            }
+            resolve(result);
+          } else {
+            resolve(output);
+          }
+        } else {
+          reject(new Error(`Command failed: ${command}\n${output}`));
+        }
       });
     });
   }
