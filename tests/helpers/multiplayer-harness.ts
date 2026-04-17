@@ -148,7 +148,7 @@ export class MultiplayerTestHarness {
    * Open browser with playwright-cli
    */
   private async openBrowser(sessionId: string, url: string): Promise<void> {
-    await this.exec(sessionId, `open ${url}`);
+    await this.exec(sessionId, 'open', url);
   }
 
   /**
