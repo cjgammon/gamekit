@@ -1,0 +1,3 @@
+[test]
+# E2E tests need more time for server startup and browser automation
+timeout = 30000

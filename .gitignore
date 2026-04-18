@@ -1,2 +1,11 @@
 node_modules
 .DS_Store
+
+# Test artifacts
+test-artifacts/
+
+# Test environment
+.env.test.local
+
+# Playwright CLI artifacts
+.playwright-cli/

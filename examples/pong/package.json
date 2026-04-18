@@ -4,8 +4,9 @@
   "description": "Multiplayer pong example using GameKit",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite .\" \"node ../../packages/gamekit-server/server.js\"",
+    "dev": "concurrently \"vite .\" \"node server.js\"",
     "client": "vite .",
+    "server": "node server.js",
     "build": "vite build ."
   },
   "dependencies": {

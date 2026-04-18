@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameKit Stage Tests</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      padding: 40px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #fff;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+    }
+
+    .subtitle {
+      color: #888;
+      margin-bottom: 40px;
+      font-size: 1.1em;
+    }
+
+    .stage {
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      transition: all 0.2s;
+    }
+
+    .stage:hover {
+      border-color: #666;
+      transform: translateY(-2px);
+    }
+
+    .stage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .stage-title {
+      color: #fff;
+      font-size: 1.4em;
+      font-weight: bold;
+    }
+
+    .stage-status {
+      background: #2a2a2a;
+      color: #4a4;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    .stage-description {
+      color: #bbb;
+      margin-bottom: 16px;
+    }
+
+    .features {
+      list-style: none;
+      margin-bottom: 16px;
+    }
+
+    .features li {
+      color: #888;
+      padding: 4px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .features li:before {
+      content: "✓";
+      color: #4a4;
+      position: absolute;
+      left: 0;
+    }
+
+    .stage-link {
+      display: inline-block;
+      background: #2a6;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 4px;
+      text-decoration: none;
+      transition: background 0.2s;
+      font-weight: bold;
+    }
+
+    .stage-link:hover {
+      background: #3b7;
+    }
+
+    .info {
+      background: #1a2a3a;
+      border-left: 4px solid #4a8;
+      padding: 16px;
+      margin-bottom: 40px;
+      color: #aaa;
+    }
+
+    .info strong {
+      color: #4a8;
+    }
+
+    code {
+      background: #2a2a2a;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #8af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 GameKit Stage Tests</h1>
+    <p class="subtitle">Visual regression tests for incremental development</p>
+
+    <div class="info">
+      <strong>⚠️ Important:</strong> These HTML files use ES modules and must be served via HTTP.
+      Run <code>npx vite</code> in this directory, then navigate to the test pages.
+      See <strong>README.md</strong> for details.
+    </div>
+
+    <!-- Stage 1 -->
+    <div class="stage">
+      <div class="stage-header">
+        <div class="stage-title">Stage 1: Core Architecture</div>
+        <div class="stage-status">✓ Complete</div>
+      </div>
+      <div class="stage-description">
+        Tests class instantiation and API structure without rendering or physics.
+      </div>
+      <ul class="features">
+        <li>Game, GKBox, GKCircle classes instantiate</li>
+        <li>Constructor logging confirms creation</li>
+        <li>TypeScript types work correctly</li>
+        <li>Sprites can be added to game</li>
+      </ul>
+      <a href="stage1-structure.html" class="stage-link">Run Test →</a>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="stage">
+      <div class="stage-header">
+        <div class="stage-title">Stage 2: Rendering System</div>
+        <div class="stage-status">✓ Complete</div>
+      </div>
+      <div class="stage-description">
+        Tests PixiJS rendering - sprites appear on canvas at correct positions with colors.
+      </div>
+      <ul class="features">
+        <li>Black canvas appears and fills screen</li>
+        <li>Colored boxes render (red, green, blue)</li>
+        <li>Colored circles render (yellow, cyan, magenta)</li>
+        <li>Dynamic position changes work (paddle moves)</li>
+      </ul>
+      <a href="stage2-rendering.html" class="stage-link">Run Test →</a>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="stage">
+      <div class="stage-header">
+        <div class="stage-title">Stage 3: Physics System</div>
+        <div class="stage-status">✓ Complete</div>
+      </div>
+      <div class="stage-description">
+        Tests Matter.js physics integration - gravity, collisions, bounce, velocity.
+      </div>
+      <ul class="features">
+        <li>Sprites fall with gravity</li>
+        <li>Static sprites (floor, walls) stay in place</li>
+        <li>Bounce values create different behaviors</li>
+        <li>Velocity can be set dynamically</li>
+        <li>Automatic physics/render sync</li>
+      </ul>
+      <a href="stage3-physics.html" class="stage-link">Run Test →</a>
+    </div>
+
+    <!-- Stage 4 -->
+    <div class="stage">
+      <div class="stage-header">
+        <div class="stage-title">Stage 4: Collision Detection</div>
+        <div class="stage-status">✓ Complete</div>
+      </div>
+      <div class="stage-description">
+        Tests collision callbacks - onCollide() fires when sprites touch.
+      </div>
+      <ul class="features">
+        <li>onCollide() callbacks fire on collision</li>
+        <li>Multiple collision pairs work simultaneously</li>
+        <li>Ball-floor, ball-ball, ball-wall detection</li>
+        <li>Score counter increments with hits</li>
+        <li>Console shows detailed collision events</li>
+      </ul>
+      <a href="stage4-collisions.html" class="stage-link">Run Test →</a>
+    </div>
+
+    <!-- Stage 5 -->
+    <div class="stage">
+      <div class="stage-header">
+        <div class="stage-title">Stage 5: Input System</div>
+        <div class="stage-status">✓ Complete</div>
+      </div>
+      <div class="stage-description">
+        Keyboard and mouse controls - player-controlled paddle movement.
+      </div>
+      <ul class="features">
+        <li>game.isKeyDown() for smooth movement (held keys)</li>
+        <li>game.onKey() for discrete actions (key press events)</li>
+        <li>game.onTap() for mouse/touch input with coordinates</li>
+        <li>Multiple key bindings (Arrow keys + WASD)</li>
+      </ul>
+      <a href="stage5-input.html" class="stage-link">Run Test →</a>
+    </div>
+
+    <!-- Stage 7 -->
+    <div class="stage">
+      <div class="stage-header">
+        <div class="stage-title">Stage 7: Multiplayer Network</div>
+        <div class="stage-status">✓ Complete</div>
+      </div>
+      <div class="stage-description">
+        Socket.io multiplayer with room-based gameplay and real-time sprite sync.
+      </div>
+      <ul class="features">
+        <li>game.createRoom() and game.joinRoom() with room codes</li>
+        <li>Automatic sprite synchronization at 20Hz</li>
+        <li>Player join/leave events with notifications</li>
+        <li>Custom messaging: game.send() and game.onMessage()</li>
+        <li>game.setOwner() marks sprites for network sync</li>
+      </ul>
+      <a href="stage7-multiplayer.html" class="stage-link">Run Test →</a>
+      <div style="margin-top: 12px; padding: 8px; background: #2a2a2a; border-radius: 4px; font-size: 0.9em; color: #aaa;">
+        ⚠️ Requires server: <code style="color: #8af;">node packages/gamekit-server/server.js</code>
+      </div>
+    </div>
+
+    <!-- Coming Soon -->
+    <div class="stage" style="opacity: 0.5;">
+      <div class="stage-header">
+        <div class="stage-title">Stage 8: Complete Pong Game</div>
+        <div class="stage-status" style="background: #444; color: #888;">Coming Soon</div>
+      </div>
+      <div class="stage-description">
+        Full multiplayer Pong with scoring, win conditions, and game states.
+      </div>
+      <ul class="features">
+        <li>Two-player competitive gameplay</li>
+        <li>Score tracking and display</li>
+        <li>Win condition and game over</li>
+        <li>Paddle positioning (left/right)</li>
+      </ul>
+    </div>
+
+  </div>
+</body>
+</html>

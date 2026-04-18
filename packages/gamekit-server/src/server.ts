@@ -1,0 +1,109 @@
+import { createServer as createHttpServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import type { ServerOptions, GameKitServer as IGameKitServer } from './types.js';
+import { RoomManager } from './room-manager.js';
+import { EventHandlers } from './event-handlers.js';
+import { TestEndpoints } from './test-endpoints.js';
+
+/**
+ * GameKit multiplayer server
+ */
+export class GameKitServer implements IGameKitServer {
+  private port: number;
+  private httpServer;
+  private io: SocketIOServer;
+  private roomManager: RoomManager;
+  private eventHandlers: EventHandlers;
+  private testEndpoints?: TestEndpoints;
+
+  constructor(options: ServerOptions = {}) {
+    this.port = options.port || 3000;
+
+    // Create HTTP server with health endpoint
+    this.httpServer = createHttpServer((req, res) => {
+      if (req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            status: 'ok',
+            rooms: this.roomManager.getRoomCount(),
+            uptime: Math.floor(process.uptime()),
+          })
+        );
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+
+    // Create Socket.IO server
+    this.io = new SocketIOServer(this.httpServer, {
+      cors: options.cors || {
+        origin: '*',
+        methods: ['GET', 'POST'],
+      },
+    });
+
+    // Create room manager and event handlers
+    this.roomManager = new RoomManager();
+    this.eventHandlers = new EventHandlers(this.roomManager, this.io, options.hooks);
+
+    // Set up test endpoints if enabled
+    if (options.testMode) {
+      console.log('[TEST MODE] Enabling test endpoints at /test/*');
+      this.testEndpoints = new TestEndpoints(this.httpServer, this.roomManager);
+      this.testEndpoints.setup();
+    }
+  }
+
+  /**
+   * Start the server
+   */
+  start(): void {
+    // Setup connection handler
+    this.io.on('connection', (socket) => {
+      console.log(`[+] Player connected:   ${socket.id}`);
+      this.eventHandlers.setupHandlers(socket);
+    });
+
+    // Start listening
+    this.httpServer.listen(this.port, () => {
+      console.log(`
+  ╔════════════════════════════════════════╗
+  ║   GameKit Server running!              ║
+  ║   http://localhost:${this.port.toString().padEnd(4)}               ║
+  ║   Health: http://localhost:${this.port.toString().padEnd(4)}/health  ║
+  ╚════════════════════════════════════════╝
+      `);
+    });
+  }
+
+  /**
+   * Stop the server
+   */
+  async stop(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.io.close((err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        this.httpServer.close((err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          console.log('[X] Server stopped');
+          resolve();
+        });
+      });
+    });
+  }
+}
+
+/**
+ * Create a new GameKit server instance
+ */
+export function createServer(options: ServerOptions = {}): IGameKitServer {
+  return new GameKitServer(options);
+}

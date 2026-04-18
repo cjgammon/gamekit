@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameKit Stage 2 - Rendering Test</title>
+</head>
+<body>
+  <script type="module">
+    import { Game, GKBox, GKCircle } from '../../packages/gamekit/dist/index.js';
+
+    console.log('=== GameKit Stage 2 Test ===');
+    console.log('Testing: PixiJS rendering system\n');
+
+    // Test 1: Create game with rendering
+    console.log('Test 1: Creating Game with renderer...');
+    const game = new Game({
+      width: 800,
+      height: 600,
+      gravity: 0,
+      background: 0x111111  // Dark gray background
+    });
+
+    // Test 2: Create and render a paddle (white rectangle)
+    console.log('\nTest 2: Creating white paddle (GKBox)...');
+    const paddle = new GKBox({
+      x: 100,
+      y: 300,
+      width: 20,
+      height: 80,
+      color: 0xffffff,  // White
+      isStatic: true
+    });
+    game.add(paddle);
+
+    // Test 3: Create and render a ball (white circle)
+    console.log('\nTest 3: Creating ball (GKCircle)...');
+    const ball = new GKCircle({
+      x: 400,
+      y: 300,
+      radius: 10,
+      color: 0xffffff,  // White
+      bounce: 1.0
+    });
+    game.add(ball);
+
+    // Test 4: Create colored boxes to test rendering
+    console.log('\nTest 4: Creating colored test boxes...');
+    const redBox = new GKBox({
+      x: 200,
+      y: 100,
+      width: 50,
+      height: 50,
+      color: 0xff0000  // Red
+    });
+    game.add(redBox);
+
+    const greenBox = new GKBox({
+      x: 400,
+      y: 100,
+      width: 50,
+      height: 50,
+      color: 0x00ff00  // Green
+    });
+    game.add(greenBox);
+
+    const blueBox = new GKBox({
+      x: 600,
+      y: 100,
+      width: 50,
+      height: 50,
+      color: 0x0000ff  // Blue
+    });
+    game.add(blueBox);
+
+    // Test 5: Create colored circles
+    console.log('\nTest 5: Creating colored circles...');
+    const yellowCircle = new GKCircle({
+      x: 200,
+      y: 500,
+      radius: 25,
+      color: 0xffff00  // Yellow
+    });
+    game.add(yellowCircle);
+
+    const cyanCircle = new GKCircle({
+      x: 400,
+      y: 500,
+      radius: 25,
+      color: 0x00ffff  // Cyan
+    });
+    game.add(cyanCircle);
+
+    const magentaCircle = new GKCircle({
+      x: 600,
+      y: 500,
+      radius: 25,
+      color: 0xff00ff  // Magenta
+    });
+    game.add(magentaCircle);
+
+    // Test 6: Test dynamic positioning
+    console.log('\nTest 6: Testing dynamic position changes...');
+    setTimeout(() => {
+      console.log('Moving paddle to x=150...');
+      paddle.x = 150;
+    }, 1000);
+
+    setTimeout(() => {
+      console.log('Moving ball to (500, 200)...');
+      ball.x = 500;
+      ball.y = 200;
+    }, 2000);
+
+    console.log('\n=== Stage 2 Test Instructions ===');
+    console.log('✓ You should see:');
+    console.log('  - Black canvas filling the screen');
+    console.log('  - White paddle on the left');
+    console.log('  - White ball in the center');
+    console.log('  - 3 colored boxes (red, green, blue) at the top');
+    console.log('  - 3 colored circles (yellow, cyan, magenta) at the bottom');
+    console.log('✓ After 1 second: paddle should move right');
+    console.log('✓ After 2 seconds: ball should move to upper-right');
+  </script>
+</body>
+</html>

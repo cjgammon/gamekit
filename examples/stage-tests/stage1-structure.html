@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameKit Stage 1 - Core Architecture Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+      font-family: monospace;
+    }
+    h1 { color: #4a9eff; }
+    .info { color: #888; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Stage 1: Core Architecture</h1>
+  <p class="info">Testing: Class instantiation, types, method signatures</p>
+  <p class="info">Open console (F12) to see test results</p>
+
+  <script type="module">
+    import { Game, GKBox, GKCircle } from '../../packages/gamekit/dist/index.js';
+
+    console.log('=== GameKit Stage 1 Test ===');
+    console.log('Testing: Core architecture with class-based sprites\n');
+
+    // Test 1: Create game instance
+    console.log('Test 1: Creating Game instance...');
+    const game = new Game({
+      width: 800,
+      height: 600,
+      gravity: 0,
+      background: 0x111111
+    });
+
+    // Test 2: Create box sprite
+    console.log('\nTest 2: Creating GKBox...');
+    const paddle = new GKBox({
+      x: 50,
+      y: 250,
+      width: 20,
+      height: 80,
+      color: 0xffffff,
+      isStatic: true
+    });
+
+    // Test 3: Add sprite to game
+    console.log('\nTest 3: Adding sprite to game...');
+    game.add(paddle);
+
+    // Test 4: Create circle sprite
+    console.log('\nTest 4: Creating GKCircle...');
+    const ball = new GKCircle({
+      x: 400,
+      y: 250,
+      radius: 7,
+      color: 0xffffff,
+      bounce: 1.0
+    });
+
+    // Test 5: Add circle to game
+    console.log('\nTest 5: Adding circle to game...');
+    game.add(ball);
+
+    // Test 6: Test movement methods
+    console.log('\nTest 6: Testing movement methods...');
+    paddle.moveUp(10);
+    console.log(`Paddle position after moveUp: (${paddle.x}, ${paddle.y})`);
+
+    // Test 7: Test game loop registration
+    console.log('\nTest 7: Registering update callback...');
+    game.onUpdate(() => {
+      // This will be called every frame in Stage 6
+    });
+
+    // Test 8: Test input methods
+    console.log('\nTest 8: Testing input methods...');
+    game.isKeyDown('ArrowUp');
+    game.onKey('Space', () => {});
+
+    // Test 9: Test multiplayer methods
+    console.log('\nTest 9: Testing multiplayer methods...');
+    game.createRoom('Player1').then(({ code }) => {
+      console.log(`Room code: ${code}`);
+    });
+
+    console.log('\n=== Stage 1 Test Complete ===');
+    console.log('✓ All classes instantiated successfully');
+    console.log('✓ All methods callable without errors');
+    console.log('✓ Check console logs above for detailed output');
+  </script>
+</body>
+</html>

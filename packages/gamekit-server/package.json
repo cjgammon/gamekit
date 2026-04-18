@@ -3,15 +3,21 @@
   "version": "0.1.0",
   "description": "Multiplayer server for games built with GameKit",
   "type": "module",
-  "main": "server.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./server.js"
+    ".": {
+      "development": "./src/index.ts",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "files": [
-    "server.js"
+    "dist"
   ],
-  "bin": {
-    "gamekit-server": "./server.js"
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "keywords": [
     "gamekit",
@@ -26,5 +32,9 @@
   },
   "dependencies": {
     "socket.io": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^6.0.2"
   }
 }

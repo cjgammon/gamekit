@@ -5,5 +5,10 @@
   "workspaces": [
     "packages/*",
     "examples/*"
-  ]
+  ],
+  "scripts": {
+    "test:e2e": "bun test tests/",
+    "test:e2e:watch": "bun test --watch tests/",
+    "test:e2e:debug": "bun test --bail tests/"
+  }
 }
