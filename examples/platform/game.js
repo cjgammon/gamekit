@@ -154,15 +154,29 @@ console.log('Collision detection ready');
 
 const playerColors = [0xFF0000, 0x0000FF, 0x00FF00, 0xFFFF00, 0xFF00FF, 0xFFA500];
 
+// Get spawn position for new player
+function getSpawnPosition(playerIndex) {
+  const spawnPositions = [
+    { x: 100, y: 500 },   // Ground left
+    { x: 400, y: 500 },   // Ground center
+    { x: 700, y: 500 },   // Ground right
+    { x: 150, y: 400 },   // Platform 1
+    { x: 500, y: 300 },   // Platform 2
+    { x: 300, y: 200 },   // Platform 3
+  ];
+
+  return spawnPositions[playerIndex % spawnPositions.length];
+}
+
 function createPlayer(playerIndex, playerName) {
   console.log(`Creating player ${playerIndex}: ${playerName}`);
 
   const color = playerColors[playerIndex % playerColors.length];
+  const spawnPos = getSpawnPosition(playerIndex);
 
-  // Spawn on ground initially
   const player = new GKBox({
-    x: 400,
-    y: 500,
+    x: spawnPos.x,
+    y: spawnPos.y,
     width: PLAYER_WIDTH,
     height: PLAYER_HEIGHT,
     color: color,
@@ -173,7 +187,6 @@ function createPlayer(playerIndex, playerName) {
 
   game.add(player);
 
-  // Store player data
   player.playerName = playerName;
   player.score = 0;
 
