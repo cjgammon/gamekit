@@ -134,6 +134,21 @@ const platforms = [ground, platform1, platform2, platform3, platform4];
 console.log('Platforms created');
 
 // ============================================================
+// COLLISION DETECTION
+// ============================================================
+
+console.log('Setting up collision detection...');
+
+// Ground detection - set isGrounded when player touches any platform
+platforms.forEach(platform => {
+  platform.onCollide(localPlayer, () => {
+    isGrounded = true;
+  });
+});
+
+console.log('Collision detection ready');
+
+// ============================================================
 // PLAYER CREATION
 // ============================================================
 
@@ -191,6 +206,22 @@ game.onUpdate(() => {
   // Right movement
   if (game.isKeyDown('ArrowRight') || game.isKeyDown('d') || game.isKeyDown('D')) {
     localPlayer.setVelocity(PLAYER_SPEED, localPlayer.body.velocity.y);
+  }
+
+  // Check if player is falling (not on any platform)
+  const isFalling = localPlayer.body.velocity.y > 0.5;
+  if (isFalling && isGrounded) {
+    // Player left platform, allow jump again when landing
+    isGrounded = false;
+  }
+});
+
+// Jump (only when grounded)
+game.onKey(' ', () => {
+  if (isGrounded && localPlayer) {
+    console.log('Jump!');
+    localPlayer.setVelocity(localPlayer.body.velocity.x, JUMP_VELOCITY);
+    isGrounded = false; // Prevent double jump
   }
 });
 
