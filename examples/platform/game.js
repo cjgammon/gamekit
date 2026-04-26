@@ -5,7 +5,15 @@
 
 import { Game, GKBox, GKCircle } from '../../packages/gamekit/dist/index.js';
 
-console.log('=== Multiplayer Platform Game ===\n');
+console.log('╔════════════════════════════════════════╗');
+console.log('║   MULTIPLAYER PLATFORM GAME - GAMEKIT  ║');
+console.log('╚════════════════════════════════════════╝\n');
+console.log('Controls:');
+console.log('  ← → or A/D : Move left/right');
+console.log('  Space      : Jump');
+console.log('\nMultiplayer:');
+console.log('  Host creates room, guests join with ?room=CODE');
+console.log('');
 
 // Game constants
 const PLAYER_WIDTH = 20;

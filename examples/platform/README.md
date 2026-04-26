@@ -106,3 +106,35 @@ Open `http://localhost:5173/examples/platform/` (Vite) or `http://localhost:8888
 - [ ] Scores update correctly
 - [ ] Multiple players can play simultaneously
 - [ ] Room creation/joining works reliably
+
+## Testing
+
+### Single Player
+1. Start dev server
+2. Open page
+3. Test movement (arrows/AD), jumping (space), collecting
+
+### Multiplayer
+1. Start gamekit-server on port 3000
+2. Open page in multiple browsers
+3. First browser creates room (gets code)
+4. Other browsers join with ?room=CODE
+5. Verify position sync, collectible sync, score sync
+
+### Common Issues
+
+**"Failed to create room"**
+- Ensure gamekit-server is running: `node packages/gamekit-server/server.js`
+- Check console for connection errors
+
+**"Collectibles not syncing"**
+- Check browser console for network messages
+- Verify both clients connected to same room
+
+**"Player falling through platforms"**
+- This is expected behavior if physics hasn't initialized
+- Wait 1-2 seconds for Matter.js to stabilize
+
+## License
+
+Part of the GameKit examples. See main project for license.
