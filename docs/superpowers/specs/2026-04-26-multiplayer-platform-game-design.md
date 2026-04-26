@@ -13,9 +13,9 @@ The user wants a learning-focused example that demonstrates how to build multipl
 
 ### Architecture Overview
 
-**File Location:** `examples/stage-tests/stage8-multiplayer-platformer.html`
+**File Location:** `examples/platform/`
 
-This follows the existing stage test pattern where each file demonstrates specific features in isolation. Stage 8 builds on stage 7's multiplayer networking and adds platform game mechanics.
+This will be a standalone example directory (similar to `examples/pong/`) containing the platform game files. The main game will be in `game.js` with an `index.html` file to run it.
 
 **Core Components:**
 - **Game instance:** 800x600 canvas with gravity enabled, connected to gamekit-server on localhost:3000
@@ -247,7 +247,15 @@ game.onMessage('respawnCollectibles', (data) => {
 
 #### Code Structure
 
-Following stage7 pattern:
+**File Structure:**
+```
+examples/platform/
+├── index.html          # Main HTML page with canvas and UI
+├── game.js            # Main game logic (module)
+└── README.md          # Setup and play instructions
+```
+
+**game.js structure:**
 
 ```javascript
 // 1. Imports
@@ -287,7 +295,7 @@ const game = new Game({...});
 **Setup Requirements:**
 1. Build gamekit: `cd packages/gamekit && npm run build`
 2. Start server: `cd packages/gamekit-server && node server.js`
-3. Open example: Navigate to `http://localhost:5173/examples/stage-tests/stage8-multiplayer-platformer.html`
+3. Open example: Navigate to `http://localhost:5173/examples/platform/`
 
 **Single Player Test:**
 - Player sprite appears on screen
