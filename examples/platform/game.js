@@ -189,6 +189,51 @@ playerScores[localPlayerId] = 0;
 console.log('Player created');
 
 // ============================================================
+// COLLECTIBLES
+// ============================================================
+
+function createCollectibles() {
+  console.log('Creating collectibles...');
+
+  // Clear existing collectibles
+  collectibles.forEach(c => game.remove(c));
+  collectibles = [];
+
+  // Collectible positions (on platforms)
+  const positions = [
+    { x: 100, y: 560 },  // Ground left
+    { x: 300, y: 560 },  // Ground center
+    { x: 500, y: 560 },  // Ground right
+    { x: 150, y: 430 },  // Platform 1
+    { x: 500, y: 330 },  // Platform 2 left
+    { x: 550, y: 330 },  // Platform 2 right
+    { x: 300, y: 230 },  // Platform 3
+    { x: 600, y: 130 },  // Platform 4
+  ];
+
+  positions.forEach((pos, index) => {
+    const collectible = new GKCircle({
+      x: pos.x,
+      y: pos.y,
+      radius: COLLECTIBLE_RADIUS,
+      color: 0xFFD700,  // Gold
+      isStatic: true
+    });
+
+    collectible.id = `collectible-${index}`;
+    collectible.visible = true;
+
+    game.add(collectible);
+    collectibles.push(collectible);
+  });
+
+  console.log(`${collectibles.length} collectibles created`);
+}
+
+// Create initial collectibles
+createCollectibles();
+
+// ============================================================
 // INPUT HANDLERS
 // ============================================================
 
