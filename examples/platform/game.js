@@ -132,3 +132,43 @@ game.add(rightWall);
 const platforms = [ground, platform1, platform2, platform3, platform4];
 
 console.log('Platforms created');
+
+// ============================================================
+// PLAYER CREATION
+// ============================================================
+
+const playerColors = [0xFF0000, 0x0000FF, 0x00FF00, 0xFFFF00, 0xFF00FF, 0xFFA500];
+
+function createPlayer(playerIndex, playerName) {
+  console.log(`Creating player ${playerIndex}: ${playerName}`);
+
+  const color = playerColors[playerIndex % playerColors.length];
+
+  // Spawn on ground initially
+  const player = new GKBox({
+    x: 400,
+    y: 500,
+    width: PLAYER_WIDTH,
+    height: PLAYER_HEIGHT,
+    color: color,
+    isStatic: false,
+    bounce: 0,
+    friction: 0.01
+  });
+
+  game.add(player);
+
+  // Store player data
+  player.playerName = playerName;
+  player.score = 0;
+
+  return player;
+}
+
+// Create local player (temporary - will be replaced in multiplayer setup)
+console.log('Creating local player...');
+localPlayer = createPlayer(0, 'Player 1');
+localPlayerId = 'temp-id';
+playerScores[localPlayerId] = 0;
+
+console.log('Player created');
