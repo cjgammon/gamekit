@@ -233,6 +233,53 @@ function createCollectibles() {
 // Create initial collectibles
 createCollectibles();
 
+// Collectible collision detection
+function setupCollectibleCollisions() {
+  collectibles.forEach(collectible => {
+    collectible.onCollide(localPlayer, () => {
+      if (collectible.visible) {
+        console.log(`Collected ${collectible.id}!`);
+
+        // Hide collectible
+        collectible.visible = false;
+
+        // Increment score
+        playerScores[localPlayerId]++;
+        updateScoreDisplay();
+
+        // TODO: Send network message (will be added in multiplayer task)
+      }
+    });
+  });
+}
+
+setupCollectibleCollisions();
+
+// Update score display
+function updateScoreDisplay() {
+  if (!scoreList) return;
+
+  scoreList.innerHTML = '';
+
+  Object.entries(playerScores).forEach(([playerId, score]) => {
+    const playerName = playerId === localPlayerId ? localPlayer.playerName : `Player ${playerId}`;
+    const playerColor = playerId === localPlayerId ? localPlayer.color : 0xFFFFFF;
+
+    const colorHex = '#' + playerColor.toString(16).padStart(6, '0');
+
+    const scoreItem = document.createElement('div');
+    scoreItem.className = 'score-item';
+    scoreItem.innerHTML = `
+      <span><span class="player-color" style="background: ${colorHex}"></span>${playerName}</span>
+      <span>${score}</span>
+    `;
+    scoreList.appendChild(scoreItem);
+  });
+}
+
+// Initialize score display
+updateScoreDisplay();
+
 // ============================================================
 // INPUT HANDLERS
 // ============================================================
