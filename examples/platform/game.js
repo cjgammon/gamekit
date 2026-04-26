@@ -44,4 +44,91 @@ const game = new Game({
 });
 
 console.log('Game instance created');
-console.log('Ready for platform setup');
+
+// ============================================================
+// PLATFORMS AND WALLS
+// ============================================================
+
+console.log('Creating platforms...');
+
+// Ground floor (full width)
+const ground = new GKBox({
+  x: 400,
+  y: 580,
+  width: 800,
+  height: 40,
+  color: 0x444444,
+  isStatic: true
+});
+game.add(ground);
+
+// Platform 1 (low left)
+const platform1 = new GKBox({
+  x: 150,
+  y: 450,
+  width: 200,
+  height: 20,
+  color: 0x444444,
+  isStatic: true
+});
+game.add(platform1);
+
+// Platform 2 (mid right)
+const platform2 = new GKBox({
+  x: 500,
+  y: 350,
+  width: 150,
+  height: 20,
+  color: 0x444444,
+  isStatic: true
+});
+game.add(platform2);
+
+// Platform 3 (mid left)
+const platform3 = new GKBox({
+  x: 300,
+  y: 250,
+  width: 180,
+  height: 20,
+  color: 0x444444,
+  isStatic: true
+});
+game.add(platform3);
+
+// Platform 4 (high right)
+const platform4 = new GKBox({
+  x: 600,
+  y: 150,
+  width: 120,
+  height: 20,
+  color: 0x444444,
+  isStatic: true
+});
+game.add(platform4);
+
+// Left wall
+const leftWall = new GKBox({
+  x: 10,
+  y: 300,
+  width: 20,
+  height: 600,
+  color: 0x444444,
+  isStatic: true
+});
+game.add(leftWall);
+
+// Right wall
+const rightWall = new GKBox({
+  x: 790,
+  y: 300,
+  width: 20,
+  height: 600,
+  color: 0x444444,
+  isStatic: true
+});
+game.add(rightWall);
+
+// Store platforms for collision detection
+const platforms = [ground, platform1, platform2, platform3, platform4];
+
+console.log('Platforms created');
