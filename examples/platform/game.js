@@ -247,7 +247,11 @@ function setupCollectibleCollisions() {
         playerScores[localPlayerId]++;
         updateScoreDisplay();
 
-        // TODO: Send network message (will be added in multiplayer task)
+        // Send network message
+        game.send('collectItem', {
+          id: collectible.id,
+          playerId: localPlayerId
+        });
       }
     });
   });
@@ -318,6 +322,70 @@ game.onKey(' ', () => {
 });
 
 console.log('Input handlers ready');
+
+// ============================================================
+// NETWORK MESSAGES
+// ============================================================
+
+// Handle collectible collection
+game.onMessage('collectItem', (data) => {
+  console.log(`Player ${data.playerId} collected ${data.id}`);
+
+  const collectible = collectibles.find(c => c.id === data.id);
+  if (collectible && collectible.visible) {
+    collectible.visible = false;
+  }
+
+  // Update scores
+  if (!playerScores[data.playerId]) {
+    playerScores[data.playerId] = 0;
+  }
+  playerScores[data.playerId]++;
+  updateScoreDisplay();
+});
+
+// Handle score updates
+game.onMessage('scoreUpdate', (data) => {
+  console.log(`Score update: ${data.playerId} = ${data.score}`);
+  playerScores[data.playerId] = data.score;
+  updateScoreDisplay();
+});
+
+// Handle player join
+game.onPlayerJoin((player) => {
+  console.log(`${player.name} joined!`);
+
+  // Initialize their score
+  playerScores[player.id] = 0;
+  updateScoreDisplay();
+
+  // Show notification
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 150, 50, 0.95);
+    color: #fff;
+    padding: 20px 40px;
+    border-radius: 8px;
+    font-size: 18px;
+    z-index: 1000;
+  `;
+  notification.textContent = `${player.name} joined!`;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 3000);
+});
+
+// Handle player leave
+game.onPlayerLeave((player) => {
+  console.log(`${player.name} left`);
+  delete playerScores[player.id];
+  updateScoreDisplay();
+});
+
+console.log('Network message handlers ready');
 
 // ============================================================
 // MULTIPLAYER SETUP
