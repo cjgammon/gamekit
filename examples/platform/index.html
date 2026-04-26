@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplayer Platform Game - GameKit</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+
+    #ui {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    #instructions {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 14px;
+      line-height: 1.6;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 5px;
+      max-width: 300px;
+    }
+
+    .key {
+      display: inline-block;
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid #666;
+      font-size: 12px;
+    }
+
+    #room-info {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 150, 50, 0.9);
+      padding: 15px 20px;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: bold;
+      display: none;
+    }
+
+    #scores {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 5px;
+      font-size: 14px;
+      min-width: 150px;
+    }
+
+    .score-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+      padding: 3px 0;
+    }
+
+    .player-color {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      margin-right: 8px;
+    }
+
+    #waiting {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    #waiting h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    #waiting p {
+      margin: 10px 0;
+      font-size: 16px;
+    }
+
+    .highlight {
+      color: #4a8;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <!-- Canvas will be injected here by GameKit -->
+
+  <!-- UI Overlay -->
+  <div id="ui">
+    <!-- Instructions -->
+    <div id="instructions">
+      <strong>PLATFORM GAME</strong><br>
+      <span class="key">←</span> <span class="key">→</span> or <span class="key">A</span> <span class="key">D</span> - Move<br>
+      <span class="key">Space</span> - Jump<br>
+      <br>
+      <span class="highlight">SETUP:</span><br>
+      1. Start server: <code>node packages/gamekit-server/server.js</code><br>
+      2. Host creates room<br>
+      3. Others join with <code>?room=CODE</code>
+    </div>
+
+    <!-- Room Code (host only) -->
+    <div id="room-info">
+      Room: <span id="room-code">----</span>
+    </div>
+
+    <!-- Scores -->
+    <div id="scores">
+      <strong>SCORES</strong>
+      <div id="score-list"></div>
+    </div>
+
+    <!-- Waiting Screen -->
+    <div id="waiting">
+      <h2>Connecting...</h2>
+      <p id="waiting-message">Creating room...</p>
+    </div>
+  </div>
+
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
