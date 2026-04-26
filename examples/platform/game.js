@@ -172,3 +172,26 @@ localPlayerId = 'temp-id';
 playerScores[localPlayerId] = 0;
 
 console.log('Player created');
+
+// ============================================================
+// INPUT HANDLERS
+// ============================================================
+
+console.log('Setting up input handlers...');
+
+// Horizontal movement (runs every frame)
+game.onUpdate(() => {
+  if (!localPlayer) return;
+
+  // Left movement
+  if (game.isKeyDown('ArrowLeft') || game.isKeyDown('a') || game.isKeyDown('A')) {
+    localPlayer.setVelocity(-PLAYER_SPEED, localPlayer.body.velocity.y);
+  }
+
+  // Right movement
+  if (game.isKeyDown('ArrowRight') || game.isKeyDown('d') || game.isKeyDown('D')) {
+    localPlayer.setVelocity(PLAYER_SPEED, localPlayer.body.velocity.y);
+  }
+});
+
+console.log('Input handlers ready');
