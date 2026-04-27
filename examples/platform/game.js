@@ -24,6 +24,7 @@ const COLLECTIBLE_RADIUS = 10;
 
 // Game state
 let localPlayer = null;
+let remotePlayers = new Map(); // Map of playerId -> sprite
 let isGrounded = false;
 let collectibles = [];
 let playerScores = {};
@@ -354,67 +355,143 @@ function setupInputHandlers() {
 // NETWORK MESSAGES
 // ============================================================
 
-// Handle collectible collection
-game.onMessage('collectItem', (data) => {
-  console.log(`Player ${data.playerId} collected ${data.id}`);
+function setupNetworkMessageHandlers() {
+  console.log('Setting up network message handlers...');
 
-  const collectible = collectibles.find(c => c.id === data.id);
-  if (collectible && collectible._pixi.visible) {
-    // Hide collectible visually and remove physics body
-    collectible._pixi.visible = false;
-    game.physics.removeBody(collectible._body);
-  }
+  // Handle collectible collection
+  game.onMessage('collectItem', (data) => {
+    console.log(`Player ${data.playerId} collected ${data.id}`);
 
-  // Update scores
-  if (!playerScores[data.playerId]) {
-    playerScores[data.playerId] = 0;
-  }
-  playerScores[data.playerId]++;
-  updateScoreDisplay();
-});
+    const collectible = collectibles.find(c => c.id === data.id);
+    if (collectible && collectible._pixi.visible) {
+      // Hide collectible visually and remove physics body
+      collectible._pixi.visible = false;
+      game.physics.removeBody(collectible._body);
+    }
 
-// Handle score updates
-game.onMessage('scoreUpdate', (data) => {
-  console.log(`Score update: ${data.playerId} = ${data.score}`);
-  playerScores[data.playerId] = data.score;
-  updateScoreDisplay();
-});
+    // Update scores
+    if (!playerScores[data.playerId]) {
+      playerScores[data.playerId] = 0;
+    }
+    playerScores[data.playerId]++;
+    updateScoreDisplay();
+  });
 
-// Handle player join
-game.onPlayerJoin((player) => {
-  console.log(`${player.name} joined!`);
+  // Handle score updates
+  game.onMessage('scoreUpdate', (data) => {
+    console.log(`Score update: ${data.playerId} = ${data.score}`);
+    playerScores[data.playerId] = data.score;
+    updateScoreDisplay();
+  });
 
-  // Initialize their score
-  playerScores[player.id] = 0;
-  updateScoreDisplay();
+  // Handle player sprite ID mapping
+  game.onMessage('playerSprite', (data) => {
+    console.log(`📨 Received playerSprite: player ${data.playerId} has sprite ${data.syncId}`);
 
-  // Show notification
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 150, 50, 0.95);
-    color: #fff;
-    padding: 20px 40px;
-    border-radius: 8px;
-    font-size: 18px;
-    z-index: 1000;
-  `;
-  notification.textContent = `${player.name} joined!`;
-  document.body.appendChild(notification);
-  setTimeout(() => notification.remove(), 3000);
-});
+    // Skip if this is our own player
+    if (data.playerId === localPlayerId) {
+      console.log('  ↳ Skipping (our own player)');
+      return;
+    }
 
-// Handle player leave
-game.onPlayerLeave((player) => {
-  console.log(`${player.name} left`);
-  delete playerScores[player.id];
-  updateScoreDisplay();
-});
+    // Find or create the remote player sprite
+    let remotePlayer = remotePlayers.get(data.playerId);
+    if (remotePlayer) {
+      // Update existing sprite's syncId
+      console.log(`  ↳ Updating existing remote player`);
+      remotePlayer._syncId = data.syncId;
+    } else {
+      // Player sprite message arrived - create sprite now
+      console.log(`  ↳ Creating NEW remote player sprite`);
+      const playerIndex = remotePlayers.size + 1;
+      remotePlayer = createPlayer(playerIndex, 'Player ' + playerIndex);
+      remotePlayer.playerId = data.playerId;
+      remotePlayer._syncId = data.syncId;
+      remotePlayers.set(data.playerId, remotePlayer);
+      playerScores[data.playerId] = 0;
+      updateScoreDisplay();
+      console.log(`  ↳ Remote player created with syncId ${data.syncId}`);
+    }
+  });
 
-console.log('Network message handlers ready');
+  // Handle player join
+  game.onPlayerJoin((player) => {
+    console.log(`${player.name} joined!`);
+
+    // Initialize their score
+    playerScores[player.id] = 0;
+    updateScoreDisplay();
+
+    // Don't create sprite yet - wait for their playerSprite message with syncId
+
+    // Re-broadcast our sprite ID so the new player knows about us
+    if (localPlayer && localPlayerId) {
+      game.send('playerSprite', {
+        playerId: localPlayerId,
+        syncId: localPlayer.syncId
+      });
+    }
+
+    // Show notification
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 150, 50, 0.95);
+      color: #fff;
+      padding: 20px 40px;
+      border-radius: 8px;
+      font-size: 18px;
+      z-index: 1000;
+    `;
+    notification.textContent = `${player.name} joined!`;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+  });
+
+  // Handle player leave
+  game.onPlayerLeave((player) => {
+    console.log(`${player.name} left`);
+
+    // Remove their sprite
+    const remotePlayer = remotePlayers.get(player.id);
+    if (remotePlayer) {
+      game.remove(remotePlayer);
+      remotePlayers.delete(player.id);
+    }
+
+    delete playerScores[player.id];
+    updateScoreDisplay();
+  });
+
+  // Handle sprite sync updates for remote players
+  game.network.spriteSyncCallbacks.push((data) => {
+    // data.sprites is an array of { id, x, y, angle, velocityX, velocityY }
+    if (!data.sprites) return;
+
+    data.sprites.forEach(spriteData => {
+      // Find which remote player owns this sprite
+      for (const [playerId, playerSprite] of remotePlayers.entries()) {
+        if (playerSprite.syncId === spriteData.id) {
+          // Update remote player position (sprite will sync to physics automatically)
+          playerSprite._x = spriteData.x;
+          playerSprite._y = spriteData.y;
+
+          // Update PixiJS display
+          if (playerSprite._pixi) {
+            playerSprite._pixi.x = spriteData.x;
+            playerSprite._pixi.y = spriteData.y;
+          }
+          break;
+        }
+      }
+    });
+  });
+
+  console.log('Network message handlers ready');
+}
 
 // ============================================================
 // MULTIPLAYER SETUP
@@ -445,11 +522,20 @@ game.joinRoom(roomCodeParam, playerName)
       game.remove(localPlayer);
       const playerIndex = game.players.length - 1;
       localPlayer = createPlayer(playerIndex, playerName);
-      localPlayerId = game.playerId;
+      localPlayerId = game.network.socket.id; // Use socket ID as player ID
       playerScores[localPlayerId] = 0;
 
       // Enable network sync for local player
       game.setOwner(localPlayer);
+
+      // Setup network message handlers (after connection established)
+      setupNetworkMessageHandlers();
+
+      // Broadcast our sprite ID to other players
+      game.send('playerSprite', {
+        playerId: localPlayerId,
+        syncId: localPlayer.syncId
+      });
 
       // Re-setup collision detection
       platforms.forEach(platform => {
@@ -480,11 +566,20 @@ game.joinRoom(roomCodeParam, playerName)
           // Recreate local player with network sync
           game.remove(localPlayer);
           localPlayer = createPlayer(0, playerName);
-          localPlayerId = game.playerId;
+          localPlayerId = game.network.socket.id; // Use socket ID as player ID
           playerScores[localPlayerId] = 0;
 
           // Enable network sync for local player
           game.setOwner(localPlayer);
+
+          // Setup network message handlers (after connection established)
+          setupNetworkMessageHandlers();
+
+          // Broadcast our sprite ID to other players
+          game.send('playerSprite', {
+            playerId: localPlayerId,
+            syncId: localPlayer.syncId
+          });
 
           // Re-setup collision detection
           platforms.forEach(platform => {
