@@ -142,21 +142,6 @@ const platforms = [ground, platform1, platform2, platform3, platform4];
 console.log('Platforms created');
 
 // ============================================================
-// COLLISION DETECTION
-// ============================================================
-
-console.log('Setting up collision detection...');
-
-// Ground detection - set isGrounded when player touches any platform
-platforms.forEach(platform => {
-  platform.onCollide(localPlayer, () => {
-    isGrounded = true;
-  });
-});
-
-console.log('Collision detection ready');
-
-// ============================================================
 // PLAYER CREATION
 // ============================================================
 
@@ -208,6 +193,21 @@ localPlayerId = 'temp-id';
 playerScores[localPlayerId] = 0;
 
 console.log('Player created');
+
+// ============================================================
+// COLLISION DETECTION
+// ============================================================
+
+console.log('Setting up collision detection...');
+
+// Ground detection - set isGrounded when player touches any platform
+platforms.forEach(platform => {
+  platform.onCollide(localPlayer, () => {
+    isGrounded = true;
+  });
+});
+
+console.log('Collision detection ready');
 
 // ============================================================
 // COLLECTIBLES
