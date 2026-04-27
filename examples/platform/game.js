@@ -223,12 +223,12 @@ function createCollectibles() {
 
   // Collectible positions (on platforms)
   const positions = [
-    { x: 100, y: 560 },  // Ground left
-    { x: 300, y: 560 },  // Ground center
-    { x: 500, y: 560 },  // Ground right
+    { x: 200, y: 560 },  // Ground left (moved away from spawn)
+    { x: 350, y: 560 },  // Ground center
+    { x: 550, y: 560 },  // Ground right
     { x: 150, y: 430 },  // Platform 1
     { x: 500, y: 330 },  // Platform 2 left
-    { x: 550, y: 330 },  // Platform 2 right
+    { x: 520, y: 330 },  // Platform 2 right
     { x: 300, y: 230 },  // Platform 3
     { x: 600, y: 130 },  // Platform 4
   ];
@@ -318,11 +318,13 @@ game.onUpdate(() => {
 
   // Left movement
   if (game.isKeyDown('ArrowLeft') || game.isKeyDown('a') || game.isKeyDown('A')) {
+    console.log('Moving left, player:', localPlayer.x, localPlayer.y);
     localPlayer.setVelocity(-PLAYER_SPEED, localPlayer.body.velocity.y);
   }
 
   // Right movement
   if (game.isKeyDown('ArrowRight') || game.isKeyDown('d') || game.isKeyDown('D')) {
+    console.log('Moving right, player:', localPlayer.x, localPlayer.y);
     localPlayer.setVelocity(PLAYER_SPEED, localPlayer.body.velocity.y);
   }
 
