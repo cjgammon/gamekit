@@ -314,7 +314,7 @@ console.log('Setting up input handlers...');
 
 // Horizontal movement (runs every frame)
 game.onUpdate(() => {
-  if (!localPlayer) return;
+  if (!localPlayer || !localPlayer.body) return;
 
   // Left movement
   if (game.isKeyDown('ArrowLeft') || game.isKeyDown('a') || game.isKeyDown('A')) {
@@ -336,7 +336,7 @@ game.onUpdate(() => {
 
 // Jump (only when grounded)
 game.onKey(' ', () => {
-  if (isGrounded && localPlayer) {
+  if (isGrounded && localPlayer && localPlayer.body) {
     console.log('Jump!');
     localPlayer.setVelocity(localPlayer.body.velocity.x, JUMP_VELOCITY);
     isGrounded = false; // Prevent double jump
