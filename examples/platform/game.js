@@ -416,20 +416,23 @@ console.log('Network message handlers ready');
 console.log('Setting up multiplayer...');
 
 const urlParams = new URLSearchParams(window.location.search);
-const roomCodeParam = urlParams.get('room');
+const roomCodeParam = urlParams.get('room') || 'PLATFORM-DEMO';
 
-if (roomCodeParam) {
-  // Join existing room
-  console.log(`Joining room: ${roomCodeParam}`);
-  waitingMessage.textContent = `Joining room ${roomCodeParam}...`;
-  waiting.style.display = 'block';
+// Always join room (using default or custom code)
+console.log(`Joining room: ${roomCodeParam}`);
+waitingMessage.textContent = `Joining room ${roomCodeParam}...`;
+waiting.style.display = 'block';
 
-  const playerName = prompt('Enter your name:', 'Player') || 'Player';
+const playerName = prompt('Enter your name:', 'Player') || 'Player';
 
-  game.joinRoom(roomCodeParam, playerName)
+game.joinRoom(roomCodeParam, playerName)
     .then(() => {
       console.log('Joined room successfully');
       waiting.style.display = 'none';
+
+      // Display room code
+      roomCodeEl.textContent = roomCodeParam;
+      roomInfo.style.display = 'block';
 
       // Recreate local player with network sync
       game.remove(localPlayer);
@@ -459,53 +462,5 @@ if (roomCodeParam) {
         waiting.style.display = 'none';
       }, 3000);
     });
-} else {
-  // Create new room
-  console.log('Creating room...');
-  waitingMessage.textContent = 'Creating room...';
-  waiting.style.display = 'block';
-
-  const playerName = prompt('Enter your name:', 'Player 1') || 'Player 1';
-
-  game.createRoom(playerName)
-    .then(({ code }) => {
-      console.log(`Room created: ${code}`);
-      console.log(`Share URL: ${window.location.href}?room=${code}`);
-      isHost = true;
-
-      waiting.style.display = 'none';
-
-      // Display room code
-      roomCodeEl.textContent = code;
-      roomInfo.style.display = 'block';
-
-      // Recreate local player with network sync
-      game.remove(localPlayer);
-      localPlayer = createPlayer(0, playerName);
-      localPlayerId = game.playerId;
-      playerScores[localPlayerId] = 0;
-
-      // Enable network sync
-      game.setOwner(localPlayer);
-
-      // Re-setup collision detection
-      platforms.forEach(platform => {
-        platform.onCollide(localPlayer, () => {
-          isGrounded = true;
-        });
-      });
-      setupCollectibleCollisions();
-
-      updateScoreDisplay();
-      console.log('Host player synced');
-    })
-    .catch(err => {
-      console.error('Failed to create room:', err);
-      waitingMessage.textContent = 'Failed to create room. Server running on :3000?';
-      setTimeout(() => {
-        waiting.style.display = 'none';
-      }, 3000);
-    });
-}
 
 console.log('Multiplayer setup complete');
