@@ -1,0 +1,20 @@
+{
+  "name": "gamekit-example-platform",
+  "version": "1.0.0",
+  "description": "Multiplayer platform game example using GameKit",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"vite .\" \"node ../../packages/gamekit-server/server.js\"",
+    "client": "vite .",
+    "server": "node ../../packages/gamekit-server/server.js",
+    "build": "vite build ."
+  },
+  "dependencies": {
+    "gamekit": "*",
+    "gamekit-server": "*"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "vite": "^5.0.0"
+  }
+}
