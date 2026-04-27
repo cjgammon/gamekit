@@ -19,7 +19,7 @@ console.log('');
 const PLAYER_WIDTH = 20;
 const PLAYER_HEIGHT = 40;
 const PLAYER_SPEED = 5;
-const JUMP_VELOCITY = -15;
+const JUMP_VELOCITY = -12;
 const COLLECTIBLE_RADIUS = 10;
 
 // Game state
@@ -243,9 +243,12 @@ function createCollectibles() {
     });
 
     collectible.id = `collectible-${index}`;
-    collectible.visible = true;
-
     game.add(collectible);
+
+    // Make collectible a sensor (no physical collision, only triggers events)
+    collectible._body.isSensor = true;
+
+    collectible._pixi.visible = true;  // Set visibility after adding to game
     collectibles.push(collectible);
   });
 
@@ -259,11 +262,12 @@ createCollectibles();
 function setupCollectibleCollisions() {
   collectibles.forEach(collectible => {
     collectible.onCollide(localPlayer, () => {
-      if (collectible.visible) {
+      if (collectible._pixi.visible) {
         console.log(`Collected ${collectible.id}!`);
 
-        // Hide collectible
-        collectible.visible = false;
+        // Hide collectible visually and remove physics body
+        collectible._pixi.visible = false;
+        game.physics.removeBody(collectible._body);
 
         // Increment score
         playerScores[localPlayerId]++;
@@ -310,42 +314,41 @@ updateScoreDisplay();
 // INPUT HANDLERS
 // ============================================================
 
-console.log('Setting up input handlers...');
+function setupInputHandlers() {
+  console.log('Setting up input handlers...');
 
-// Horizontal movement (runs every frame)
-game.onUpdate(() => {
-  if (!localPlayer || !localPlayer.body) return;
+  // Horizontal movement (runs every frame)
+  game.onUpdate(() => {
+    if (!localPlayer || !localPlayer._body) return;
 
-  // Left movement
-  if (game.isKeyDown('ArrowLeft') || game.isKeyDown('a') || game.isKeyDown('A')) {
-    console.log('Moving left, player:', localPlayer.x, localPlayer.y);
-    localPlayer.setVelocity(-PLAYER_SPEED, localPlayer.body.velocity.y);
-  }
+    // Left movement
+    if (game.isKeyDown('ArrowLeft') || game.isKeyDown('a') || game.isKeyDown('A')) {
+      localPlayer.setVelocity(-PLAYER_SPEED, localPlayer._body.velocity.y);
+    }
 
-  // Right movement
-  if (game.isKeyDown('ArrowRight') || game.isKeyDown('d') || game.isKeyDown('D')) {
-    console.log('Moving right, player:', localPlayer.x, localPlayer.y);
-    localPlayer.setVelocity(PLAYER_SPEED, localPlayer.body.velocity.y);
-  }
+    // Right movement
+    if (game.isKeyDown('ArrowRight') || game.isKeyDown('d') || game.isKeyDown('D')) {
+      localPlayer.setVelocity(PLAYER_SPEED, localPlayer._body.velocity.y);
+    }
 
-  // Check if player is falling (not on any platform)
-  const isFalling = localPlayer.body.velocity.y > 0.5;
-  if (isFalling && isGrounded) {
-    // Player left platform, allow jump again when landing
-    isGrounded = false;
-  }
-});
+    // Check if player is falling (not on any platform)
+    const isFalling = localPlayer._body.velocity.y > 0.5;
+    if (isFalling && isGrounded) {
+      // Player left platform, allow jump again when landing
+      isGrounded = false;
+    }
+  });
 
-// Jump (only when grounded)
-game.onKey(' ', () => {
-  if (isGrounded && localPlayer && localPlayer.body) {
-    console.log('Jump!');
-    localPlayer.setVelocity(localPlayer.body.velocity.x, JUMP_VELOCITY);
-    isGrounded = false; // Prevent double jump
-  }
-});
+  // Jump (only when grounded)
+  game.onKey(' ', () => {
+    if (isGrounded && localPlayer && localPlayer._body) {
+      localPlayer.setVelocity(localPlayer._body.velocity.x, JUMP_VELOCITY);
+      isGrounded = false; // Prevent double jump
+    }
+  });
 
-console.log('Input handlers ready');
+  console.log('Input handlers ready');
+}
 
 // ============================================================
 // NETWORK MESSAGES
@@ -356,8 +359,10 @@ game.onMessage('collectItem', (data) => {
   console.log(`Player ${data.playerId} collected ${data.id}`);
 
   const collectible = collectibles.find(c => c.id === data.id);
-  if (collectible && collectible.visible) {
-    collectible.visible = false;
+  if (collectible && collectible._pixi.visible) {
+    // Hide collectible visually and remove physics body
+    collectible._pixi.visible = false;
+    game.physics.removeBody(collectible._body);
   }
 
   // Update scores
@@ -454,6 +459,9 @@ game.joinRoom(roomCodeParam, playerName)
       });
       setupCollectibleCollisions();
 
+      // Setup input handlers
+      setupInputHandlers();
+
       updateScoreDisplay();
       console.log('Local player synced');
     })
@@ -485,6 +493,9 @@ game.joinRoom(roomCodeParam, playerName)
             });
           });
           setupCollectibleCollisions();
+
+          // Setup input handlers
+          setupInputHandlers();
 
           updateScoreDisplay();
           console.log('Host player synced');
