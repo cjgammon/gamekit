@@ -182,6 +182,7 @@ function createPlayer(playerIndex, playerName) {
 
   player.playerName = playerName;
   player.score = 0;
+  player.color = color;
 
   return player;
 }
