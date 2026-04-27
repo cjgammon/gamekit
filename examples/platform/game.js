@@ -456,11 +456,44 @@ game.joinRoom(roomCodeParam, playerName)
       console.log('Local player synced');
     })
     .catch(err => {
-      console.error('Failed to join room:', err);
-      waitingMessage.textContent = 'Failed to join room. Server running?';
-      setTimeout(() => {
-        waiting.style.display = 'none';
-      }, 3000);
+      console.log('Room not found, creating it...', err.message);
+      // Room doesn't exist, create it
+      return game.createRoom(playerName, roomCodeParam)
+        .then(() => {
+          console.log('Room created successfully');
+          waiting.style.display = 'none';
+
+          // Display room code
+          roomCodeEl.textContent = roomCodeParam;
+          roomInfo.style.display = 'block';
+
+          // Recreate local player with network sync
+          game.remove(localPlayer);
+          localPlayer = createPlayer(0, playerName);
+          localPlayerId = game.playerId;
+          playerScores[localPlayerId] = 0;
+
+          // Enable network sync for local player
+          game.setOwner(localPlayer);
+
+          // Re-setup collision detection
+          platforms.forEach(platform => {
+            platform.onCollide(localPlayer, () => {
+              isGrounded = true;
+            });
+          });
+          setupCollectibleCollisions();
+
+          updateScoreDisplay();
+          console.log('Host player synced');
+        })
+        .catch(createErr => {
+          console.error('Failed to create room:', createErr);
+          waitingMessage.textContent = 'Failed to connect. Server running on :3000?';
+          setTimeout(() => {
+            waiting.style.display = 'none';
+          }, 3000);
+        });
     });
 
 console.log('Multiplayer setup complete');
