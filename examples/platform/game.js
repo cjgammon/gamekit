@@ -531,9 +531,9 @@ async function joinWithRetry(roomCode, playerName, maxRetries = 3) {
       }
     }
   }
-  // All join attempts failed, create new room
-  console.log('All join attempts failed, creating new room...');
-  await game.createRoom(playerName);
+  // All join attempts failed, create new room with requested code
+  console.log(`All join attempts failed, creating room '${roomCode}'...`);
+  await game.createRoom(playerName, roomCode);
   return { success: true, isHost: true };
 }
 

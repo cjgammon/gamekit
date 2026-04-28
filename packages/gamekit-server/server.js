@@ -97,10 +97,21 @@ io.on('connection', (socket) => {
   // ----------------------------------------------------------------
   //  createRoom — host creates a new room, gets back a 4-letter code
   // ----------------------------------------------------------------
-  socket.on('createRoom', ({ name } = {}) => {
+  socket.on('createRoom', ({ name, code: requestedCode } = {}) => {
     playerName = name || `Player_${socket.id.slice(0, 4)}`;
 
-    const code = generateCode();
+    // Use requested code if provided, otherwise generate random
+    let code;
+    if (requestedCode) {
+      code = requestedCode.toUpperCase();
+      // Check if room already exists
+      if (rooms[code]) {
+        socket.emit('roomError', { message: `Room "${code}" already exists. Try joining instead!` });
+        return;
+      }
+    } else {
+      code = generateCode();
+    }
 
     rooms[code] = {
       code,
