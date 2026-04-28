@@ -516,19 +516,40 @@ waiting.style.display = 'block';
 
 const playerName = prompt('Enter your name:', 'Player') || 'Player';
 
-game.joinRoom(roomCodeParam, playerName)
-    .then(() => {
-      console.log('Joined room successfully');
+// Retry join with exponential backoff before creating new room
+async function joinWithRetry(roomCode, playerName, maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      await game.joinRoom(roomCode, playerName);
+      return { success: true, isHost: false };
+    } catch (err) {
+      console.log(`Join attempt ${attempt + 1}/${maxRetries} failed: ${err.message}`);
+      if (attempt < maxRetries - 1) {
+        const delay = 500 * Math.pow(2, attempt); // 500ms, 1000ms, 2000ms
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  // All join attempts failed, create new room
+  console.log('All join attempts failed, creating new room...');
+  await game.createRoom(playerName);
+  return { success: true, isHost: true };
+}
+
+joinWithRetry(roomCodeParam, playerName)
+    .then((result) => {
+      console.log(result.isHost ? 'Room created successfully' : 'Joined room successfully');
       waiting.style.display = 'none';
 
-      // Display room code
-      roomCodeEl.textContent = roomCodeParam;
+      // Display room code (use actual code from server, not requested code)
+      roomCodeEl.textContent = game.network.roomCode;
       roomInfo.style.display = 'block';
 
       // Recreate local player with network sync
       game.remove(localPlayer);
       delete playerScores['temp-id']; // Remove temporary score entry
-      const playerIndex = game.players.length - 1;
+      const playerIndex = result.isHost ? 0 : game.players.length - 1;
       localPlayer = createPlayer(playerIndex, playerName);
       localPlayerId = game.network.socket.id; // Use socket ID as player ID
       playerScores[localPlayerId] = 0;
@@ -540,7 +561,7 @@ game.joinRoom(roomCodeParam, playerName)
       setupNetworkMessageHandlers();
 
       // Broadcast our sprite ID to other players
-      console.log(`📤 Broadcasting playerSprite: playerId=${localPlayerId}, syncId=${localPlayer.syncId}`);
+      console.log(`📤 Broadcasting playerSprite${result.isHost ? ' (host)' : ''}: playerId=${localPlayerId}, syncId=${localPlayer.syncId}`);
       game.send('playerSprite', {
         playerId: localPlayerId,
         syncId: localPlayer.syncId
@@ -558,61 +579,14 @@ game.joinRoom(roomCodeParam, playerName)
       setupInputHandlers();
 
       updateScoreDisplay();
-      console.log('Local player synced');
+      console.log(result.isHost ? 'Host player synced' : 'Local player synced');
     })
     .catch(err => {
-      console.log('Room not found, creating it...', err.message);
-      // Room doesn't exist, create it
-      return game.createRoom(playerName, roomCodeParam)
-        .then(() => {
-          console.log('Room created successfully');
-          waiting.style.display = 'none';
-
-          // Display room code
-          roomCodeEl.textContent = roomCodeParam;
-          roomInfo.style.display = 'block';
-
-          // Recreate local player with network sync
-          game.remove(localPlayer);
-          delete playerScores['temp-id']; // Remove temporary score entry
-          localPlayer = createPlayer(0, playerName);
-          localPlayerId = game.network.socket.id; // Use socket ID as player ID
-          playerScores[localPlayerId] = 0;
-
-          // Enable network sync for local player
-          game.setOwner(localPlayer);
-
-          // Setup network message handlers (after connection established)
-          setupNetworkMessageHandlers();
-
-          // Broadcast our sprite ID to other players
-          console.log(`📤 Broadcasting playerSprite (host): playerId=${localPlayerId}, syncId=${localPlayer.syncId}`);
-          game.send('playerSprite', {
-            playerId: localPlayerId,
-            syncId: localPlayer.syncId
-          });
-
-          // Re-setup collision detection
-          platforms.forEach(platform => {
-            platform.onCollide(localPlayer, () => {
-              isGrounded = true;
-            });
-          });
-          setupCollectibleCollisions();
-
-          // Setup input handlers
-          setupInputHandlers();
-
-          updateScoreDisplay();
-          console.log('Host player synced');
-        })
-        .catch(createErr => {
-          console.error('Failed to create room:', createErr);
-          waitingMessage.textContent = 'Failed to connect. Server running on :3000?';
-          setTimeout(() => {
-            waiting.style.display = 'none';
-          }, 3000);
-        });
+      console.error('Failed to connect:', err);
+      waitingMessage.textContent = 'Failed to connect. Server running on :3000?';
+      setTimeout(() => {
+        waiting.style.display = 'none';
+      }, 3000);
     });
 
 console.log('Multiplayer setup complete');
