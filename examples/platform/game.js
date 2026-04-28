@@ -426,6 +426,7 @@ function setupNetworkMessageHandlers() {
 
     // Re-broadcast our sprite ID so the new player knows about us
     if (localPlayer && localPlayerId) {
+      console.log(`📤 Re-broadcasting playerSprite: playerId=${localPlayerId}, syncId=${localPlayer.syncId}`);
       game.send('playerSprite', {
         playerId: localPlayerId,
         syncId: localPlayer.syncId
@@ -467,9 +468,15 @@ function setupNetworkMessageHandlers() {
   });
 
   // Handle sprite sync updates for remote players
+  let syncUpdateCount = 0;
   game.network.spriteSyncCallbacks.push((data) => {
     // data.sprites is an array of { id, x, y, angle, velocityX, velocityY }
     if (!data.sprites) return;
+
+    // Log every 60th update (once per ~3 seconds at 20Hz)
+    if (++syncUpdateCount % 60 === 0) {
+      console.log(`📡 Sprite sync update #${syncUpdateCount}: ${data.sprites.length} sprite(s), ${remotePlayers.size} remote player(s)`);
+    }
 
     data.sprites.forEach(spriteData => {
       // Find which remote player owns this sprite
@@ -520,6 +527,7 @@ game.joinRoom(roomCodeParam, playerName)
 
       // Recreate local player with network sync
       game.remove(localPlayer);
+      delete playerScores['temp-id']; // Remove temporary score entry
       const playerIndex = game.players.length - 1;
       localPlayer = createPlayer(playerIndex, playerName);
       localPlayerId = game.network.socket.id; // Use socket ID as player ID
@@ -532,6 +540,7 @@ game.joinRoom(roomCodeParam, playerName)
       setupNetworkMessageHandlers();
 
       // Broadcast our sprite ID to other players
+      console.log(`📤 Broadcasting playerSprite: playerId=${localPlayerId}, syncId=${localPlayer.syncId}`);
       game.send('playerSprite', {
         playerId: localPlayerId,
         syncId: localPlayer.syncId
@@ -565,6 +574,7 @@ game.joinRoom(roomCodeParam, playerName)
 
           // Recreate local player with network sync
           game.remove(localPlayer);
+          delete playerScores['temp-id']; // Remove temporary score entry
           localPlayer = createPlayer(0, playerName);
           localPlayerId = game.network.socket.id; // Use socket ID as player ID
           playerScores[localPlayerId] = 0;
@@ -576,6 +586,7 @@ game.joinRoom(roomCodeParam, playerName)
           setupNetworkMessageHandlers();
 
           // Broadcast our sprite ID to other players
+          console.log(`📤 Broadcasting playerSprite (host): playerId=${localPlayerId}, syncId=${localPlayer.syncId}`);
           game.send('playerSprite', {
             playerId: localPlayerId,
             syncId: localPlayer.syncId
