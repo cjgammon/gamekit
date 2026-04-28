@@ -518,7 +518,7 @@ const playerName = prompt('Enter your name:', 'Player') || 'Player';
 
 // Try to join, if room doesn't exist, create it
 // Setup function for both join and create scenarios
-function setupMultiplayerGame() {
+function setupMultiplayerGame(isHost) {
   waiting.style.display = 'none';
   roomCodeEl.textContent = roomCode;
   roomInfo.style.display = 'block';
@@ -526,7 +526,7 @@ function setupMultiplayerGame() {
   // Recreate local player with network sync
   game.remove(localPlayer);
   delete playerScores['temp-id']; // Remove temporary score entry
-  const playerIndex = game.players.length - 1;
+  const playerIndex = isHost ? 0 : remotePlayers.size + 1;
   localPlayer = createPlayer(playerIndex, playerName);
   localPlayerId = game.network.socket.id; // Use socket ID as player ID
   playerScores[localPlayerId] = 0;
@@ -562,7 +562,7 @@ function setupMultiplayerGame() {
 game.joinRoom(roomCode, playerName)
     .then(() => {
       console.log('✅ Joined existing room');
-      setupMultiplayerGame();
+      setupMultiplayerGame(false);
     })
     .catch(err => {
       console.log(`❌ Room not found: ${err.message}`);
@@ -571,7 +571,7 @@ game.joinRoom(roomCode, playerName)
       return game.createRoom(playerName, roomCode)
         .then(() => {
           console.log('✅ Room created successfully');
-          setupMultiplayerGame();
+          setupMultiplayerGame(true);
         });
     })
     .catch(err => {
