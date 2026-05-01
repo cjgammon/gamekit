@@ -46,6 +46,7 @@ export class GKCircle extends GKSprite {
             friction: this._friction,
             density: this._density,
             noRotation: this._noRotation,
+            frictionAir: this._frictionAir,
         });
         console.log(`[GKCircle] Physics body created (static: ${this._isStatic})`);
         return body;

@@ -37,6 +37,10 @@ export interface BaseSpriteOptions {
     density?: number;
     /** Prevent rotation from physics */
     noRotation?: boolean;
+    /** Air resistance (0 = no air resistance, higher = more resistance, default: 0.01) */
+    frictionAir?: number;
+    /** Sync ID for multiplayer (auto-generated if not provided) */
+    syncId?: string;
 }
 /**
  * Box (rectangle) sprite options

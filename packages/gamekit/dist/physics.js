@@ -86,7 +86,7 @@ export class Physics {
             restitution: options.bounce ?? 0.2,
             friction: options.friction ?? 0.8,
             density: options.density ?? 0.001,
-            frictionAir: 0.01,
+            frictionAir: options.frictionAir ?? 0.01,
         };
         const body = Matter.Bodies.rectangle(x, y, width, height, bodyOptions);
         // Prevent rotation if specified
@@ -106,7 +106,7 @@ export class Physics {
             restitution: options.bounce ?? 0.2,
             friction: options.friction ?? 0.8,
             density: options.density ?? 0.001,
-            frictionAir: 0.01,
+            frictionAir: options.frictionAir ?? 0.01,
         };
         const body = Matter.Bodies.circle(x, y, radius, bodyOptions);
         // Prevent rotation if specified
