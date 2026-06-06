@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplayer Pong - GameKit</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+
+    #ui {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    #scores {
+      position: absolute;
+      top: 40px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 100px;
+      font-size: 48px;
+      font-weight: bold;
+    }
+
+    .player-score {
+      min-width: 100px;
+      text-align: center;
+    }
+
+    .player-name {
+      font-size: 18px;
+      margin-bottom: 10px;
+      opacity: 0.7;
+    }
+
+    #room-info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 100, 0, 0.8);
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #waiting {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      padding: 40px 60px;
+      border-radius: 12px;
+      text-align: center;
+      border: 2px solid #4a8;
+      pointer-events: auto;
+    }
+
+    #waiting h1 {
+      font-size: 36px;
+      margin-bottom: 20px;
+      color: #4a8;
+    }
+
+    #waiting p {
+      font-size: 18px;
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+
+    #waiting .room-code {
+      font-size: 48px;
+      color: #4a8;
+      margin: 20px 0;
+      letter-spacing: 8px;
+    }
+
+    #waiting .share-url {
+      background: #222;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-top: 15px;
+      word-break: break-all;
+    }
+
+    #game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      padding: 60px 80px;
+      border-radius: 12px;
+      text-align: center;
+      border: 3px solid #4a8;
+      display: none;
+    }
+
+    #game-over h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #4a8;
+    }
+
+    #game-over .winner {
+      font-size: 36px;
+      margin-bottom: 30px;
+    }
+
+    #game-over .final-score {
+      font-size: 24px;
+      margin-bottom: 40px;
+      opacity: 0.7;
+    }
+
+    #instructions {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      opacity: 0.5;
+      font-size: 14px;
+    }
+
+    .key {
+      display: inline-block;
+      background: #333;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin: 0 3px;
+    }
+  </style>
+</head>
+<body>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
