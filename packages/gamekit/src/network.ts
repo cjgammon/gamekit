@@ -3,9 +3,9 @@
  * Handles room management, sprite sync, and custom messaging
  */
 
-import { io, Socket } from 'socket.io-client';
-import type { Player, RoomData } from './types.js';
-import type { GKSprite } from './gk-sprite.js';
+import { io, Socket } from "socket.io-client";
+import type { Player, RoomData } from "./types.js";
+import type { GKSprite } from "./gk-sprite.js";
 
 export class Network {
   private socket: Socket | null = null;
@@ -32,12 +32,6 @@ export class Network {
   }> = [];
   private readonly MAX_HISTORY_SIZE = 100; // Limit history to prevent memory growth
 
-  // Test mode flag - only track messages in test environment
-  // Set by test harness via window.__GAMEKIT_TEST_MODE__ = true
-  private get testMode(): boolean {
-    return typeof window !== 'undefined' && (window as any).__GAMEKIT_TEST_MODE__ === true;
-  }
-
   constructor(serverUrl: string) {
     this.serverUrl = serverUrl;
     console.log(`[Network] Initialized with server: ${serverUrl}`);
@@ -46,10 +40,15 @@ export class Network {
   /**
    * Create a new room (become host)
    */
-  async createRoom(playerName: string, requestedCode?: string): Promise<{ code: string }> {
+  async createRoom(
+    playerName: string,
+    requestedCode?: string,
+  ): Promise<{ code: string }> {
     console.log(`\n🌐 [Network] Connecting to server: ${this.serverUrl}`);
     if (requestedCode) {
-      console.log(`🌐 [Network] Creating room '${requestedCode}' as '${playerName}'...`);
+      console.log(
+        `🌐 [Network] Creating room '${requestedCode}' as '${playerName}'...`,
+      );
     } else {
       console.log(`🌐 [Network] Creating room as '${playerName}'...`);
     }
@@ -60,18 +59,22 @@ export class Network {
     this.isHost = true;
 
     // Add connection error handling
-    this.socket.on('connect_error', (err) => {
-      console.error('❌ [Network] Connection error:', err.message);
-      console.error('❌ [Network] Is the server running on', this.serverUrl, '?');
+    this.socket.on("connect_error", (err) => {
+      console.error("❌ [Network] Connection error:", err.message);
+      console.error(
+        "❌ [Network] Is the server running on",
+        this.serverUrl,
+        "?",
+      );
     });
 
-    this.socket.on('connect', () => {
-      console.log('✅ [Network] Connected to server!');
+    this.socket.on("connect", () => {
+      console.log("✅ [Network] Connected to server!");
     });
 
     return new Promise((resolve, reject) => {
       // Listen for roomCreated event
-      this.socket!.once('roomCreated', (data: any) => {
+      this.socket!.once("roomCreated", (data: any) => {
         this.roomCode = data.code;
         console.log(`\n✅ [Network] ═══════════════════════════════`);
         console.log(`✅ [Network] ROOM CREATED SUCCESSFULLY!`);
@@ -84,15 +87,15 @@ export class Network {
       });
 
       // Listen for errors
-      this.socket!.once('roomError', (error: any) => {
-        console.error('❌ [Network] Failed to create room:', error.message);
+      this.socket!.once("roomError", (error: any) => {
+        console.error("❌ [Network] Failed to create room:", error.message);
         reject(new Error(error.message));
       });
 
       // Send createRoom request (server expects { name, code? })
-      this.socket!.emit('createRoom', {
+      this.socket!.emit("createRoom", {
         name: playerName,
-        ...(requestedCode && { code: requestedCode })
+        ...(requestedCode && { code: requestedCode }),
       });
     });
   }
@@ -111,23 +114,30 @@ export class Network {
     this.isHost = false;
 
     // Add connection error handling
-    this.socket.on('connect_error', (err) => {
-      console.error('❌ [Network] Connection error:', err.message);
-      console.error('❌ [Network] Is the server running on', this.serverUrl, '?');
+    this.socket.on("connect_error", (err) => {
+      console.error("❌ [Network] Connection error:", err.message);
+      console.error(
+        "❌ [Network] Is the server running on",
+        this.serverUrl,
+        "?",
+      );
     });
 
-    this.socket.on('connect', () => {
-      console.log('✅ [Network] Connected to server!');
+    this.socket.on("connect", () => {
+      console.log("✅ [Network] Connected to server!");
     });
 
     return new Promise((resolve, reject) => {
       // Listen for roomJoined event
-      this.socket!.once('roomJoined', (data: any) => {
+      this.socket!.once("roomJoined", (data: any) => {
         console.log(`\n✅ [Network] ═══════════════════════════════`);
         console.log(`✅ [Network] JOINED ROOM SUCCESSFULLY!`);
         console.log(`✅ [Network] Room Code: ${code}`);
         console.log(`✅ [Network] You are: ${playerName} (GUEST)`);
-        console.log(`✅ [Network] Players in room:`, data.players.map((p: any) => p.name).join(', '));
+        console.log(
+          `✅ [Network] Players in room:`,
+          data.players.map((p: any) => p.name).join(", "),
+        );
         console.log(`✅ [Network] ═══════════════════════════════\n`);
         this.setupEventHandlers();
         this.startSpriteSync();
@@ -135,13 +145,13 @@ export class Network {
       });
 
       // Listen for errors
-      this.socket!.once('roomError', (error: any) => {
-        console.error('❌ [Network] Failed to join room:', error.message);
+      this.socket!.once("roomError", (error: any) => {
+        console.error("❌ [Network] Failed to join room:", error.message);
         reject(new Error(error.message));
       });
 
       // Send joinRoom request (server expects { code, name })
-      this.socket!.emit('joinRoom', { code, name: playerName });
+      this.socket!.emit("joinRoom", { code, name: playerName });
     });
   }
 
@@ -152,12 +162,12 @@ export class Network {
     if (!this.socket) return;
 
     // Player joined (server sends { player: ... })
-    this.socket.on('playerJoined', (data: { player: Player }) => {
+    this.socket.on("playerJoined", (data: { player: Player }) => {
       // Track for tests (test mode only)
       if (this.testMode) {
         this.messageHistory.push({
           timestamp: Date.now(),
-          event: 'playerJoined',
+          event: "playerJoined",
           data: data,
         });
         // Circular buffer: keep only last MAX_HISTORY_SIZE entries
@@ -167,16 +177,16 @@ export class Network {
       }
 
       console.log(`👋 [Network] Player joined: ${data.player.name}`);
-      this.playerJoinCallbacks.forEach(cb => cb(data.player));
+      this.playerJoinCallbacks.forEach((cb) => cb(data.player));
     });
 
     // Player left (server sends { playerId: ... })
-    this.socket.on('playerLeft', (data: { playerId: string }) => {
+    this.socket.on("playerLeft", (data: { playerId: string }) => {
       // Track for tests (test mode only)
       if (this.testMode) {
         this.messageHistory.push({
           timestamp: Date.now(),
-          event: 'playerLeft',
+          event: "playerLeft",
           data: data,
         });
         // Circular buffer: keep only last MAX_HISTORY_SIZE entries
@@ -186,38 +196,43 @@ export class Network {
       }
 
       console.log(`👋 [Network] Player left: ${data.playerId}`);
-      this.playerLeaveCallbacks.forEach(cb => cb({ id: data.playerId }));
+      this.playerLeaveCallbacks.forEach((cb) => cb({ id: data.playerId }));
     });
 
     // Sprite position sync
     let syncReceiveCount = 0;
-    this.socket.on('spriteSync', (data: { playerId: string; sprites: any[] }) => {
-      // Track for tests (test mode only)
-      if (this.testMode) {
-        this.messageHistory.push({
-          timestamp: Date.now(),
-          event: 'spriteSync',
-          data: data,
-        });
-        // Circular buffer: keep only last MAX_HISTORY_SIZE entries
-        if (this.messageHistory.length > this.MAX_HISTORY_SIZE) {
-          this.messageHistory.shift();
+    this.socket.on(
+      "spriteSync",
+      (data: { playerId: string; sprites: any[] }) => {
+        // Track for tests (test mode only)
+        if (this.testMode) {
+          this.messageHistory.push({
+            timestamp: Date.now(),
+            event: "spriteSync",
+            data: data,
+          });
+          // Circular buffer: keep only last MAX_HISTORY_SIZE entries
+          if (this.messageHistory.length > this.MAX_HISTORY_SIZE) {
+            this.messageHistory.shift();
+          }
         }
-      }
 
-      syncReceiveCount++;
-      if (syncReceiveCount === 1) {
-        console.log(`📡 [Network] Receiving sprite updates from other players`);
-      }
+        syncReceiveCount++;
+        if (syncReceiveCount === 1) {
+          console.log(
+            `📡 [Network] Receiving sprite updates from other players`,
+          );
+        }
 
-      // Call all sprite sync callbacks with the data
-      this.spriteSyncCallbacks.forEach(cb => cb(data));
-    });
+        // Call all sprite sync callbacks with the data
+        this.spriteSyncCallbacks.forEach((cb) => cb(data));
+      },
+    );
 
     // Custom messages are registered dynamically per event name
     // (handled in onMessage() method)
 
-    console.log('📡 [Network] Event handlers registered');
+    console.log("📡 [Network] Event handlers registered");
   }
 
   /**
@@ -231,7 +246,7 @@ export class Network {
       if (!this.socket || this.ownedSprites.size === 0) return;
 
       // Sync all owned sprites
-      const syncData = Array.from(this.ownedSprites).map(sprite => ({
+      const syncData = Array.from(this.ownedSprites).map((sprite) => ({
         id: sprite.syncId,
         x: sprite.x,
         y: sprite.y,
@@ -240,7 +255,7 @@ export class Network {
         velocityY: sprite.velocityY,
       }));
 
-      this.socket.emit('spriteSync', {
+      this.socket.emit("spriteSync", {
         room: this.roomCode,
         sprites: syncData,
       });
@@ -248,11 +263,13 @@ export class Network {
       // Log first sync to confirm it's working
       syncCount++;
       if (syncCount === 1) {
-        console.log(`📡 [Network] Sprite sync started (20Hz) - syncing ${this.ownedSprites.size} sprite(s)`);
+        console.log(
+          `📡 [Network] Sprite sync started (20Hz) - syncing ${this.ownedSprites.size} sprite(s)`,
+        );
       }
     }, 50); // Sync 20 times per second
 
-    console.log('📡 [Network] Sprite sync initialized');
+    console.log("📡 [Network] Sprite sync initialized");
   }
 
   /**
@@ -261,7 +278,9 @@ export class Network {
   addOwnedSprite(sprite: GKSprite): void {
     this.ownedSprites.add(sprite);
     sprite.setOwner(true);
-    console.log(`[Network] Sprite ${sprite.syncId} marked as owned (will sync)`);
+    console.log(
+      `[Network] Sprite ${sprite.syncId} marked as owned (will sync)`,
+    );
   }
 
   /**
@@ -278,7 +297,7 @@ export class Network {
    */
   onPlayerJoin(callback: Function): void {
     this.playerJoinCallbacks.push(callback);
-    console.log('[Network] Player join callback registered');
+    console.log("[Network] Player join callback registered");
   }
 
   /**
@@ -286,7 +305,7 @@ export class Network {
    */
   onPlayerLeave(callback: Function): void {
     this.playerLeaveCallbacks.push(callback);
-    console.log('[Network] Player leave callback registered');
+    console.log("[Network] Player leave callback registered");
   }
 
   /**
@@ -294,11 +313,11 @@ export class Network {
    */
   send(event: string, data: any): void {
     if (!this.socket || !this.roomCode) {
-      console.warn('[Network] Cannot send message: not connected to room');
+      console.warn("[Network] Cannot send message: not connected to room");
       return;
     }
 
-    this.socket.emit('gameEvent', {
+    this.socket.emit("gameEvent", {
       room: this.roomCode,
       event,
       data,
@@ -312,7 +331,7 @@ export class Network {
    */
   onMessage(event: string, callback: Function): void {
     if (!this.socket) {
-      console.warn('[Network] Cannot register message handler: not connected');
+      console.warn("[Network] Cannot register message handler: not connected");
       return;
     }
 
@@ -325,7 +344,7 @@ export class Network {
         console.log(`📨 [Network] Received message '${event}':`, data);
         const callbacks = this.messageCallbacks.get(event);
         if (callbacks) {
-          callbacks.forEach(cb => cb(data));
+          callbacks.forEach((cb) => cb(data));
         }
       });
     }
@@ -366,7 +385,7 @@ export class Network {
    */
   onSpriteSync(callback: Function): void {
     this.spriteSyncCallbacks.push(callback);
-    console.log('📡 [Network] Sprite sync callback registered');
+    console.log("📡 [Network] Sprite sync callback registered");
   }
 
   /**
@@ -383,7 +402,7 @@ export class Network {
       this.socket = null;
     }
 
-    console.log('[Network] Disconnected');
+    console.log("[Network] Disconnected");
   }
 
   /**

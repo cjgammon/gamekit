@@ -69,29 +69,36 @@ export class Game {
   private startGameLoop(): void {
     console.log("[Game] Starting game loop");
 
-    this.renderer.start(() => {
-      const now = performance.now();
-      const delta = (now - this.lastTime) / 1000;
-      this.lastTime = now;
-      this.frameCount++;
+    this.renderer.start((): void => this.update());
+  }
 
-      // Cap delta to prevent physics instability
-      const deltaMs = Math.min(delta, 0.05) * 1000;
+  private update(): void {
+    console.log("update");
 
-      // Update physics
-      this.physics.update(deltaMs);
+    const now = performance.now();
+    const delta = (now - this.lastTime) / 1000;
+    this.lastTime = now;
+    this.frameCount++;
 
-      console.log(this.sprites);
-      // Sync all sprites (physics → rendering)
-      for (const sprite of this.sprites) {
-        sprite._syncPhysicsToRender();
-      }
+    // Cap delta to prevent physics instability
+    const deltaMs = Math.min(delta, 0.05) * 1000;
 
-      // Call user update callbacks
-      for (const callback of this.updateCallbacks) {
-        callback();
-      }
-    });
+    /*
+    // Update physics
+    this.physics.update(deltaMs);
+
+    console.log(this.sprites);
+    // Sync all sprites (physics → rendering)
+    for (const sprite of this.sprites) {
+      sprite._syncPhysicsToRender();
+    }
+
+    */
+
+    // Call user update callbacks
+    for (const callback of this.updateCallbacks) {
+      callback();
+    }
   }
 
   // ============================================================
@@ -132,12 +139,14 @@ export class Game {
    * Remove a sprite from the game
    */
   remove(sprite: GKSprite): void {
+    /*
     const index = this.sprites.indexOf(sprite);
     if (index > -1) {
       this.sprites.splice(index, 1);
       sprite.destroy();
       console.log(`[Game] Removed sprite. Total: ${this.sprites.length}`);
     }
+    */
   }
 
   // ============================================================
