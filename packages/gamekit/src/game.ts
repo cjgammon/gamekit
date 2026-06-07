@@ -3,12 +3,12 @@
  * Orchestrates all subsystems: rendering, physics, input, network
  */
 
-import type { GameOptions } from './types.js';
-import type { GKSprite } from './gk-sprite.js';
-import { Renderer } from './renderer.js';
-import { Physics } from './physics.js';
-import { Input } from './input.js';
-import { Network } from './network.js';
+import type { GameOptions } from "./types.js";
+import type { GKSprite } from "./gk-sprite.js";
+import { Renderer } from "./renderer.js";
+import { Physics } from "./physics.js";
+import { Input } from "./input.js";
+import { Network } from "./network.js";
 
 export class Game {
   // Configuration
@@ -35,16 +35,16 @@ export class Game {
       height: options.height ?? 600,
       gravity: options.gravity ?? 1,
       background: options.background ?? 0x87ceeb,
-      server: options.server ?? 'http://localhost:3000',
+      server: options.server ?? "http://localhost:3000",
     };
 
-    console.log('[Game] Created with options:', this.options);
+    console.log("[Game] Created with options:", this.options);
 
     // Create renderer (Stage 2)
     this.renderer = new Renderer(
       this.options.width,
       this.options.height,
-      this.options.background
+      this.options.background,
     );
 
     // Create physics (Stage 3)
@@ -59,7 +59,7 @@ export class Game {
     // Start game loop (Stage 3)
     this.startGameLoop();
 
-    console.log('[Game] Ready to add sprites with game.add(sprite)');
+    console.log("[Game] Ready to add sprites with game.add(sprite)");
   }
 
   /**
@@ -67,7 +67,7 @@ export class Game {
    * Updates physics and syncs sprites every frame
    */
   private startGameLoop(): void {
-    console.log('[Game] Starting game loop');
+    console.log("[Game] Starting game loop");
 
     this.renderer.start(() => {
       const now = performance.now();
@@ -81,6 +81,7 @@ export class Game {
       // Update physics
       this.physics.update(deltaMs);
 
+      console.log(this.sprites);
       // Sync all sprites (physics → rendering)
       for (const sprite of this.sprites) {
         sprite._syncPhysicsToRender();
@@ -111,14 +112,14 @@ export class Game {
     sprite._pixi = sprite._createPixiObject();
     if (sprite._pixi) {
       this.renderer.addToStage(sprite._pixi);
-      console.log('[Game] Sprite added to render stage');
+      console.log("[Game] Sprite added to render stage");
     }
 
     // Create Matter.js body and add to world (Stage 3)
     sprite._body = sprite._createPhysicsBody();
     if (sprite._body) {
       this.physics.addBody(sprite._body);
-      console.log('[Game] Sprite added to physics world');
+      console.log("[Game] Sprite added to physics world");
     }
 
     // Track sprite
@@ -147,7 +148,7 @@ export class Game {
    * Register callback to run every frame
    */
   onUpdate(callback: Function): void {
-    console.log('[Game] onUpdate callback registered');
+    console.log("[Game] onUpdate callback registered");
     this.updateCallbacks.push(callback);
   }
 
@@ -279,15 +280,16 @@ export class Game {
   getTestAPI() {
     return {
       // Sprite state
-      getSprites: () => this.sprites.map(s => ({
-        syncId: s.syncId,
-        x: s.x,
-        y: s.y,
-        angle: s.angle,
-        velocityX: s.velocityX,
-        velocityY: s.velocityY,
-        isOwned: s.isOwned,
-      })),
+      getSprites: () =>
+        this.sprites.map((s) => ({
+          syncId: s.syncId,
+          x: s.x,
+          y: s.y,
+          angle: s.angle,
+          velocityX: s.velocityX,
+          velocityY: s.velocityY,
+          isOwned: s.isOwned,
+        })),
 
       // Network state
       getNetworkState: () => ({

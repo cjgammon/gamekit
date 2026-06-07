@@ -3,9 +3,9 @@
  * Handles both rendering (PixiJS) and physics (Matter.js) automatically
  */
 
-import Matter from 'matter-js';
-import type { BaseSpriteOptions } from './types.js';
-import type { Physics } from './physics.js';
+import Matter from "matter-js";
+import type { BaseSpriteOptions } from "./types.js";
+import type { Physics } from "./physics.js";
 
 export abstract class GKSprite {
   // Protected properties (available to subclasses)
@@ -20,10 +20,10 @@ export abstract class GKSprite {
   protected _frictionAir: number;
 
   // Will be set when added to game (public for Game class access)
-  _pixi: any = null;       // PixiJS display object
-  _body: any = null;       // Matter.js physics body
-  _game: any = null;       // Parent game instance
-  _physics: Physics | null = null;  // Physics engine reference
+  _pixi: any = null; // PixiJS display object
+  _body: any = null; // Matter.js physics body
+  _game: any = null; // Parent game instance
+  _physics: Physics | null = null; // Physics engine reference
 
   // Collision tracking
   protected _collisionCallbacks: Map<GKSprite, Function> = new Map();
@@ -45,7 +45,9 @@ export abstract class GKSprite {
     this._frictionAir = options.frictionAir ?? 0.01;
     this._syncId = options.syncId ?? Math.random().toString(36).substr(2, 9);
 
-    console.log(`[${this.constructor.name}] Created at (${this._x}, ${this._y})`);
+    console.log(
+      `[${this.constructor.name}] Created at (${this._x}, ${this._y})`,
+    );
   }
 
   /**
@@ -80,7 +82,7 @@ export abstract class GKSprite {
       // This works correctly for both static and dynamic bodies
       Matter.Body.setPosition(this._body, {
         x: v,
-        y: this._body.position.y
+        y: this._body.position.y,
       });
     }
   }
@@ -101,7 +103,7 @@ export abstract class GKSprite {
       // This works correctly for both static and dynamic bodies
       Matter.Body.setPosition(this._body, {
         x: this._body.position.x,
-        y: v
+        y: v,
       });
     }
   }
@@ -131,14 +133,17 @@ export abstract class GKSprite {
 
   setVelocity(x: number, y: number): void {
     if (this._body) {
-      Matter.Sleeping.set(this._body, false);  // Wake body if sleeping
+      Matter.Sleeping.set(this._body, false); // Wake body if sleeping
       Matter.Body.setVelocity(this._body, { x, y });
     }
   }
 
   applyForce(forceX: number, forceY: number): void {
     if (this._body) {
-      Matter.Body.applyForce(this._body, this._body.position, { x: forceX, y: forceY });
+      Matter.Body.applyForce(this._body, this._body.position, {
+        x: forceX,
+        y: forceY,
+      });
     }
   }
 
@@ -172,7 +177,9 @@ export abstract class GKSprite {
     // Register with physics engine if both sprites have bodies
     if (this._body && other._body && this._physics) {
       this._physics.registerCollision(this._body, other._body, callback);
-      console.log(`[${this.constructor.name}] onCollide registered with ${other.constructor.name}`);
+      console.log(
+        `[${this.constructor.name}] onCollide registered with ${other.constructor.name}`,
+      );
     }
   }
 
@@ -182,7 +189,9 @@ export abstract class GKSprite {
     // but typically used for trigger zones (future feature)
     if (this._body && other._body && this._physics) {
       this._physics.registerCollision(this._body, other._body, callback);
-      console.log(`[${this.constructor.name}] onOverlap registered with ${other.constructor.name}`);
+      console.log(
+        `[${this.constructor.name}] onOverlap registered with ${other.constructor.name}`,
+      );
     }
   }
 
@@ -232,7 +241,8 @@ export abstract class GKSprite {
    */
   _syncPhysicsToRender(): void {
     // Skip sync for non-owned sprites - they receive positions via network
-    if (!this._isOwned) return;
+    console.log("sync sprite", this._body, this._pixi);
+    //if (!this._isOwned) return;
 
     if (this._body && this._pixi) {
       this._pixi.x = this._body.position.x;

@@ -8,7 +8,7 @@ console.log(`Server URL: ${serverUrl}`);
 const game = new Game({
   width: 800,
   height: 600,
-  gravity: 1,
+  gravity: 0,
   background: 0xff0000,
   server: serverUrl,
 });
@@ -19,11 +19,12 @@ const character = new GKBox({
   width: 15,
   height: 100,
   color: 0xffffff,
+  mass: 1,
   isStatic: true,
+  bounce: 0,
+  friction: 0.01,
 });
 game.add(character);
 
-game.onUpdate(() => {
-  console.log("yes");
-});
+game.onUpdate(() => {});
 

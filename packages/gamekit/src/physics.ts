@@ -3,37 +3,65 @@
  * Manages the physics engine and bodies
  */
 
-import Matter from 'matter-js';
+import Matter from "matter-js";
 
 export class Physics {
   public engine: Matter.Engine;
   public world: Matter.World;
+  public render: Matter.Render;
 
   // Collision callback registry
   private collisionCallbacks: Map<string, Function> = new Map();
 
   constructor(gravity: number) {
-    console.log('[Physics] Creating Matter.js engine');
+    console.log("[Physics] Creating Matter.js engine");
     console.log(`[Physics] Gravity: ${gravity}`);
 
     // Create Matter.js engine
     this.engine = Matter.Engine.create({
-      gravity: { x: 0, y: gravity }
+      gravity: { x: 0, y: gravity },
     });
+
+    this.render = Matter.Render.create({
+      element: document.body,
+      engine: this.engine,
+      options: {
+        width: 800,
+        height: 600,
+        wireframes: true, // Essential for seeing true physical body shapes
+        showDebug: true, // Enables general debug info
+        showPositions: true, // Draws center of mass and positions
+        showBounds: true, // Displays bounding boxes of bodies
+        showVelocity: true, // Draws vectors showing movement speed/direction
+        showCollisions: true, // Highlights active collision points
+        showAxes: true, // Shows internal body orientation axes
+        showAngleIndicator: true, // Draws a line showing the body's rotation
+        showSleeping: true, // Changes color of bodies that are resting/sleeping
+      },
+    });
+
+    this.render.canvas.style.position = "absolute";
+    this.render.canvas.style.top = "0";
+    this.render.canvas.style.left = "0";
+    this.render.canvas.style.background = "blue";
+    this.render.canvas.style.opacity = "0.5";
+    this.render.canvas.style.zIndex = "100000";
+
+    console.log("...", this.render);
 
     this.world = this.engine.world;
 
     // Set up collision detection
     this.setupCollisionEvents();
 
-    console.log('[Physics] Engine created successfully');
+    console.log("[Physics] Engine created successfully");
   }
 
   /**
    * Set up Matter.js collision event listeners
    */
   private setupCollisionEvents(): void {
-    Matter.Events.on(this.engine, 'collisionStart', (event) => {
+    Matter.Events.on(this.engine, "collisionStart", (event) => {
       for (const pair of event.pairs) {
         const bodyA = pair.bodyA;
         const bodyB = pair.bodyB;
@@ -51,16 +79,22 @@ export class Physics {
       }
     });
 
-    console.log('[Physics] Collision detection enabled');
+    console.log("[Physics] Collision detection enabled");
   }
 
   /**
    * Register a collision callback between two bodies
    */
-  registerCollision(bodyA: Matter.Body, bodyB: Matter.Body, callback: Function): void {
+  registerCollision(
+    bodyA: Matter.Body,
+    bodyB: Matter.Body,
+    callback: Function,
+  ): void {
     const key = `${bodyA.id}-${bodyB.id}`;
     this.collisionCallbacks.set(key, callback);
-    console.log(`[Physics] Collision callback registered: body ${bodyA.id} → body ${bodyB.id}`);
+    console.log(
+      `[Physics] Collision callback registered: body ${bodyA.id} → body ${bodyB.id}`,
+    );
   }
 
   /**
@@ -77,6 +111,7 @@ export class Physics {
    */
   update(deltaMs: number): void {
     Matter.Engine.update(this.engine, deltaMs);
+    Matter.Render.world(this.render);
   }
 
   /**
@@ -84,7 +119,7 @@ export class Physics {
    */
   addBody(body: Matter.Body): void {
     Matter.Composite.add(this.world, body);
-    console.log('[Physics] Body added to world');
+    console.log("[Physics] Body added to world");
   }
 
   /**
@@ -92,7 +127,7 @@ export class Physics {
    */
   removeBody(body: Matter.Body): void {
     Matter.Composite.remove(this.world, body);
-    console.log('[Physics] Body removed from world');
+    console.log("[Physics] Body removed from world");
   }
 
   /**
@@ -110,9 +145,11 @@ export class Physics {
       density?: number;
       noRotation?: boolean;
       frictionAir?: number;
-    } = {}
+    } = {},
   ): Matter.Body {
-    console.log(`[Physics] Creating rectangle body at (${x}, ${y}), size ${width}x${height}`);
+    console.log(
+      `[Physics] Creating rectangle body at (${x}, ${y}), size ${width}x${height}`,
+    );
 
     const bodyOptions = {
       isStatic: options.isStatic ?? false,
@@ -147,9 +184,11 @@ export class Physics {
       density?: number;
       noRotation?: boolean;
       frictionAir?: number;
-    } = {}
+    } = {},
   ): Matter.Body {
-    console.log(`[Physics] Creating circle body at (${x}, ${y}), radius ${radius}`);
+    console.log(
+      `[Physics] Creating circle body at (${x}, ${y}), radius ${radius}`,
+    );
 
     const bodyOptions = {
       isStatic: options.isStatic ?? false,
