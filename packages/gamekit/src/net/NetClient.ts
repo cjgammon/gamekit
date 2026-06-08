@@ -45,10 +45,14 @@ export interface NetClientOptions {
 /** How far behind server time to render remote entities, in ms (≈2 ticks @ 20Hz). */
 const INTERPOLATION_DELAY = 100;
 
+/** Cap on buffered predicted inputs. Only reached if the server stops acking
+ *  (a stalled or dead connection); bounds memory at the cost of dropping the
+ *  oldest unacked inputs, which a healthy connection never hits. */
+const MAX_INPUT_HISTORY = 256;
+
 interface PendingInput {
   seq: number;
   input: InputState;
-  dt: number;
 }
 
 /**
@@ -66,6 +70,7 @@ export class NetClient {
 
   /** NetId of this client's own player (0 until welcomed). */
   you: NetId = 0;
+  /** Server fixed tick rate (Hz), learned from the welcome message. */
   tickRate = 20;
   /** Last input seq the server acked. */
   lastSeq = 0;
@@ -81,6 +86,10 @@ export class NetClient {
   private _seq = 0;
   private _clockOffset = 0; // localNow - serverTime
   private _world = { width: 0, height: 0 };
+  /** Integration step for prediction, in seconds — derived from the server's
+   *  tick rate so each predicted/replayed input advances exactly as it did on
+   *  the server. Seeded from the default tickRate, finalized at welcome. */
+  private _fixedStep = 1 / this.tickRate;
 
   // Prediction state (only used when _simulate is set).
   private _localEntity: Entity | null = null;
@@ -113,24 +122,37 @@ export class NetClient {
 
   /** Send a one-off input (2a path / no prediction). */
   sendInput(input: InputState): void {
-    this._seq++;
-    this._transport.send(encode({ k: "input", seq: this._seq, input }));
+    this._sendInput(input);
   }
 
   /**
    * Prediction tick — call once per client fixed step (e.g. from a Scene's
    * fixedUpdate). Sends the current input, records it for replay, and advances
-   * the predicted local entity immediately. No-op without `simulate`.
+   * the predicted local entity by exactly one server step. No-op without
+   * `simulate`.
+   *
+   * The integration step is derived from the welcomed tick rate, not from the
+   * host loop's dt, so replay during reconciliation reproduces the server's
+   * motion exactly. For the prediction cadence to match the server, drive this
+   * from a loop running at {@link tickRate} (i.e. construct the host `Game`
+   * with the server's tick rate).
    */
-  predict(dt: number): void {
+  predict(): void {
     if (!this._connected || !this._simulate) return;
     const input = this._localInput;
+    const seq = this._sendInput(input);
+    this._history.push({ seq, input: { ...input } });
+    if (this._history.length > MAX_INPUT_HISTORY) this._history.shift();
+    if (this._localEntity) {
+      this._simulate(this._localEntity, input, this._fixedStep, this._ctx());
+    }
+  }
+
+  /** Encode and send one input, advancing the sequence. Returns its seq. */
+  private _sendInput(input: InputState): number {
     this._seq++;
     this._transport.send(encode({ k: "input", seq: this._seq, input }));
-    this._history.push({ seq: this._seq, input: { ...input }, dt });
-    if (this._localEntity) {
-      this._simulate(this._localEntity, input, dt, this._ctx());
-    }
+    return this._seq;
   }
 
   /**
@@ -167,6 +189,7 @@ export class NetClient {
     if (msg.k === "welcome") {
       this.you = msg.you;
       this.tickRate = msg.tickRate;
+      this._fixedStep = 1 / msg.tickRate;
       this._world = msg.world;
       this._clockOffset = this._now() - msg.serverTime;
       this._connected = true;
@@ -219,7 +242,7 @@ export class NetClient {
     this._history = this._history.filter((h) => h.seq > msg.lastSeq);
     const ctx = this._ctx();
     for (const h of this._history) {
-      this._simulate(this._localEntity, h.input, h.dt, ctx);
+      this._simulate(this._localEntity, h.input, this._fixedStep, ctx);
     }
   }
 }

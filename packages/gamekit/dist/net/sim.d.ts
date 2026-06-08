@@ -17,4 +17,4 @@ export interface PlayerSimOptions {
     worldW: number;
     worldH: number;
 }
-export declare function simulatePlayer(e: Entity, input: InputState, dt: number, o: PlayerSimOptions): void;
+export declare function simulatePlayer(entity: Entity, input: InputState, dt: number, opts: PlayerSimOptions): void;

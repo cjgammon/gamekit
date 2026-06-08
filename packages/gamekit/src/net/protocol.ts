@@ -28,8 +28,9 @@ export const EMPTY_INPUT: InputState = {
 
 export interface InputMessage {
   k: "input";
-  /** Monotonic client input sequence. Unused in milestone 2a; the server echoes
-   *  it back as `lastSeq` — the reconciliation seam for 2b (prediction). */
+  /** Monotonic client input sequence. The server echoes the last seq it
+   *  processed back as `snap.lastSeq`, which the client uses to discard acked
+   *  inputs and replay the rest during prediction reconciliation. */
   seq: number;
   input: InputState;
 }
@@ -67,9 +68,8 @@ export interface SnapshotMessage {
   tick: number;
   /** Server wall-clock ms at tick end — the interpolation timeline. */
   t: number;
-  /** Echoed so the client can flag its own entity. */
-  you: NetId;
-  /** Last input seq processed for this client (seam for 2b). */
+  /** Last input seq processed for this client. Drives prediction
+   *  reconciliation — the client replays inputs newer than this. */
   lastSeq: number;
   ents: SnapshotEntity[];
 }

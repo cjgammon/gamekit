@@ -39,6 +39,7 @@ export declare class NetClient {
     readonly onWelcome: Signal<void>;
     /** NetId of this client's own player (0 until welcomed). */
     you: NetId;
+    /** Server fixed tick rate (Hz), learned from the welcome message. */
     tickRate: number;
     /** Last input seq the server acked. */
     lastSeq: number;
@@ -52,6 +53,10 @@ export declare class NetClient {
     private _seq;
     private _clockOffset;
     private _world;
+    /** Integration step for prediction, in seconds — derived from the server's
+     *  tick rate so each predicted/replayed input advances exactly as it did on
+     *  the server. Seeded from the default tickRate, finalized at welcome. */
+    private _fixedStep;
     private _localEntity;
     private _localInput;
     private _history;
@@ -66,9 +71,18 @@ export declare class NetClient {
     /**
      * Prediction tick — call once per client fixed step (e.g. from a Scene's
      * fixedUpdate). Sends the current input, records it for replay, and advances
-     * the predicted local entity immediately. No-op without `simulate`.
+     * the predicted local entity by exactly one server step. No-op without
+     * `simulate`.
+     *
+     * The integration step is derived from the welcomed tick rate, not from the
+     * host loop's dt, so replay during reconciliation reproduces the server's
+     * motion exactly. For the prediction cadence to match the server, drive this
+     * from a loop running at {@link tickRate} (i.e. construct the host `Game`
+     * with the server's tick rate).
      */
-    predict(dt: number): void;
+    predict(): void;
+    /** Encode and send one input, advancing the sequence. Returns its seq. */
+    private _sendInput;
     /**
      * Write rendered transforms for this frame. Remote entities interpolate;
      * the local predicted entity is left as prediction authored it.

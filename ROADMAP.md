@@ -22,15 +22,16 @@ Server-authoritative loop → JSON snapshot broadcast → client interpolation.
 
 Decisions: hand-rolled WS (no libs); JSON full snapshots (binary/delta later); presence-based membership; entity identity via net-layer registry (no core `id` field); snapshot carries only `{id,type,x,y,rotation}`.
 
-## Phase 2b — Client-side prediction + reconciliation ⬜ NEXT
+## Phase 2b — Client-side prediction + reconciliation ✅ DONE
 
-Seams already in place: `input.seq` echoed as `snap.lastSeq`; `NetClient.isLocal()`; a `TODO(2b)` branch in `NetClient.apply()`.
+- **Shared deterministic sim** (`gamekit/src/net/sim.ts`) — `simulatePlayer` with `PLAYER_SPEED`/`PLAYER_SIZE` constants; called by both server `PlayerEntity` and client prediction so they cannot drift.
+- **NetClient prediction** — `predict(dt)` sends input with seq, advances the local entity immediately; `setLocalInput()` decouples polling from per-tick send; `apply()` skips the local entity (leaves it where prediction placed it).
+- **Reconciliation** — on each snapshot: local entity reset to authoritative state, acked inputs dropped, in-flight tail replayed.
+- **Server input queue** — `NetServer` now buffers inputs per client; `consumeInputs()` drains one per tick (before the fixed step), so `snap.lastSeq` reflects what the server actually consumed — making replay deterministic.
+- **NetScene** drives `client.predict(dt)` in `fixedUpdate` and `client.apply()` in `update`; pass `{ simulate }` in options to enable prediction.
+- **Tests** (`tests/net/prediction.test.ts`) — predicted player locks to authority (no 100ms lag), un-predicted lags by interp delay, reconciliation replays in-flight inputs correctly.
 
-- Predict the local player's movement immediately from input.
-- Keep an input history keyed by seq; on each snapshot, rewind the local player to the authoritative state and replay unacknowledged inputs (rollback/reconcile).
-- Smooth small corrections rather than snapping.
-
-## Phase 3 — Renderer + input + camera ⬜
+## Phase 3 — Renderer + input + camera ⬜ NEXT
 
 - `WebGPURenderer` — sprite batcher, WGSL shaders, texture atlas, camera uniform; consumes `Game.render(alpha)` for interpolated draw.
 - `core/Camera.ts` — viewport, follow, shake, world↔screen, `Mat3` projection.

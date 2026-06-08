@@ -112,7 +112,6 @@ export class NetServer {
           k: "snap",
           tick,
           t: now,
-          you: rec.id,
           lastSeq: rec.lastSeq,
           ents,
         }),

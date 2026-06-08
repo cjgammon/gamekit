@@ -20,7 +20,7 @@ export class NetScene extends Scene {
     }
     fixedUpdate(dt) {
         super.fixedUpdate(dt); // passive synced entities are skipped
-        this.client.predict(dt); // advance local prediction + send input
+        this.client.predict(); // advance local prediction + send input (server-derived step)
     }
     update(dt) {
         super.update(dt); // sweep dead, advance timers/tweens

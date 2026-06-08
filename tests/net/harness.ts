@@ -12,8 +12,6 @@ import {
 
 /** Matches the server's PlayerEntity simulation — for client prediction tests. */
 export const playerSim: SimulateFn = (e, input, dt, ctx) => {
-  if (e.width === 0) e.width = PLAYER_SIZE;
-  if (e.height === 0) e.height = PLAYER_SIZE;
   simulatePlayer(e, input, dt, {
     speed: PLAYER_SPEED,
     worldW: ctx.worldW,

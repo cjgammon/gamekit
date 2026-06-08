@@ -1,10 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { InputState } from "gamekit";
+import { PLAYER_SPEED, type InputState } from "gamekit";
 import { createHarness } from "./harness.js";
 
 const RIGHT: InputState = { up: false, down: false, left: false, right: true };
 
-const DT = 0.05; // client fixed step (matches tickRate 20)
 
 describe("client-side prediction (2b)", () => {
   test("predicted local player tracks authority with no interpolation lag", () => {
@@ -14,7 +13,7 @@ describe("client-side prediction (2b)", () => {
 
     for (let i = 0; i < 20; i++) {
       h.advance(50);
-      a.client.predict(DT); // send input + predict locally
+      a.client.predict(); // send input + predict locally
       h.tick(); // server consumes input, moves, broadcasts, client reconciles
     }
 
@@ -48,7 +47,7 @@ describe("client-side prediction (2b)", () => {
 
     // One tick to spawn the local entity and sync at the start position.
     h.advance(50);
-    a.client.predict(DT);
+    a.client.predict();
     h.tick();
     const local = a.spawned.get(1)!;
     const serverP = h.server.scene.root.children[0];
@@ -56,11 +55,11 @@ describe("client-side prediction (2b)", () => {
     // Predict three ticks of input WITHOUT the server ticking → 3 inputs queued.
     a.client.setLocalInput(RIGHT);
     h.advance(50);
-    a.client.predict(DT);
+    a.client.predict();
     h.advance(50);
-    a.client.predict(DT);
+    a.client.predict();
     h.advance(50);
-    a.client.predict(DT);
+    a.client.predict();
     const aheadX = local.x;
 
     // Server processes ONE of the three queued inputs and acks only that seq.
@@ -76,5 +75,28 @@ describe("client-side prediction (2b)", () => {
     const beforeApply = local.x;
     a.client.apply();
     expect(local.x).toBe(beforeApply);
+  });
+
+  test("prediction step is derived from the welcomed tick rate, not a fixed dt", () => {
+    // Server at 10Hz → 0.1s/step (not the default 20Hz / 0.05s). The client is
+    // never told a dt; it must derive its integration step from the welcome.
+    const h = createHarness({ tickRate: 10 });
+    const a = h.addClient({ predict: true });
+    expect(a.client.tickRate).toBe(10);
+
+    // Spawn + sync the local entity.
+    h.advance(100);
+    a.client.predict();
+    h.tick();
+    const local = a.spawned.get(1)!;
+    const startX = local.x;
+
+    // Two predicted steps with NO server tick → no reconciliation, so this is
+    // pure prediction. Each step must advance by speed · (1/10), not · (1/20).
+    a.client.setLocalInput(RIGHT);
+    a.client.predict();
+    a.client.predict();
+
+    expect(local.x - startX).toBeCloseTo(2 * PLAYER_SPEED * 0.1, 5); // 40px @ 10Hz
   });
 });

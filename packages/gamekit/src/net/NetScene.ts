@@ -35,7 +35,7 @@ export class NetScene extends Scene {
 
   override fixedUpdate(dt: number): void {
     super.fixedUpdate(dt); // passive synced entities are skipped
-    this.client.predict(dt); // advance local prediction + send input
+    this.client.predict(); // advance local prediction + send input (server-derived step)
   }
 
   override update(dt: number): void {
