@@ -204,12 +204,22 @@ interpolation end-to-end. Served statically like netdemo (plain ESM importing
    order, visibility/size filtering, texture-run batching, alpha lerp).
    `RenderGame extends Game` owns renderer+loader+view, overrides `render`.
    Barrel + `gamekit/renderer` package export added.
-7. ✅ **`examples/renderdemo`** (built) — procedural walk-sheet (no asset files),
+7. ✅ **`examples/renderdemo`** — procedural walk-sheet (no asset files),
    `Player` sprite driven by `InputManager`, `Camera` follow + bounds, white-quad
-   blocks, `demo:render` script. Statically validated (bundles, 33 modules
-   resolve, syntax OK). ⏳ Manual GPU screenshot verification pending (needs a
-   real WebGPU browser).
-8. Roadmap update; mark Phase 3 done (after manual verification).
+   blocks, `demo:render` script. Native-res (device-pixel) rendering. Verified in
+   a real WebGPU browser.
+8. ✅ Phase 3 marked done in `ROADMAP.md`.
+
+## Post-build fix: camera/sprite interpolation lockstep
+
+Shipped initially with camera follow running per-frame against the entities'
+*non-interpolated* `current` position, while sprites drew at the *interpolated*
+position — a ~20Hz sample-time mismatch that read as jitter while panning. Fixed
+by moving camera follow into the fixed step (`Scene.fixedUpdate`) with
+`syncPrev`, and interpolating the camera center via `viewProjection(alpha)`, so
+camera and sprites are sampled at the same logical instant. The demo also moved
+to native-resolution rendering (camera `zoom` for FOV) to remove the separate
+upscale shimmer. Both verified in-browser.
 
 ## Deferred / out of scope (later phases)
 

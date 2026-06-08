@@ -31,7 +31,8 @@ export declare class Scene {
     /** Override to build the scene. Called once when the scene becomes active. */
     create(): void;
     /** Fixed-step update — physics & game logic. Forwards to the root group.
-     *  Snapshots transforms first so the renderer can interpolate this tick. */
+     *  Snapshots transforms first so the renderer can interpolate this tick, then
+     *  advances the camera in the same step so it tracks entities in lockstep. */
     fixedUpdate(dt: number): void;
     /** Variable-step update — animation, tweens, sweep. Forwards to the root. */
     update(dt: number): void;

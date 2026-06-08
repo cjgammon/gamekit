@@ -65,7 +65,7 @@ export class RenderView {
 
   /** Draw `scene` for this frame. `alpha` is `Game.render`'s 0..1 factor. */
   draw(scene: Scene, alpha: number): void {
-    this._renderer.beginFrame(scene.camera.viewProjection());
+    this._renderer.beginFrame(scene.camera.viewProjection(alpha));
     this._renderer.batcher.begin();
     this._drawGroup(scene.root, alpha);
     this._renderer.batcher.end();

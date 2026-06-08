@@ -6,8 +6,13 @@ import { Entity, Scene, Sprite } from "../../packages/gamekit/dist/index.js";
 import { RenderGame } from "../../packages/gamekit/dist/render/index.js";
 import { InputManager } from "../../packages/gamekit/dist/input/index.js";
 
-const VIEW_W = 480;
-const VIEW_H = 360;
+// Displayed (CSS) size, and the field of view in world units we want visible
+// across that width. We render the backing buffer at device-pixel resolution
+// (native res, no CSS upscaling) and use camera zoom to hit the FOV — so it's
+// crisp at any devicePixelRatio with no pixel-snap shimmer.
+const CSS_W = 960;
+const CSS_H = 720;
+const FOV_W = 480; // world units visible horizontally
 const WORLD_W = 1280;
 const WORLD_H = 960;
 const SPEED = 200;
@@ -86,16 +91,23 @@ function addBlocks(scene) {
 }
 
 class PlayScene extends Scene {
-  constructor(input) {
+  constructor(input, zoom) {
     super();
     this.input = input;
+    this.zoom = zoom;
   }
 
   create() {
     addBlocks(this);
     this.player = this.add(new Player(this.input));
+    // The camera viewport is the device-pixel backing size; zoom maps it to the
+    // intended world-unit FOV, keeping world coords resolution-independent.
+    this.camera.zoom = this.zoom;
     this.camera.bounds = { minX: 0, minY: 0, maxX: WORLD_W, maxY: WORLD_H };
-    this.camera.follow(this.player, 0.12);
+    // followLerp is per fixed tick (20Hz) now, so a higher value than a
+    // per-frame one gives the same responsiveness; render interpolation keeps
+    // the motion smooth between ticks.
+    this.camera.follow(this.player, 0.25);
     this.camera.snapToTarget();
   }
 
@@ -113,7 +125,15 @@ async function main() {
     return;
   }
 
-  const game = await RenderGame.create(canvas, { width: VIEW_W, height: VIEW_H });
+  // Display at the CSS size, but render the backing buffer at device pixels.
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.width = `${CSS_W}px`;
+  canvas.style.height = `${CSS_H}px`;
+  const backingW = Math.round(CSS_W * dpr);
+  const backingH = Math.round(CSS_H * dpr);
+  const zoom = backingW / FOV_W; // world units → device pixels
+
+  const game = await RenderGame.create(canvas, { width: backingW, height: backingH });
   game.renderer.clearColor = { r: 0.08, g: 0.08, b: 0.11, a: 1 };
 
   const sheet = await makeSpriteSheet();
@@ -128,7 +148,7 @@ async function main() {
   });
   input.attach(window);
 
-  game.switchScene(new PlayScene(input));
+  game.switchScene(new PlayScene(input, zoom));
   game.start();
   hud.textContent = "WASD / arrows / gamepad to move — camera follows, blocks are static";
 }

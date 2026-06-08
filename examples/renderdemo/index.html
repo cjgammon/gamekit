@@ -16,11 +16,11 @@
         padding-top: 16px;
       }
       #hud { min-height: 1.2em; }
-      /* Drawing buffer is 480×360; upscale 2× for visibility (nearest = crisp). */
+      /* Backing buffer is sized to device pixels in JS (native res); the canvas
+         is displayed at this CSS size 1:1, so there's no upscaling shimmer. */
       canvas {
         width: 960px;
         height: 720px;
-        image-rendering: pixelated;
         background: #14141c;
         border: 1px solid #333;
       }
@@ -28,7 +28,7 @@
   </head>
   <body>
     <div id="hud">starting…</div>
-    <canvas id="view" width="480" height="360"></canvas>
+    <canvas id="view"></canvas>
     <script type="module" src="./main.js"></script>
   </body>
 </html>

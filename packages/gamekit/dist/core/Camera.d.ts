@@ -30,6 +30,10 @@ export declare class Camera {
     /** Camera center in world space (the world point shown at the viewport center). */
     x: number;
     y: number;
+    /** Center at the start of the current fixed tick — the render-interpolation
+     *  origin, mirroring `Entity.prevX/prevY`. */
+    prevX: number;
+    prevY: number;
     /** Pixels-per-world-unit. >1 zooms in, <1 zooms out. */
     zoom: number;
     /** View rotation in radians (rotates the world about the viewport center). */
@@ -37,7 +41,7 @@ export declare class Camera {
     /** Visible region in screen pixels. */
     viewportWidth: number;
     viewportHeight: number;
-    /** Per-frame follow smoothing in [0, 1]: 1 snaps to the target, smaller
+    /** Per-fixed-tick follow smoothing in [0, 1]: 1 snaps to the target, smaller
      *  values ease toward it. */
     followLerp: number;
     /** When set, the target may move within these half-extents (world units)
@@ -57,7 +61,7 @@ export declare class Camera {
     constructor(viewportWidth?: number, viewportHeight?: number);
     /** Resize the visible region (e.g. on canvas resize). */
     resize(width: number, height: number): this;
-    /** Snap the center to a world point immediately. */
+    /** Snap the center to a world point immediately (no interpolation smear). */
     centerOn(x: number, y: number): this;
     /**
      * Track an entity's center. `lerp` is the per-frame smoothing (1 = snap).
@@ -77,20 +81,37 @@ export declare class Camera {
     shake(intensity: number, duration: number): this;
     /** True while a shake is in progress. */
     get shaking(): boolean;
-    /** Advance follow, bounds clamping, and shake. Called once per frame. */
-    update(dt: number): void;
     /**
-     * World → screen-pixel transform (viewport origin at top-left, y-down).
-     * This is the "view" half of the pipeline; the renderer wants
-     * {@link viewProjection}.
+     * Snapshot the center as the interpolation origin for the coming tick.
+     * Called by the framework before {@link update}, matching `Entity.syncPrev`.
      */
-    view(): Mat3;
-    /** World → clip-space [-1, 1] transform, ready for GPU upload. */
-    viewProjection(): Mat3;
-    /** Map a world point to screen pixels. */
+    syncPrev(): void;
+    /**
+     * Advance follow + bounds clamp by one fixed tick. Driven from the same fixed
+     * step as entity motion (via `Scene.fixedUpdate`) and snapshots `prev` first,
+     * so the rendered view interpolates in lockstep with the entities it frames —
+     * no per-tick jitter between sprites and the camera.
+     */
+    update(_dt: number): void;
+    /**
+     * Advance the shake decay by real elapsed time. Shake is a purely visual
+     * offset, so it runs per rendered frame (not per fixed tick) to stay smooth.
+     */
+    advanceShake(realDt: number): void;
+    /**
+     * World → screen-pixel transform at interpolation factor `alpha` (0..1, from
+     * `Game.render`). The center is `lerp(prev, current, alpha)` plus shake;
+     * `alpha = 1` (the default) yields the current center.
+     */
+    view(alpha?: number): Mat3;
+    /** World → clip-space [-1, 1] transform at `alpha`, ready for GPU upload. */
+    viewProjection(alpha?: number): Mat3;
+    /** Map a world point to screen pixels (using the current center). */
     worldToScreen(p: Vec2): Vec2;
-    /** Map a screen-pixel point back to world space (inverse of the view). */
+    /** Map a screen-pixel point back to world space (inverse of the current view). */
     screenToWorld(p: Vec2): Vec2;
+    private _centerX;
+    private _centerY;
     private _followStep;
     /** Goal center for one axis so `target` sits within `half` of `current`. */
     private _clampGoal;

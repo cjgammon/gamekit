@@ -31,12 +31,18 @@ Decisions: hand-rolled WS (no libs); JSON full snapshots (binary/delta later); p
 - **NetScene** drives `client.predict(dt)` in `fixedUpdate` and `client.apply()` in `update`; pass `{ simulate }` in options to enable prediction.
 - **Tests** (`tests/net/prediction.test.ts`) — predicted player locks to authority (no 100ms lag), un-predicted lags by interp delay, reconciliation replays in-flight inputs correctly.
 
-## Phase 3 — Renderer + input + camera 🔨 IN PROGRESS
+## Phase 3 — Renderer + input + camera ✅ DONE
 
-- ✅ `core/Camera.ts` — viewport, follow (lerp + deadzone), bounds clamp, shake (injectable RNG), `worldToScreen`/`screenToWorld`, `viewProjection()` (`Mat3` world→clip). Owned by `Scene`, advanced in `update`, sized by `Game` on activation. Unit-tested.
-- ✅ `InputManager` (`gamekit/input` subpath) — named actions over keyboard/mouse/gamepad codes, held + just-pressed/released edges, boolean `snapshot()` (feeds `setLocalInput`). Pure state machine (unit-tested); DOM/gamepad access confined to `attach()`/`poll()` so it stays out of the server import.
-- `WebGPURenderer` — sprite batcher, WGSL shaders, texture atlas, camera uniform; consumes `Game.render(alpha)` for interpolated draw.
-- New `examples/renderdemo` showing the real renderer + camera + input. Keep `examples/netdemo` (the 2D-canvas multiplayer demo) as-is — it stays the multiplayer reference; the renderer gets its own demo rather than replacing it.
+Full plan + step log: `docs/renderer-plan.md`. WebGPU-only; fixed-step logic is
+interpolated to display rate (`alpha`), with camera and sprites sampled in
+lockstep so motion is jitter-free.
+
+- **`core/Camera.ts`** — center/zoom/rotation; follow (lerp + deadzone), bounds clamp, shake (injectable RNG); `worldToScreen`/`screenToWorld`; `viewProjection(alpha)` (`Mat3` world→clip). Runs in the **fixed step** (`Scene.fixedUpdate`) with `prev`/`syncPrev` and is interpolated at render, so it tracks entities without per-tick jitter. Owned by `Scene`, sized by `Game` on activation. Unit-tested.
+- **Render interpolation in core** — `Entity` `prev*` transform + `interpolate` flag + `syncPrev()` + `sampleRender(alpha, out)` + `setPosition(x,y,snap)`; `Group.syncPrev` recursion; net entities opt out. Unit-tested.
+- **`InputManager`** (`gamekit/input` subpath) — named actions over keyboard/mouse/gamepad codes, held + just-pressed/released edges, boolean `snapshot()` (feeds `setLocalInput`). Pure state machine (unit-tested); DOM/gamepad access confined to `attach()`/`poll()` so it stays out of the server import.
+- **`WebGPURenderer`** (`gamekit/renderer` subpath) — instanced sprite pipeline, WGSL shader (std140 `mat3x3` uniform), premultiplied-alpha blending, nearest sampler. Pieces: `Texture` (frame→UV atlas math), `SpriteBatcher` (instance packing + texture-run batching behind an injected sink), `AssetLoader` (image→GPU + 1×1 white texture), `RenderView` (scene traversal → interpolated instances), `RenderGame` (async device init + `render(alpha)` seam). Pure pieces unit-tested with fakes; GPU path verified in the demo.
+- **`@webgpu/types`** added as a dev-only type dependency (no runtime dep).
+- **`examples/renderdemo`** — native-res (device-pixel) rendering, procedural walk sheet, `InputManager`-driven player, camera follow + bounds, white-quad blocks. `examples/netdemo` kept as-is as the multiplayer reference.
 
 ## Phase 4 — Gameplay subsystems ⬜
 

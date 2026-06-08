@@ -124,13 +124,13 @@ describe("Camera shake", () => {
     cam.shake(10, 1);
     expect(cam.shaking).toBe(true);
 
-    cam.update(0.5); // half-way: decay factor ~0.5
+    cam.advanceShake(0.5); // half-way: decay factor ~0.5
     const s = cam.worldToScreen(new Vec2(0, 0));
     // Center shoved +intensity*decay (=+5); a fixed world point therefore
     // shifts the opposite way on screen: 400 + (0 - 5) = 395.
     expect(s.x).toBeCloseTo(400 - 10 * 0.5, 5);
 
-    cam.update(0.6); // pushes time past duration
+    cam.advanceShake(0.6); // pushes time past duration
     expect(cam.shaking).toBe(false);
     const after = cam.worldToScreen(new Vec2(0, 0));
     expect(after.x).toBeCloseTo(400, 5); // offset cleared
@@ -140,8 +140,36 @@ describe("Camera shake", () => {
     const cam = new Camera(800, 600).centerOn(42, 42);
     cam.random = () => 1;
     cam.shake(5, 1);
-    cam.update(0.1);
+    cam.advanceShake(0.1);
     expect(cam.x).toBe(42); // x/y are the stable center; shake is view-only
     expect(cam.y).toBe(42);
+  });
+});
+
+describe("Camera render interpolation", () => {
+  test("viewProjection(alpha) interpolates the center between fixed ticks", () => {
+    const cam = new Camera(800, 600).centerOn(0, 0);
+    cam.syncPrev(); // prev = (0,0)
+    cam.x = 100; // current center after a tick's follow
+
+    // alpha 0 → prev center: world (0,0) sits at the viewport center.
+    expect(cam.view(0).transformPoint(new Vec2(0, 0)).x).toBeCloseTo(400, 5);
+    // alpha 0.5 → center at x=50, so world (0,0) is 50px left of viewport center.
+    expect(cam.view(0.5).transformPoint(new Vec2(0, 0)).x).toBeCloseTo(350, 5);
+    // alpha 1 → current center at x=100.
+    expect(cam.view(1).transformPoint(new Vec2(0, 0)).x).toBeCloseTo(300, 5);
+  });
+
+  test("fixed-step follow + interpolation keeps a moving target framed smoothly", () => {
+    const cam = new Camera(800, 600).centerOn(0, 0);
+    const target = entity(0, 0);
+    cam.follow(target, 1); // snap follow
+
+    target.x = 100; // target jumped this tick
+    cam.update(0.05); // prev=0, follow → center=100
+    expect(cam.prevX).toBe(0);
+    expect(cam.x).toBe(100);
+    // Mid-frame the camera is halfway, matching how a sampled entity would lerp.
+    expect(cam.view(0.5).transformPoint(new Vec2(50, 0)).x).toBeCloseTo(400, 5);
   });
 });

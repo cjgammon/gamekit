@@ -42,10 +42,12 @@ export class Scene {
   create(): void {}
 
   /** Fixed-step update — physics & game logic. Forwards to the root group.
-   *  Snapshots transforms first so the renderer can interpolate this tick. */
+   *  Snapshots transforms first so the renderer can interpolate this tick, then
+   *  advances the camera in the same step so it tracks entities in lockstep. */
   fixedUpdate(dt: number): void {
     this.root.syncPrev();
     this.root.fixedUpdate(dt);
+    this.camera.update(dt); // follow + bounds, against post-step positions
   }
 
   /** Variable-step update — animation, tweens, sweep. Forwards to the root. */
@@ -53,7 +55,7 @@ export class Scene {
     this.root.update(dt);
     this.timers.update(dt);
     this.tweens.update(dt);
-    this.camera.update(dt);
+    this.camera.advanceShake(dt); // visual-only, real-time decay
   }
 
   /** Tear down the scene and everything in it. */

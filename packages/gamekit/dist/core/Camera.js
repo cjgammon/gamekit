@@ -16,11 +16,15 @@ export class Camera {
         /** Camera center in world space (the world point shown at the viewport center). */
         this.x = 0;
         this.y = 0;
+        /** Center at the start of the current fixed tick — the render-interpolation
+         *  origin, mirroring `Entity.prevX/prevY`. */
+        this.prevX = 0;
+        this.prevY = 0;
         /** Pixels-per-world-unit. >1 zooms in, <1 zooms out. */
         this.zoom = 1;
         /** View rotation in radians (rotates the world about the viewport center). */
         this.rotation = 0;
-        /** Per-frame follow smoothing in [0, 1]: 1 snaps to the target, smaller
+        /** Per-fixed-tick follow smoothing in [0, 1]: 1 snaps to the target, smaller
          *  values ease toward it. */
         this.followLerp = 1;
         /** When set, the target may move within these half-extents (world units)
@@ -47,10 +51,12 @@ export class Camera {
         this.viewportHeight = height;
         return this;
     }
-    /** Snap the center to a world point immediately. */
+    /** Snap the center to a world point immediately (no interpolation smear). */
     centerOn(x, y) {
         this.x = x;
         this.y = y;
+        this.prevX = x;
+        this.prevY = y;
         return this;
     }
     /**
@@ -74,6 +80,7 @@ export class Camera {
             this.x = this._target.x + this._target.width / 2;
             this.y = this._target.y + this._target.height / 2;
             this._clampToBounds();
+            this.syncPrev(); // snap interpolation origin so there's no first-frame smear
         }
         return this;
     }
@@ -92,44 +99,70 @@ export class Camera {
     get shaking() {
         return this._shakeTime > 0;
     }
-    // ---- Per-frame ----
-    /** Advance follow, bounds clamping, and shake. Called once per frame. */
-    update(dt) {
+    // ---- Per-tick / per-frame ----
+    /**
+     * Snapshot the center as the interpolation origin for the coming tick.
+     * Called by the framework before {@link update}, matching `Entity.syncPrev`.
+     */
+    syncPrev() {
+        this.prevX = this.x;
+        this.prevY = this.y;
+    }
+    /**
+     * Advance follow + bounds clamp by one fixed tick. Driven from the same fixed
+     * step as entity motion (via `Scene.fixedUpdate`) and snapshots `prev` first,
+     * so the rendered view interpolates in lockstep with the entities it frames —
+     * no per-tick jitter between sprites and the camera.
+     */
+    update(_dt) {
+        this.syncPrev();
         this._followStep();
         this._clampToBounds();
-        this._updateShake(dt);
+    }
+    /**
+     * Advance the shake decay by real elapsed time. Shake is a purely visual
+     * offset, so it runs per rendered frame (not per fixed tick) to stay smooth.
+     */
+    advanceShake(realDt) {
+        this._updateShake(realDt);
     }
     // ---- Matrices & coordinate conversion ----
     /**
-     * World → screen-pixel transform (viewport origin at top-left, y-down).
-     * This is the "view" half of the pipeline; the renderer wants
-     * {@link viewProjection}.
+     * World → screen-pixel transform at interpolation factor `alpha` (0..1, from
+     * `Game.render`). The center is `lerp(prev, current, alpha)` plus shake;
+     * `alpha = 1` (the default) yields the current center.
      */
-    view() {
-        const cx = this.x + this._shakeX;
-        const cy = this.y + this._shakeY;
+    view(alpha = 1) {
+        const cx = this._centerX(alpha);
+        const cy = this._centerY(alpha);
         return Mat3.translation(this.viewportWidth / 2, this.viewportHeight / 2)
             .multiplySelf(Mat3.rotation(this.rotation))
             .multiplySelf(Mat3.scaling(this.zoom, this.zoom))
             .multiplySelf(Mat3.translation(-cx, -cy));
     }
-    /** World → clip-space [-1, 1] transform, ready for GPU upload. */
-    viewProjection() {
-        return Mat3.ortho(this.viewportWidth, this.viewportHeight).multiplySelf(this.view());
+    /** World → clip-space [-1, 1] transform at `alpha`, ready for GPU upload. */
+    viewProjection(alpha = 1) {
+        return Mat3.ortho(this.viewportWidth, this.viewportHeight).multiplySelf(this.view(alpha));
     }
-    /** Map a world point to screen pixels. */
+    /** Map a world point to screen pixels (using the current center). */
     worldToScreen(p) {
-        return this.view().transformPoint(p);
+        return this.view(1).transformPoint(p);
     }
-    /** Map a screen-pixel point back to world space (inverse of the view). */
+    /** Map a screen-pixel point back to world space (inverse of the current view). */
     screenToWorld(p) {
-        const cx = this.x + this._shakeX;
-        const cy = this.y + this._shakeY;
+        const cx = this._centerX(1);
+        const cy = this._centerY(1);
         const inv = Mat3.translation(cx, cy)
             .multiplySelf(Mat3.scaling(1 / this.zoom, 1 / this.zoom))
             .multiplySelf(Mat3.rotation(-this.rotation))
             .multiplySelf(Mat3.translation(-this.viewportWidth / 2, -this.viewportHeight / 2));
         return inv.transformPoint(p);
+    }
+    _centerX(alpha) {
+        return this.prevX + (this.x - this.prevX) * alpha + this._shakeX;
+    }
+    _centerY(alpha) {
+        return this.prevY + (this.y - this.prevY) * alpha + this._shakeY;
     }
     // ---- Internal ----
     _followStep() {
