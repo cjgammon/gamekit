@@ -41,6 +41,15 @@ export class Group extends Entity {
                 child.fixedUpdate(dt);
         }
     }
+    /** Snapshot every child's transform (and the group's own) for interpolation.
+     *  Not gated on `active`: stationary/inactive children must keep
+     *  `prev == current` so they don't flicker. */
+    syncPrev() {
+        super.syncPrev();
+        const children = this._children;
+        for (let i = 0; i < children.length; i++)
+            children[i].syncPrev();
+    }
     update(dt) {
         this._sweep();
         const children = this._children;

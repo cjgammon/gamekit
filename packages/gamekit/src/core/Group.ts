@@ -42,6 +42,15 @@ export class Group<T extends Entity = Entity> extends Entity {
     }
   }
 
+  /** Snapshot every child's transform (and the group's own) for interpolation.
+   *  Not gated on `active`: stationary/inactive children must keep
+   *  `prev == current` so they don't flicker. */
+  override syncPrev(): void {
+    super.syncPrev();
+    const children = this._children;
+    for (let i = 0; i < children.length; i++) children[i].syncPrev();
+  }
+
   override update(dt: number): void {
     this._sweep();
     const children = this._children;

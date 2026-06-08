@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>gamekit renderdemo</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0c0c10;
+        color: #ddd;
+        font: 14px monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding-top: 16px;
+      }
+      #hud { min-height: 1.2em; }
+      /* Drawing buffer is 480×360; upscale 2× for visibility (nearest = crisp). */
+      canvas {
+        width: 960px;
+        height: 720px;
+        image-rendering: pixelated;
+        background: #14141c;
+        border: 1px solid #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="hud">starting…</div>
+    <canvas id="view" width="480" height="360"></canvas>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

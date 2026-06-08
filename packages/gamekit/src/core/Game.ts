@@ -123,6 +123,8 @@ export class Game {
     this.currentScene = this.pendingScene;
     this.pendingScene = null;
     this.accumulator = 0;
+    // Default the camera viewport to the game size; create() may override.
+    this.currentScene.camera.resize(this.width, this.height);
     this.currentScene.create();
   }
 

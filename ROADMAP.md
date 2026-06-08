@@ -31,16 +31,57 @@ Decisions: hand-rolled WS (no libs); JSON full snapshots (binary/delta later); p
 - **NetScene** drives `client.predict(dt)` in `fixedUpdate` and `client.apply()` in `update`; pass `{ simulate }` in options to enable prediction.
 - **Tests** (`tests/net/prediction.test.ts`) — predicted player locks to authority (no 100ms lag), un-predicted lags by interp delay, reconciliation replays in-flight inputs correctly.
 
-## Phase 3 — Renderer + input + camera ⬜ NEXT
+## Phase 3 — Renderer + input + camera 🔨 IN PROGRESS
 
+- ✅ `core/Camera.ts` — viewport, follow (lerp + deadzone), bounds clamp, shake (injectable RNG), `worldToScreen`/`screenToWorld`, `viewProjection()` (`Mat3` world→clip). Owned by `Scene`, advanced in `update`, sized by `Game` on activation. Unit-tested.
+- ✅ `InputManager` (`gamekit/input` subpath) — named actions over keyboard/mouse/gamepad codes, held + just-pressed/released edges, boolean `snapshot()` (feeds `setLocalInput`). Pure state machine (unit-tested); DOM/gamepad access confined to `attach()`/`poll()` so it stays out of the server import.
 - `WebGPURenderer` — sprite batcher, WGSL shaders, texture atlas, camera uniform; consumes `Game.render(alpha)` for interpolated draw.
-- `core/Camera.ts` — viewport, follow, shake, world↔screen, `Mat3` projection.
-- `InputManager` — keyboard/mouse/gamepad, snapshot-based, named actions.
-- Replace the throwaway `examples/netdemo` canvas with the real renderer.
+- New `examples/renderdemo` showing the real renderer + camera + input. Keep `examples/netdemo` (the 2D-canvas multiplayer demo) as-is — it stays the multiplayer reference; the renderer gets its own demo rather than replacing it.
 
-## Phase 4 — Later ⬜
+## Phase 4 — Gameplay subsystems ⬜
 
-- Audio (`AudioManager`), binary/delta snapshot protocol, optional physics plugin, tilemaps, object pooling.
+The grab-bag that turns the core + renderer into something you can build a real
+game on. Most of these exist specifically to make the **Mode** demo (Phase 5)
+buildable; each is tagged accordingly. Depends on Phase 3 for anything that draws.
+
+**Mode-critical** (Phase 5 is blocked without these):
+
+- **`Tilemap`** — grid of tiles backed by a flat typed array; batched draw through the renderer; per-tile AABB collision via `scene.collide(entity, tilemap)`. Isomorphic core + a renderer-side draw path. *(Mode: the block level + walls.)*
+- **`Emitter` / `Particle`** — burst + continuous emission, per-particle lifespan, velocity/gravity, fade-out; particles are pooled `Entity`s the emitter owns. New subsystem; logic in core, draw via the sprite batcher. *(Mode: explosions + debris.)*
+- **Object pooling** — `Pool<T>` and `Group.recycle()/getFirstAvailable()` (Flixel-style) so bullets and particles reuse dead slots instead of allocating per-frame. Pure core; reinforces the zero-GC hot-path principle. *(Mode: bullets + particles.)*
+- **`AudioManager`** — WebAudio load/decode, one-shot SFX, looping music, master/group volume. Browser-only — lives behind a subpath export like `WebSocketTransport`, never imported by the isomorphic core or the server. *(Mode: music + SFX.)*
+- **`Text` + bitmap font** — text entity rendered from a glyph atlas through the batcher; left/center align. Renderer-dependent. *(Mode: score + "gun jammed" HUD.)*
+- **Seeded RNG** (`Rng`) — deterministic, zero-dep (xorshift/PCG), explicit-seed. Needed so random level/spawn generation is reproducible and server-compatible (determinism principle). *(Mode: random block + spawner placement.)*
+
+**Performance / scale** (Mode runs without it, but it's the natural home):
+
+- **Broadphase collision** — optional quadtree (Flixel-style) behind the existing `scene.overlap()/collide()` API, for group-vs-group at bullet/particle counts. Pure core; degrades to brute force when absent. *(Mode: bullet↔block, bullet↔enemy, player↔enemy.)*
+
+**Independent of Mode** (deferred, not on the Phase 5 path):
+
+- **Binary / delta snapshot protocol** — replace JSON full snapshots with a `DataView` codec + per-tick deltas; transports already accept `ArrayBufferLike`, so it swaps in behind `encode`/`decode`.
+- **Optional physics plugin** — richer collision response than core AABB separation. Mode does *not* need it (simple AABB + gravity suffices); listed for completeness.
+
+## Phase 5 — "Mode" demo (Adam Atomic) ⬜
+
+Port Adam Atomic's **Mode** as a flagship demo that exercises the whole engine end-to-end — the original [`PlayState.as`](https://github.com/AdamAtomic/Mode/blob/master/src/PlayState.as) is the canonical Flixel showcase, and gamekit is Flixel-inspired, so it doubles as a feature checklist and a real-world validation of the API.
+
+A top-down score-survival shooter: 640×640 world of 16 rooms (160×160 each), randomly-generated platform blocks, enemy spawners in the corner rooms, enemies that shoot at the player, player + enemy bullets, particle explosions, a HUD (score with continuous decay, hi/last score, "gun jammed" overheat notice), camera follow with bounds, and music/SFX.
+
+Every engine feature it needs (all delivered by earlier phases — Mode is the
+assembly, not new engine work):
+
+- **Camera** follow + world bounds → Phase 3.
+- **Tilemap** + per-tile collision → Phase 4 `Tilemap`.
+- **Emitters / particles** (explosions, debris) → Phase 4 `Emitter`/`Particle`.
+- **Object pooling** (bullets, particles) → Phase 4 pooling.
+- **Audio** (music + SFX) → Phase 4 `AudioManager`.
+- **Bitmap/text HUD** (score, "gun jammed") → Phase 4 `Text`.
+- **Seeded RNG** (random rooms + spawner placement) → Phase 4 `Rng`.
+- **Group-vs-group collision at scale** (bullet↔block, bullet↔enemy, player↔enemy) → core `overlap()/collide()`, optionally the Phase 4 broadphase.
+- **Gravity + jump, named sprite animations** → already in core (`Entity` acceleration, `Sprite` animations) — no new work.
+
+Single-player first (faithful port); a multiplayer variant is a possible stretch once it runs.
 
 ## Cleanup backlog
 

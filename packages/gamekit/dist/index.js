@@ -30,6 +30,7 @@ export { Tween, TweenManager } from "./core/Tween.js";
 export { Ease } from "./core/Ease.js";
 // ---- Scene & loop ----
 export { Scene } from "./core/Scene.js";
+export { Camera } from "./core/Camera.js";
 export { Game } from "./core/Game.js";
 export { createMemoryTransportPair } from "./net/MemoryTransport.js";
 export { Interpolator } from "./net/Interpolator.js";

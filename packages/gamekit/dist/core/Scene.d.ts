@@ -1,3 +1,4 @@
+import { Camera } from "./Camera.js";
 import { Entity } from "./Entity.js";
 import { Group } from "./Group.js";
 import { TimerManager, type Timer, type TimerCallback } from "./Timer.js";
@@ -15,19 +16,22 @@ export type CollisionCallback = (a: Entity, b: Entity) => void;
  * Collision helpers (`overlap`, `collide`) operate on absolute world-space
  * AABBs — matching the engine's Flixel-style absolute coordinate model.
  *
- * Camera, timers, and tweens will be owned here as those subsystems land
- * (Phase 1); the root group + lifecycle + collision form the foundation.
+ * A Scene owns the {@link Camera} the renderer reads; it's advanced once per
+ * frame in `update`. On the headless server the camera is allocated but unused.
  */
 export declare class Scene {
     /** Root container. Add entities to the scene via `scene.add(...)`. */
     readonly root: Group<Entity>;
+    /** The view the renderer uploads. Game sizes it to the viewport on activation. */
+    readonly camera: Camera;
     /** Scene-managed countdown/repeat timers, advanced on `update`. */
     readonly timers: TimerManager;
     /** Scene-managed property tweens, advanced on `update`. */
     readonly tweens: TweenManager;
     /** Override to build the scene. Called once when the scene becomes active. */
     create(): void;
-    /** Fixed-step update — physics & game logic. Forwards to the root group. */
+    /** Fixed-step update — physics & game logic. Forwards to the root group.
+     *  Snapshots transforms first so the renderer can interpolate this tick. */
     fixedUpdate(dt: number): void;
     /** Variable-step update — animation, tweens, sweep. Forwards to the root. */
     update(dt: number): void;

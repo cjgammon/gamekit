@@ -26,6 +26,7 @@ export { Circle } from "./math/Circle.js";
 export { Signal } from "./core/Signal.js";
 export type { SignalListener } from "./core/Signal.js";
 export { Entity } from "./core/Entity.js";
+export type { RenderTransform } from "./core/Entity.js";
 export { Group } from "./core/Group.js";
 export { Sprite, Animation } from "./core/Sprite.js";
 export type { AnimationConfig } from "./core/Sprite.js";
@@ -39,6 +40,8 @@ export type { EaseFn } from "./core/Ease.js";
 // ---- Scene & loop ----
 export { Scene } from "./core/Scene.js";
 export type { CollisionCallback } from "./core/Scene.js";
+export { Camera } from "./core/Camera.js";
+export type { CameraBounds, CameraDeadzone } from "./core/Camera.js";
 export { Game } from "./core/Game.js";
 export type { GameConfig } from "./core/Game.js";
 

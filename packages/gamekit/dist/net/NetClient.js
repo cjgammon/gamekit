@@ -147,8 +147,10 @@ export class NetClient {
             if (!this.entities.has(e.id)) {
                 const entity = this._factory(e.t);
                 // Transforms are authored by interpolation/prediction, not by the
-                // entity's own motion integration — keep it passive in the scene.
+                // entity's own motion integration — keep it passive in the scene, and
+                // skip render interpolation (the net layer already smooths it).
                 entity.active = false;
+                entity.interpolate = false;
                 this.entities.set(e.id, entity);
                 if (e.id === this.you)
                     this._localEntity = entity;

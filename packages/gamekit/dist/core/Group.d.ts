@@ -13,6 +13,10 @@ export declare class Group<T extends Entity = Entity> extends Entity {
     /** Immediate removal. Safe to call outside the update loop. */
     remove(entity: T): boolean;
     fixedUpdate(dt: number): void;
+    /** Snapshot every child's transform (and the group's own) for interpolation.
+     *  Not gated on `active`: stationary/inactive children must keep
+     *  `prev == current` so they don't flicker. */
+    syncPrev(): void;
     update(dt: number): void;
     destroy(): void;
     forEach(fn: (entity: T) => void): void;
