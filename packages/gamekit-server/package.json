@@ -1,7 +1,7 @@
 {
   "name": "gamekit-server",
   "version": "0.1.0",
-  "description": "Multiplayer server for games built with GameKit",
+  "description": "Authoritative multiplayer server for gamekit — headless fixed-rate loop, from-scratch WebSocket transport, snapshot broadcast. Zero runtime dependencies.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -23,15 +23,16 @@
     "gamekit",
     "game-server",
     "multiplayer",
-    "socket.io",
-    "kids"
+    "websocket",
+    "authoritative",
+    "zero-dependency"
   ],
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "socket.io": "^4.7.0"
+    "gamekit": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

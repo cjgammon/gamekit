@@ -1,31 +1,24 @@
 /**
- * GameKit Server - Multiplayer server for games built with GameKit
+ * gamekit-server — authoritative multiplayer server for gamekit.
  *
- * @example
- * ```typescript
- * import { createServer } from 'gamekit-server';
- *
- * const server = createServer({
- *   port: 3000,
- *   hooks: {
- *     onSpriteSync: async (room, playerId, sprites) => {
- *       // Custom validation
- *       return true;
- *     }
- *   }
- * });
- *
- * server.start();
- * ```
+ * Runs the headless gamekit core loop at a fixed tick rate, serializes world
+ * state each tick, and broadcasts snapshots to clients over a from-scratch
+ * (RFC 6455) WebSocket transport. Zero runtime dependencies beyond the gamekit
+ * core it shares with the client.
  */
 
-export { createServer, GameKitServer } from './server.js';
-export type {
-  ServerOptions,
-  ServerHooks,
-  Room,
-  Player,
-  SpriteSnapshot,
-  CorsOptions,
-  GameKitServer as IGameKitServer,
-} from './types.js';
+export { ServerGame } from "./game/ServerGame.js";
+export type { ServerGameOptions } from "./game/ServerGame.js";
+export { PlayerEntity } from "./game/PlayerEntity.js";
+export { NetServer } from "./net/NetServer.js";
+export { ServerTransport } from "./net/ServerTransport.js";
+export { WebSocketServer } from "./ws/WebSocketServer.js";
+export { WebSocketConnection } from "./ws/WebSocketConnection.js";
+export {
+  Opcode,
+  WebSocketProtocolError,
+  encodeFrame,
+  parseFrames,
+} from "./ws/frame.js";
+export type { ParsedFrame } from "./ws/frame.js";
+export { computeAcceptKey, buildHandshakeResponse } from "./ws/handshake.js";

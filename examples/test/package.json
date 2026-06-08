@@ -1,7 +1,7 @@
 {
   "name": "gamekit-example-test",
   "version": "1.0.0",
-  "description": "Multiplayer pong example using GameKit",
+  "description": "Multiplayer example using GameKit",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite .\" \"node server.js\"",

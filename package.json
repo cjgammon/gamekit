@@ -7,6 +7,12 @@
     "examples/*"
   ],
   "scripts": {
+    "build": "npx tsc -p packages/gamekit && npx tsc -p packages/gamekit-server",
+    "build:gamekit": "npx tsc -p packages/gamekit",
+    "test": "bun test tests/unit/",
+    "test:watch": "bun test --watch tests/unit/",
+    "test:net": "npm run build:gamekit && bun test tests/net/",
+    "demo:server": "npm run build && node examples/netdemo/server.mjs",
     "test:e2e": "bun test tests/",
     "test:e2e:watch": "bun test --watch tests/",
     "test:e2e:debug": "bun test --bail tests/"
