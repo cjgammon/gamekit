@@ -44,13 +44,13 @@ lockstep so motion is jitter-free.
 - **`@webgpu/types`** added as a dev-only type dependency (no runtime dep).
 - **`examples/renderdemo`** — native-res (device-pixel) rendering, procedural walk sheet, `InputManager`-driven player, camera follow + bounds, white-quad blocks. `examples/netdemo` kept as-is as the multiplayer reference.
 
-## Phase 4 — Gameplay subsystems ⬜
+## Phase 4 — Gameplay subsystems ✅ DONE (Mode-critical complete)
 
 The grab-bag that turns the core + renderer into something you can build a real
-game on. Most of these exist specifically to make the **Mode** demo (Phase 5)
-buildable; each is tagged accordingly. Depends on Phase 3 for anything that draws.
+game on. All Mode-critical subsystems are implemented and unit-tested; the two
+remaining items below are optional/deferred and not on the Mode path.
 
-**Mode-critical** (Phase 5 is blocked without these):
+**Mode-critical** (Phase 5 is blocked without these) — all ✅:
 
 - ✅ **`Tilemap`** (`core/Tilemap.ts`) — flat `Uint16Array` grid (0 = empty, N → tileset frame N-1); `getTile/setTile/world↔tile`; per-tile **immovable** AABB `collide(entity)` (tests only the tiles under the entity, separates + zeroes contact-axis velocity); default-solid with `setTileCollision` overrides; `forEachTileIn` for culling. Renderer draws only visible tiles via `RenderView` (view-rect unprojected from the camera). Core collision + render culling unit-tested. *(Mode: the block level + walls.)*
 - ✅ **`Emitter` / `Particle`** — `Particle` is a lightweight `Sprite` (lifespan, gravity via `acceleration`, spin, alpha+scale fade, self-`kill`). `Emitter` is a recycling `Group`: `explode`/`start`/`stop`, per-particle speed/angle/life/spin/tint sampled from a seedable `Rng`, `maxParticles` cap. Draws through the existing sprite path (untextured → tinted white quad). Logic unit-tested (lifecycle, recycling, determinism, streams). *(Mode: explosions + debris.)*
@@ -68,11 +68,27 @@ buildable; each is tagged accordingly. Depends on Phase 3 for anything that draw
 - **Binary / delta snapshot protocol** — replace JSON full snapshots with a `DataView` codec + per-tick deltas; transports already accept `ArrayBufferLike`, so it swaps in behind `encode`/`decode`.
 - **Optional physics plugin** — richer collision response than core AABB separation. Mode does *not* need it (simple AABB + gravity suffices); listed for completeness.
 
-## Phase 5 — "Mode" demo (Adam Atomic) ⬜
+## Phase 5 — "Mode" demo (Adam Atomic) 🔨 BUILT (browser GPU playtest pending)
 
-Port Adam Atomic's **Mode** as a flagship demo that exercises the whole engine end-to-end — the original [`PlayState.as`](https://github.com/AdamAtomic/Mode/blob/master/src/PlayState.as) is the canonical Flixel showcase, and gamekit is Flixel-inspired, so it doubles as a feature checklist and a real-world validation of the API.
+A flagship demo inspired by Adam Atomic's **Mode** (the canonical Flixel
+showcase) — a top-down score-survival arena shooter that exercises the whole
+engine end-to-end. Lives in `examples/mode/`, a **Vite** project that imports the
+gamekit packages straight from TypeScript source (alias → `src` indexes; no build
+step, HMR into the engine). All assets — textures, bitmap font, SFX — are
+generated procedurally at runtime; no binary files.
 
-A top-down score-survival shooter: 640×640 world of 16 rooms (160×160 each), randomly-generated platform blocks, enemy spawners in the corner rooms, enemies that shoot at the player, player + enemy bullets, particle explosions, a HUD (score with continuous decay, hi/last score, "gun jammed" overheat notice), camera follow with bounds, and music/SFX.
+Implemented: 40×30-tile walled arena with pillar cover, WASD move + arrow-key
+twin-stick shooting, four corner spawners that emit homing/shooting enemies,
+pooled player/enemy bullets, particle explosions + impact sparks, camera follow
+with bounds, score with decay + HP, win (destroy all spawners) / lose (HP 0) with
+restart, and procedural WebAudio SFX. Type-checks (`tsc --noEmit`) and bundles
+(`vite build`) clean; run via `npm run demo:mode`. **Pending:** in-browser GPU
+playtest (can't run WebGPU in this environment).
+
+Simplifications vs. the original: score-survival framing kept, but health is an
+explicit HP bar rather than the original's pure score-as-life; arena is a pillar
+grid rather than 16 hand-authored rooms; no gun-overheat/jam mechanic. A
+multiplayer variant remains a possible stretch.
 
 Every engine feature it needs (all delivered by earlier phases — Mode is the
 assembly, not new engine work):
