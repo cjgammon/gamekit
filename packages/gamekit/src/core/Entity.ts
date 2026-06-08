@@ -115,9 +115,21 @@ export class Entity {
     return this.y + this.height * 0.5;
   }
 
-  /** Mark for removal. The owning Group will destroy it on its next update. */
+  /** Mark for removal. The owning Group will destroy it on its next update
+   *  (or, in a recycling Group, keep it for reuse via `recycle()`). */
   kill(): void {
     this.alive = false;
+  }
+
+  /**
+   * Bring a killed entity back to life for reuse (the recycle counterpart of
+   * {@link kill}). Re-enables update/render; the caller positions it afterward,
+   * preferably via {@link setPosition} so it doesn't smear from its old spot.
+   */
+  revive(): void {
+    this.alive = true;
+    this.active = true;
+    this.visible = true;
   }
 
   // ---- Render interpolation ----

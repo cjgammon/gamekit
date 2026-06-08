@@ -23,8 +23,15 @@ export { Circle } from "./math/Circle.js";
 // ---- Core ----
 export { Signal } from "./core/Signal.js";
 export { Entity } from "./core/Entity.js";
+export { Rng } from "./core/Rng.js";
 export { Group } from "./core/Group.js";
+export { Pool } from "./core/Pool.js";
 export { Sprite, Animation } from "./core/Sprite.js";
+export { Particle } from "./core/Particle.js";
+export { Emitter } from "./core/Emitter.js";
+export { Tilemap } from "./core/Tilemap.js";
+export { BitmapFont } from "./core/BitmapFont.js";
+export { Text } from "./core/Text.js";
 export { Timer, TimerManager } from "./core/Timer.js";
 export { Tween, TweenManager } from "./core/Tween.js";
 export { Ease } from "./core/Ease.js";

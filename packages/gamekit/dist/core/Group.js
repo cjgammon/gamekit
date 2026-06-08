@@ -8,6 +8,12 @@ import { Entity } from "./Entity.js";
 export class Group extends Entity {
     constructor() {
         super(...arguments);
+        /**
+         * When true, dead children (`alive === false`) are kept instead of swept, so
+         * {@link recycle} can revive and reuse them (Flixel-style pooling). Default
+         * false — the normal sweep-and-destroy behavior.
+         */
+        this.recycling = false;
         this._children = [];
     }
     get children() {
@@ -37,7 +43,7 @@ export class Group extends Entity {
         const children = this._children;
         for (let i = 0; i < children.length; i++) {
             const child = children[i];
-            if (child.active)
+            if (child.active && child.alive)
                 child.fixedUpdate(dt);
         }
     }
@@ -55,7 +61,7 @@ export class Group extends Entity {
         const children = this._children;
         for (let i = 0; i < children.length; i++) {
             const child = children[i];
-            if (child.active)
+            if (child.active && child.alive)
                 child.update(dt);
         }
     }
@@ -76,6 +82,27 @@ export class Group extends Entity {
     filter(predicate) {
         return this._children.filter(predicate);
     }
+    /** First dead child (`alive === false`) available for reuse, or undefined.
+     *  Only meaningful while {@link recycling} (otherwise dead children are swept). */
+    getFirstDead() {
+        return this._children.find((c) => !c.alive);
+    }
+    /**
+     * Reuse a dead child if one exists (revived in place), else build a new one
+     * via `factory` and add it. Requires {@link recycling}; without a free slot
+     * and without a factory, returns undefined. The returned entity is alive —
+     * position and configure it before it renders.
+     */
+    recycle(factory) {
+        const dead = this.getFirstDead();
+        if (dead) {
+            dead.revive();
+            return dead;
+        }
+        if (factory)
+            return this.add(factory());
+        return undefined;
+    }
     /** Destroy and remove all children, keeping the Group itself alive. */
     clear() {
         for (const child of this._children)
@@ -83,8 +110,12 @@ export class Group extends Entity {
         this._children.length = 0;
     }
     // ---- Internal ----
-    /** Remove and destroy children whose `alive` flag is false. Back-to-front for splice safety. */
+    /** Remove and destroy children whose `alive` flag is false. Back-to-front for
+     *  splice safety. Skipped while {@link recycling} — dead children are kept for
+     *  reuse by {@link recycle}. */
     _sweep() {
+        if (this.recycling)
+            return;
         const children = this._children;
         for (let i = children.length - 1; i >= 0; i--) {
             const child = children[i];

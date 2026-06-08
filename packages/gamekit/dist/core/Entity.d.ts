@@ -71,8 +71,15 @@ export declare class Entity {
     get bounds(): AABB;
     get centerX(): number;
     get centerY(): number;
-    /** Mark for removal. The owning Group will destroy it on its next update. */
+    /** Mark for removal. The owning Group will destroy it on its next update
+     *  (or, in a recycling Group, keep it for reuse via `recycle()`). */
     kill(): void;
+    /**
+     * Bring a killed entity back to life for reuse (the recycle counterpart of
+     * {@link kill}). Re-enables update/render; the caller positions it afterward,
+     * preferably via {@link setPosition} so it doesn't smear from its old spot.
+     */
+    revive(): void;
     /**
      * Snapshot the current transform as the lerp origin for the coming fixed
      * tick. The framework calls this on the whole tree once per fixed step,

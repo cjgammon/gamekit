@@ -25,6 +25,11 @@
       "development": "./src/render/index.ts",
       "import": "./dist/render/index.js",
       "types": "./dist/render/index.d.ts"
+    },
+    "./audio": {
+      "development": "./src/audio/index.ts",
+      "import": "./dist/audio/index.js",
+      "types": "./dist/audio/index.d.ts"
     }
   },
   "files": [

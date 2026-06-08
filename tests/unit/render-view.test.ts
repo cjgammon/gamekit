@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { Entity, Group, Scene, Sprite } from "../../packages/gamekit/src/index.js";
+import {
+  BitmapFont,
+  Entity,
+  Group,
+  Scene,
+  Sprite,
+  Text,
+  Tilemap,
+} from "../../packages/gamekit/src/index.js";
 import { RenderView } from "../../packages/gamekit/src/render/RenderView.js";
 import {
   AssetLoader,
@@ -139,6 +147,82 @@ describe("RenderView traversal", () => {
 
     view.draw(scene, 0.5);
     expect(instX(f.instanceData, 0)).toBe(50); // lerp(0, 100, 0.5)
+  });
+});
+
+describe("RenderView tilemap drawing", () => {
+  // 4×3 grid of 16px tiles; 5 non-empty cells (one wall + a 4-wide floor).
+  function floorMap(): Tilemap {
+    // prettier-ignore
+    const data = [
+      0, 0, 0, 0,
+      0, 0, 2, 0,
+      1, 1, 1, 1,
+    ];
+    const m = new Tilemap(4, 3, 16, 16, data);
+    m.tilesetId = "tiles";
+    return m;
+  }
+
+  /** A scene whose camera frames the whole 64×48 map. */
+  function fullViewScene(map: Tilemap): Scene {
+    const scene = new Scene();
+    scene.camera.resize(64, 48).centerOn(32, 24);
+    scene.add(map);
+    return scene;
+  }
+
+  test("emits one instance per non-empty visible tile, bound to the tileset", () => {
+    const tiles = entry(64, 16, 16, 16); // 4-frame strip
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({ tiles }));
+    view.draw(fullViewScene(floorMap()), 0);
+
+    expect(f.instanceData.length / INSTANCE_FLOATS).toBe(5); // 5 non-empty tiles
+    expect(f.draws).toEqual([{ texture: tiles, first: 0, count: 5 }]);
+  });
+
+  test("culls tiles outside the camera view", () => {
+    const tiles = entry(64, 16, 16, 16);
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({ tiles }));
+    const scene = new Scene();
+    // Viewport over the top-left 16×16 cell only — which is empty.
+    scene.camera.resize(16, 16).centerOn(8, 8);
+    scene.add(floorMap());
+    view.draw(scene, 0);
+    expect(f.instanceData.length).toBe(0);
+  });
+
+  test("tile value N resolves to tileset frame N-1", () => {
+    const tiles = entry(64, 16, 16, 16); // du = 16/64 = 0.25 per frame
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({ tiles }));
+    // Single tile of value 3 at (0,0) → frame 2 → u = 2*0.25 = 0.5.
+    const m = new Tilemap(1, 1, 16, 16, [3]);
+    m.tilesetId = "tiles";
+    const scene = new Scene();
+    scene.camera.resize(16, 16).centerOn(8, 8);
+    scene.add(m);
+    view.draw(scene, 0);
+    const u = f.instanceData[7]; // field 7 = u offset
+    expect(u).toBeCloseTo(0.5, 6);
+  });
+});
+
+describe("RenderView text drawing", () => {
+  test("emits one instance per non-space glyph, bound to the font texture", () => {
+    const fontTex = entry(256, 8, 8, 8); // 32-frame glyph strip
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({ font: fontTex }));
+    const scene = new Scene();
+    scene.camera.resize(256, 64).centerOn(0, 0);
+    const font = new BitmapFont("font", { charWidth: 8, charHeight: 8 });
+    scene.add(new Text(font, "HI YOU", 0, 0)); // 5 letters + 1 space
+
+    view.draw(scene, 0);
+    expect(f.instanceData.length / INSTANCE_FLOATS).toBe(5); // space skipped
+    expect(f.draws).toEqual([{ texture: fontTex, first: 0, count: 5 }]);
   });
 });
 

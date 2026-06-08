@@ -1,7 +1,10 @@
 import type { Mat3 } from "../math/Mat3.js";
+import { Vec2 } from "../math/Vec2.js";
 import { Entity, type RenderTransform } from "../core/Entity.js";
 import { Group } from "../core/Group.js";
 import { Sprite } from "../core/Sprite.js";
+import { Tilemap } from "../core/Tilemap.js";
+import { Text } from "../core/Text.js";
 import type { Scene } from "../core/Scene.js";
 import type { AssetLoader } from "./AssetLoader.js";
 import type { SpriteBatcher, SpriteInstance } from "./SpriteBatcher.js";
@@ -42,6 +45,13 @@ export class RenderView {
   private readonly _uv: FrameUV = { u: 0, v: 0, uScale: 0, vScale: 0 };
   private readonly _inst: SpriteInstance<TextureEntry>;
 
+  // Visible world rect (for tilemap culling), recomputed each frame.
+  private _viewMinX = 0;
+  private _viewMinY = 0;
+  private _viewMaxX = 0;
+  private _viewMaxY = 0;
+  private readonly _corner = new Vec2();
+
   constructor(renderer: SpriteRenderer, loader: AssetLoader) {
     this._renderer = renderer;
     this._loader = loader;
@@ -65,6 +75,7 @@ export class RenderView {
 
   /** Draw `scene` for this frame. `alpha` is `Game.render`'s 0..1 factor. */
   draw(scene: Scene, alpha: number): void {
+    this._computeViewRect(scene);
     this._renderer.beginFrame(scene.camera.viewProjection(alpha));
     this._renderer.batcher.begin();
     this._drawGroup(scene.root, alpha);
@@ -73,6 +84,34 @@ export class RenderView {
   }
 
   // ---- Internal ----
+
+  /** World-space AABB of the viewport (the 4 corners unprojected), for culling. */
+  private _computeViewRect(scene: Scene): void {
+    const cam = scene.camera;
+    const w = cam.viewportWidth;
+    const h = cam.viewportHeight;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    const corners: ReadonlyArray<readonly [number, number]> = [
+      [0, 0],
+      [w, 0],
+      [0, h],
+      [w, h],
+    ];
+    for (const [sx, sy] of corners) {
+      const p = cam.screenToWorld(this._corner.set(sx, sy));
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+    this._viewMinX = minX;
+    this._viewMinY = minY;
+    this._viewMaxX = maxX;
+    this._viewMaxY = maxY;
+  }
 
   private _drawGroup(group: Group, alpha: number): void {
     for (const child of group.children) {
@@ -83,6 +122,14 @@ export class RenderView {
   }
 
   private _drawEntity(e: Entity, alpha: number): void {
+    if (e instanceof Tilemap) {
+      this._drawTilemap(e);
+      return;
+    }
+    if (e instanceof Text) {
+      this._drawText(e);
+      return;
+    }
     if (e.width === 0 || e.height === 0) return; // nothing to rasterize
 
     const t = e.sampleRender(alpha, this._t);
@@ -116,5 +163,65 @@ export class RenderView {
     inst.uScale = this._uv.uScale;
     inst.vScale = this._uv.vScale;
     this._renderer.batcher.add(inst);
+  }
+
+  /** Emit one instance per non-empty tile in view, resolving tile→frame UVs. */
+  private _drawTilemap(map: Tilemap): void {
+    const entry = this._loader.resolve(map.tilesetId);
+    const inst = this._inst;
+    const uv = this._uv;
+    const batcher = this._renderer.batcher;
+    inst.texture = entry;
+    inst.width = map.tileWidth;
+    inst.height = map.tileHeight;
+    inst.originX = 0;
+    inst.originY = 0;
+    inst.rotation = 0;
+    inst.tint = map.tint;
+    inst.alpha = 1;
+
+    map.forEachTileIn(
+      this._viewMinX,
+      this._viewMinY,
+      this._viewMaxX,
+      this._viewMaxY,
+      (_col, _row, index, worldX, worldY) => {
+        entry.meta.frameUV(index - 1, false, false, uv); // value N → frame N-1
+        inst.x = worldX;
+        inst.y = worldY;
+        inst.u = uv.u;
+        inst.v = uv.v;
+        inst.uScale = uv.uScale;
+        inst.vScale = uv.vScale;
+        batcher.add(inst);
+      },
+    );
+  }
+
+  /** Emit one instance per glyph of a Text, resolving glyph→frame UVs. */
+  private _drawText(text: Text): void {
+    const entry = this._loader.resolve(text.font.fontId);
+    const inst = this._inst;
+    const uv = this._uv;
+    const batcher = this._renderer.batcher;
+    inst.texture = entry;
+    inst.originX = 0;
+    inst.originY = 0;
+    inst.rotation = 0;
+    inst.tint = text.tint;
+    inst.alpha = text.alpha;
+
+    text.forEachGlyph((frame, worldX, worldY, w, h) => {
+      entry.meta.frameUV(frame, false, false, uv);
+      inst.x = worldX;
+      inst.y = worldY;
+      inst.width = w;
+      inst.height = h;
+      inst.u = uv.u;
+      inst.v = uv.v;
+      inst.uScale = uv.uScale;
+      inst.vScale = uv.vScale;
+      batcher.add(inst);
+    });
   }
 }

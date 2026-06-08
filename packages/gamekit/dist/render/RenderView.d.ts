@@ -27,9 +27,20 @@ export declare class RenderView {
     private readonly _t;
     private readonly _uv;
     private readonly _inst;
+    private _viewMinX;
+    private _viewMinY;
+    private _viewMaxX;
+    private _viewMaxY;
+    private readonly _corner;
     constructor(renderer: SpriteRenderer, loader: AssetLoader);
     /** Draw `scene` for this frame. `alpha` is `Game.render`'s 0..1 factor. */
     draw(scene: Scene, alpha: number): void;
+    /** World-space AABB of the viewport (the 4 corners unprojected), for culling. */
+    private _computeViewRect;
     private _drawGroup;
     private _drawEntity;
+    /** Emit one instance per non-empty tile in view, resolving tile→frame UVs. */
+    private _drawTilemap;
+    /** Emit one instance per glyph of a Text, resolving glyph→frame UVs. */
+    private _drawText;
 }
