@@ -28,6 +28,8 @@ const FILES = [
   "hurt.mp3",
   "jump.mp3",
   "jam.mp3",
+  "countdown.mp3",
+  "mode.mp3",
 ];
 
 await mkdir(OUT, { recursive: true });
