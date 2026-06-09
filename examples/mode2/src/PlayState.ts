@@ -88,6 +88,22 @@ function buildBackground(rng: Rng): Tilemap {
   return map;
 }
 
+/** A non-colliding overlay that paints the lit `dirt_top` edge on every solid
+ *  tile whose cell above is empty — the grassy/lit platform surface in Mode. */
+function buildSurface(arena: Tilemap, rng: Rng): Tilemap {
+  const data = new Uint16Array(COLS * ROWS);
+  for (let r = 1; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (arena.getTile(c, r) !== 0 && arena.getTile(c, r - 1) === 0) {
+        data[r * COLS + c] = 1 + rng.int(2); // dirt_top frame 0/1
+      }
+    }
+  }
+  const map = new Tilemap(COLS, ROWS, TILE, TILE, data);
+  map.tilesetId = "tiles_top";
+  return map;
+}
+
 type GameState = "playing" | "won" | "lost";
 
 /** The Mode play scene: platformer arena, spawners, score-as-life. */
@@ -126,6 +142,7 @@ export class PlayState extends Scene implements Arena {
     this.add(buildBackground(this.rng)); // non-colliding backdrop, drawn first
     this.tilemap = buildArena(this.rng);
     this.add(this.tilemap);
+    this.add(buildSurface(this.tilemap, this.rng)); // lit tops over the dirt body
     this.add(this.enemies);
     this.add(this.spawners);
     this.add(this.pBullets);
@@ -189,11 +206,15 @@ export class PlayState extends Scene implements Arena {
       if (this._hurtCd === 0) this.player.tint = 0xffffff;
     }
 
-    // Player + bullets collide with terrain; flying enemies don't.
+    // Player collides with terrain; flying enemies don't. Bullets die only when
+    // their center enters a solid tile (a wall) — a point test, so one flying
+    // along just above a floor isn't killed by grazing its edge.
     this.tilemap.collide(this.player);
     this.player.updateGround();
-    this.pBullets.forEach((b) => b.alive && this.tilemap.collide(b) && b.kill());
-    this.eBullets.forEach((b) => b.alive && this.tilemap.collide(b) && b.kill());
+    const inWall = (b: Bullet) =>
+      this.tilemap.isSolid(this.tilemap.getTileAtWorld(b.centerX, b.centerY));
+    this.pBullets.forEach((b) => b.alive && inWall(b) && b.kill());
+    this.eBullets.forEach((b) => b.alive && inWall(b) && b.kill());
 
     this.overlap(this.pBullets, this.enemies, (b, e) => {
       if (!b.alive || !e.alive) return;
