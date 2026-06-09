@@ -237,8 +237,14 @@ export class Enemy extends Sprite {
     this._jetTimer += dt;
     if (this._jetTimer > ENEMY_JET_PERIOD) this._jetTimer = 0;
     const jetsOn = this._jetTimer < ENEMY_JET_ON;
-    const goal = jetsOn ? ENEMY_THRUST : 0;
-    this._thrust += (goal - this._thrust) * Math.min(1, ENEMY_DRAG * dt * 0.1);
+    // computeVelocity: accelerate toward thrust while jets fire, drag down when
+    // off, capped at max speed (Mode: accel 90, drag 35, max 60).
+    if (jetsOn) {
+      this._thrust += ENEMY_THRUST * dt;
+    } else {
+      this._thrust -= ENEMY_DRAG * dt;
+      if (this._thrust < 0) this._thrust = 0;
+    }
     if (this._thrust > ENEMY_MAXSPEED) this._thrust = ENEMY_MAXSPEED;
     this.velocity.set(
       Math.cos(this.rotation) * this._thrust,

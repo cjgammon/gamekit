@@ -24,7 +24,14 @@ async function main() {
   const backingH = Math.round(CSS_H * dpr);
   const zoom = backingW / FOV_W;
 
-  const game = await RenderGame.create(canvas, { width: backingW, height: backingH });
+  // 60Hz fixed step: single-player (no networking), and it matches Mode's
+  // ~60fps so physics integrate identically and fast bullets don't tunnel
+  // through enemies (at 20Hz a 360px/s bullet jumps 18px/step, past a 16px bot).
+  const game = await RenderGame.create(canvas, {
+    width: backingW,
+    height: backingH,
+    tickRate: 60,
+  });
   game.renderer.clearColor = { r: 0.05, g: 0.05, b: 0.07, a: 1 };
 
   let font: Awaited<ReturnType<typeof loadAssets>>;

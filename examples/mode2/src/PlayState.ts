@@ -383,7 +383,9 @@ export class PlayState extends Scene implements Arena {
 
   private _hurt(): boolean {
     if (!this.player.hurt()) return false;
-    this.score = Math.max(0, this.score - HURT_SCORE);
+    // Mode only docks score on a hit if you have a cushion (>1000); death comes
+    // from the decay, not directly from hits.
+    if (this.score > HURT_SCORE) this.score -= HURT_SCORE;
     this.playSound("hurt", 0.7);
     return true;
   }
