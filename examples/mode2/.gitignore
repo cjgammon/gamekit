@@ -1,0 +1,5 @@
+dist
+node_modules
+.vite
+# Third-party assets are fetched on demand, not committed (see scripts/fetch-assets.mjs).
+public/data
