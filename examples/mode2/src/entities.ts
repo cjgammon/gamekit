@@ -3,11 +3,17 @@ import type { InputManager } from "gamekit/input";
 import {
   BULLET_LIFE,
   BULLET_SPEED,
+  DRAG_X,
   ENEMY_BULLET_SPEED,
   ENEMY_FIRE,
   ENEMY_SPEED,
   FIRE_RATE,
-  PLAYER_SPEED,
+  GRAVITY,
+  JUMP,
+  MAXVEL_X,
+  MAXVEL_Y,
+  RECOIL,
+  RUN_ACCEL,
   SPAWNER_HEALTH,
   SPAWN_INTERVAL,
 } from "./config";
@@ -19,15 +25,16 @@ export interface Arena {
   firePlayerBullet(x: number, y: number, vx: number, vy: number): void;
   fireEnemyBullet(x: number, y: number, vx: number, vy: number): void;
   spawnEnemy(x: number, y: number): void;
+  playSound(name: string, volume?: number): void;
 }
 
-/** A projectile (pooled). Dies on timeout; the scene kills it on impact. */
+/** A straight-flying projectile (pooled). Dies on timeout or impact. */
 export class Bullet extends Sprite {
   age = 0;
 
   constructor(textureId = "bullet") {
     super();
-    this.setTexture(textureId, 6, 6);
+    this.setTexture(textureId, 8, 8);
     this.originX = 0.5;
     this.originY = 0.5;
   }
@@ -45,74 +52,113 @@ export class Bullet extends Sprite {
   }
 }
 
-/** The player — WASD to move, arrow keys to shoot (twin-stick). */
+/**
+ * The player: a Flixel-style platformer character. Arrow keys walk; X jumps
+ * (when grounded); C shoots in the aim direction (up / down-while-airborne /
+ * facing). Gravity, run acceleration + drag, and the velocity clamp all use the
+ * engine's built-in motion model with Mode's constants.
+ */
 export class Player extends Sprite {
-  hp: number;
+  facing: 1 | -1 = 1;
+  grounded = false;
+
   private _cooldown = 0;
+  private _prevJump = false;
 
   constructor(
     private readonly input: InputManager,
     private readonly arena: Arena,
     x: number,
     y: number,
-    maxHp: number,
   ) {
     super(x, y);
-    // spaceman.png has 8×8 frames; draw at 16 and animate idle/run.
-    this.setTexture("player", 16, 16);
+    this.setTexture("player", 8, 8);
     this.addAnim("idle", { frames: [0], fps: 1 });
     this.addAnim("run", { frames: [1, 2, 3, 0], fps: 12 });
-    this.originX = 0.5;
-    this.originY = 0.5;
-    this.hp = maxHp;
+    this.addAnim("jump", { frames: [4], fps: 1 });
+    this.addAnim("idle_up", { frames: [5], fps: 1 });
+    this.addAnim("run_up", { frames: [6, 7, 8, 5], fps: 12 });
+    this.addAnim("jump_up", { frames: [9], fps: 1 });
+    this.drag.set(DRAG_X, 0);
+    this.maxVelocity.set(MAXVEL_X, MAXVEL_Y);
   }
 
   override fixedUpdate(dt: number): void {
-    // Move (WASD).
-    const mx =
-      (this.input.isDown("moveRight") ? 1 : 0) -
-      (this.input.isDown("moveLeft") ? 1 : 0);
-    const my =
-      (this.input.isDown("moveDown") ? 1 : 0) -
-      (this.input.isDown("moveUp") ? 1 : 0);
-    const ml = Math.hypot(mx, my) || 1;
-    this.velocity.set((mx / ml) * PLAYER_SPEED, (my / ml) * PLAYER_SPEED);
-    super.fixedUpdate(dt); // integrate position
+    const i = this.input;
+    const left = i.isDown("moveLeft");
+    const right = i.isDown("moveRight");
+    const up = i.isDown("aimUp");
+    const down = i.isDown("aimDown");
 
-    // Animate + face the way we move.
-    if (mx !== 0 || my !== 0) this.play("run");
-    else this.play("idle");
-    if (mx < 0) this.flipX = true;
-    else if (mx > 0) this.flipX = false;
+    // Horizontal: accelerate while held; drag decelerates when released.
+    this.acceleration.x = 0;
+    if (left && !right) {
+      this.acceleration.x = -RUN_ACCEL;
+      this.facing = -1;
+      this.flipX = true;
+    } else if (right && !left) {
+      this.acceleration.x = RUN_ACCEL;
+      this.facing = 1;
+      this.flipX = false;
+    }
+    this.acceleration.y = GRAVITY;
 
-    // Aim + fire (arrow keys).
-    const ax =
-      (this.input.isDown("aimRight") ? 1 : 0) -
-      (this.input.isDown("aimLeft") ? 1 : 0);
-    const ay =
-      (this.input.isDown("aimDown") ? 1 : 0) -
-      (this.input.isDown("aimUp") ? 1 : 0);
+    // Jump (rising edge, only when grounded).
+    const jump = i.isDown("jump");
+    if (jump && !this._prevJump && this.grounded) {
+      this.velocity.y = -JUMP;
+      this.arena.playSound("jump", 0.5);
+    }
+    this._prevJump = jump;
+
+    super.fixedUpdate(dt); // integrate accel → drag → clamp → position
+
+    // Shoot in the aim direction.
     this._cooldown -= dt;
-    if ((ax !== 0 || ay !== 0) && this._cooldown <= 0) {
-      const al = Math.hypot(ax, ay);
+    if (i.isDown("shoot") && this._cooldown <= 0) {
+      let ax = 0;
+      let ay = 0;
+      if (up) ay = -1;
+      else if (down && !this.grounded) ay = 1;
+      else ax = this.facing;
+      if (ax === 0 && ay === 0) ax = this.facing;
+
       this.arena.firePlayerBullet(
         this.centerX,
         this.centerY,
-        (ax / al) * BULLET_SPEED,
-        (ay / al) * BULLET_SPEED,
+        ax * BULLET_SPEED,
+        ay * BULLET_SPEED,
       );
+      if (ay > 0) this.velocity.y -= RECOIL; // downward shot kicks you up
+      this.arena.playSound("shoot", 0.5);
       this._cooldown = FIRE_RATE;
     }
+
+    this._animate(up);
+  }
+
+  /** Probe the tiles just below the feet to decide if we can jump. */
+  updateGround(): void {
+    const t = this.arena.tilemap;
+    const footY = this.y + this.height + 1;
+    this.grounded =
+      t.isSolid(t.getTileAtWorld(this.x + 1, footY)) ||
+      t.isSolid(t.getTileAtWorld(this.x + this.width - 1, footY));
+  }
+
+  private _animate(up: boolean): void {
+    if (!this.grounded) this.play(up ? "jump_up" : "jump");
+    else if (this.velocity.x === 0) this.play(up ? "idle_up" : "idle");
+    else this.play(up ? "run_up" : "run");
   }
 }
 
-/** An enemy (pooled): homes on the player and shoots at it. */
+/** A flying enemy (pooled): homes on the player, ignores gravity, shoots. */
 export class Enemy extends Sprite {
   private _shoot = 0;
 
   constructor(private readonly arena: Arena) {
     super();
-    // bot.png is a single sprite (Mode pre-rotates it); we rotate live instead.
     this.setTexture("enemy", 16, 16);
     this.originX = 0.5;
     this.originY = 0.5;
@@ -121,7 +167,7 @@ export class Enemy extends Sprite {
   spawn(x: number, y: number): void {
     this.setPosition(x, y, true);
     this.velocity.set(0, 0);
-    this._shoot = 0.6 + Math.random() * ENEMY_FIRE;
+    this._shoot = 0.5 + Math.random() * ENEMY_FIRE;
   }
 
   override fixedUpdate(dt: number): void {
@@ -131,7 +177,7 @@ export class Enemy extends Sprite {
     const d = Math.hypot(dx, dy) || 1;
     this.velocity.set((dx / d) * ENEMY_SPEED, (dy / d) * ENEMY_SPEED);
     super.fixedUpdate(dt);
-    this.rotation = Math.atan2(dy, dx); // face the player
+    this.rotation = Math.atan2(dy, dx);
 
     this._shoot -= dt;
     if (this._shoot <= 0) {
@@ -141,6 +187,7 @@ export class Enemy extends Sprite {
         (dx / d) * ENEMY_BULLET_SPEED,
         (dy / d) * ENEMY_BULLET_SPEED,
       );
+      this.arena.playSound("enemyShoot", 0.35);
       this._shoot = ENEMY_FIRE;
     }
   }
@@ -153,17 +200,18 @@ export class Spawner extends Sprite {
 
   constructor(private readonly arena: Arena, x: number, y: number) {
     super(x, y);
-    this.setTexture("spawner", 16, 16);
+    this.setTexture("spawner", 24, 24);
+    this.addAnim("open", { frames: [1, 2, 3, 4, 5], fps: 40, loop: false });
+    this.originX = 0.5;
+    this.originY = 0.5;
     this._timer = 1 + Math.random() * SPAWN_INTERVAL;
   }
 
   override fixedUpdate(dt: number): void {
     this._timer -= dt;
     if (this._timer <= 0) {
-      this.arena.spawnEnemy(
-        this.centerX - 8 + (Math.random() * 2 - 1) * 6,
-        this.centerY - 8 + (Math.random() * 2 - 1) * 6,
-      );
+      this.play("open", true);
+      this.arena.spawnEnemy(this.centerX, this.centerY);
       this._timer = SPAWN_INTERVAL;
     }
   }

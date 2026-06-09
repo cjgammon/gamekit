@@ -86,6 +86,19 @@ describe("Tilemap collision", () => {
     expect(e.velocity.x).toBe(0);
   });
 
+  test("a fast fall snaps onto the floor instead of tunneling through it", () => {
+    const m = floorMap(); // floor row 2 top = y32
+    const e = box(0, 0); // 16px box, starts above the floor
+    e.syncPrev(); // prev bottom = 16 (above the floor)
+    // Big downward step lands the box PAST the floor row's midline (y=33),
+    // where minimum-translation would flip it downward through the floor.
+    e.y = 33;
+    e.velocity.y = 300;
+    expect(m.collide(e)).toBe(true);
+    expect(e.y).toBe(16); // swept resolution rests it on the floor top (32 - 16)
+    expect(e.velocity.y).toBe(0);
+  });
+
   test("no collision in open space", () => {
     const m = floorMap();
     const e = box(0, 0); // top-left empty cell

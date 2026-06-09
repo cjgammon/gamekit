@@ -89,29 +89,66 @@ export class Tilemap extends Entity {
      */
     collide(entity) {
         const b0 = entity.bounds;
+        const w = b0.width;
+        const h = b0.height;
         // Tile range under the entity (clamped to the grid).
         const minCol = Math.max(0, this.worldToCol(b0.left));
         const maxCol = Math.min(this.cols - 1, this.worldToCol(b0.right));
         const minRow = Math.max(0, this.worldToRow(b0.top));
         const maxRow = Math.min(this.rows - 1, this.worldToRow(b0.bottom));
+        // Pre-step edges (from syncPrev) — used to decide which side the entity
+        // entered from. This makes resolution *swept*: a fast mover that penetrates
+        // deeply (past a tile's midline) still snaps back to the surface it crossed,
+        // instead of the minimum-translation vector flipping it out the far side
+        // (which would tunnel a falling body straight through a thin floor).
+        const prevTop = entity.prevY;
+        const prevBottom = entity.prevY + h;
+        const prevLeft = entity.prevX;
+        const prevRight = entity.prevX + w;
+        const vx = entity.velocity.x;
+        const vy = entity.velocity.y;
         let hit = false;
         for (let row = minRow; row <= maxRow; row++) {
             for (let col = minCol; col <= maxCol; col++) {
                 if (!this.isSolid(this.getTile(col, row)))
                     continue;
-                const tile = this._tileAABB.set(this.x + col * this.tileWidth, this.y + row * this.tileHeight, this.tileWidth, this.tileHeight);
+                const tileX = this.x + col * this.tileWidth;
+                const tileY = this.y + row * this.tileHeight;
+                const tile = this._tileAABB.set(tileX, tileY, this.tileWidth, this.tileHeight);
                 const eb = entity.bounds; // refetch — entity may have moved
                 if (!eb.overlaps(tile))
                     continue;
-                const mtv = eb.penetration(tile); // moves the entity out of the tile
-                if (mtv.x === 0 && mtv.y === 0)
-                    continue;
-                entity.x += mtv.x;
-                entity.y += mtv.y;
-                if (mtv.x !== 0)
-                    entity.velocity.x = 0;
-                if (mtv.y !== 0)
+                const tileBottom = tileY + this.tileHeight;
+                const tileRight = tileX + this.tileWidth;
+                if (vy > 0 && prevBottom <= tileY) {
+                    entity.y = tileY - h; // fell onto the tile's top
                     entity.velocity.y = 0;
+                }
+                else if (vy < 0 && prevTop >= tileBottom) {
+                    entity.y = tileBottom; // rose into the tile's underside
+                    entity.velocity.y = 0;
+                }
+                else if (vx > 0 && prevRight <= tileX) {
+                    entity.x = tileX - w; // ran into the tile's left face
+                    entity.velocity.x = 0;
+                }
+                else if (vx < 0 && prevLeft >= tileRight) {
+                    entity.x = tileRight; // ran into the tile's right face
+                    entity.velocity.x = 0;
+                }
+                else {
+                    // Already overlapping at step start (resting/embedded) — fall back to
+                    // minimum-translation separation.
+                    const mtv = eb.penetration(tile);
+                    if (mtv.x === 0 && mtv.y === 0)
+                        continue;
+                    entity.x += mtv.x;
+                    entity.y += mtv.y;
+                    if (mtv.x !== 0)
+                        entity.velocity.x = 0;
+                    if (mtv.y !== 0)
+                        entity.velocity.y = 0;
+                }
                 hit = true;
             }
         }

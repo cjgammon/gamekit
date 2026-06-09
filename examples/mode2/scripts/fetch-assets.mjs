@@ -17,11 +17,17 @@ const FILES = [
   "bot_bullet.png",
   "spawner.png",
   "dirt.png",
+  "dirt_top.png",
+  "tech_tiles.png",
+  "gibs.png",
+  "spawner_gibs.png",
   // sounds
   "shoot.mp3",
   "enemy.mp3",
   "asplode.mp3",
   "hurt.mp3",
+  "jump.mp3",
+  "jam.mp3",
 ];
 
 await mkdir(OUT, { recursive: true });

@@ -7,14 +7,13 @@ import type { RenderGame } from "gamekit/renderer";
 import { AudioManager } from "gamekit/audio";
 import { BitmapFont } from "gamekit";
 
-export const TILE = 16;
 export const FONT_W = 8;
 export const FONT_H = 12;
 
 // Frame sizes match the original PNG layouts:
-//   spaceman 32×24 → 8×8 frames    bullet   64×8  → 8×8 frames
-//   bot      16×16 → single sprite bot_bullet 20×4 → 4×4 frames
-//   spawner  168×24 → 24×24 frames dirt     128×8 → 8×8 auto-tile frames
+//   spaceman 32×24 → 8×8      bullet     64×8  → 8×8     bot 16×16 → single
+//   bot_bullet 20×4 → 4×4     spawner    168×24 → 24×24  dirt 128×8 → 8×8
+//   gibs 30×6 → 6×6           spawner_gibs 48×12 → 12×12
 const SHEETS: Array<{ name: string; url: string; frameWidth?: number; frameHeight?: number }> = [
   { name: "player", url: "/data/spaceman.png", frameWidth: 8, frameHeight: 8 },
   { name: "enemy", url: "/data/bot.png" }, // single sprite — rotated in-game
@@ -22,6 +21,10 @@ const SHEETS: Array<{ name: string; url: string; frameWidth?: number; frameHeigh
   { name: "ebullet", url: "/data/bot_bullet.png", frameWidth: 4, frameHeight: 4 },
   { name: "spawner", url: "/data/spawner.png", frameWidth: 24, frameHeight: 24 },
   { name: "tiles", url: "/data/dirt.png", frameWidth: 8, frameHeight: 8 },
+  { name: "tiles_top", url: "/data/dirt_top.png", frameWidth: 8, frameHeight: 8 },
+  { name: "bg", url: "/data/tech_tiles.png", frameWidth: 8, frameHeight: 8 },
+  { name: "gibs", url: "/data/gibs.png", frameWidth: 6, frameHeight: 6 },
+  { name: "spawner_gibs", url: "/data/spawner_gibs.png", frameWidth: 12, frameHeight: 12 },
 ];
 
 /** Load the real Mode graphics, then build the HUD font. */
@@ -43,6 +46,8 @@ export async function loadAudio(): Promise<AudioManager> {
     { name: "enemyShoot", url: "/data/enemy.mp3" },
     { name: "explode", url: "/data/asplode.mp3" },
     { name: "hurt", url: "/data/hurt.mp3" },
+    { name: "jump", url: "/data/jump.mp3" },
+    { name: "jam", url: "/data/jam.mp3" },
   ]);
   return audio;
 }

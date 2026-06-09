@@ -5,7 +5,7 @@ import { PlayState } from "./PlayState";
 
 const CSS_W = 800;
 const CSS_H = 600;
-const FOV_W = 416; // world units visible across the width
+const FOV_W = 320; // world units visible across the width (zoomed-in like Mode)
 
 async function main() {
   const canvas = document.getElementById("view") as HTMLCanvasElement;
@@ -38,15 +38,14 @@ async function main() {
     return;
   }
 
+  // Mode controls: arrows walk + aim, X jumps, C shoots.
   const input = new InputManager({
-    moveUp: ["KeyW"],
-    moveDown: ["KeyS"],
-    moveLeft: ["KeyA"],
-    moveRight: ["KeyD"],
-    aimUp: ["ArrowUp"],
-    aimDown: ["ArrowDown"],
-    aimLeft: ["ArrowLeft"],
-    aimRight: ["ArrowRight"],
+    moveLeft: ["ArrowLeft", "KeyA"],
+    moveRight: ["ArrowRight", "KeyD"],
+    aimUp: ["ArrowUp", "KeyW"],
+    aimDown: ["ArrowDown", "KeyS"],
+    jump: ["KeyX", "Space"],
+    shoot: ["KeyC"],
     restart: ["KeyR"],
   });
   input.attach(window);
@@ -65,7 +64,8 @@ async function main() {
   start();
   game.start();
 
-  hud.textContent = "WASD move · arrow keys shoot · destroy the 4 spawners";
+  hud.textContent =
+    "← → move · ↑/↓ aim · X jump · C shoot — destroy the 8 spawners before your score drains";
 }
 
 main().catch((err) => {

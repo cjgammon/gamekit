@@ -33,7 +33,9 @@ function buildArena(): Tilemap {
       set(c + 1, r + 1);
     }
   }
-  return new Tilemap(COLS, ROWS, TILE, TILE, data);
+  const map = new Tilemap(COLS, ROWS, TILE, TILE, data);
+  map.tilesetId = "tiles"; // resolve tile frames (else falls back to white)
+  return map;
 }
 
 type GameState = "playing" | "won" | "lost";

@@ -1,58 +1,112 @@
-import { Emitter, Group, Scene, Text, Tilemap, type BitmapFont } from "gamekit";
+import {
+  Emitter,
+  Group,
+  Particle,
+  Rng,
+  Scene,
+  Text,
+  Tilemap,
+  type BitmapFont,
+} from "gamekit";
 import type { InputManager } from "gamekit/input";
 import type { AudioManager } from "gamekit/audio";
 import { Bullet, Enemy, Player, Spawner, type Arena } from "./entities";
 import {
-  ARENA_H,
-  ARENA_W,
   COLS,
-  HIT_BY_BULLET,
-  HIT_BY_ENEMY,
-  PLAYER_MAX_HP,
+  GIB_GRAVITY,
+  MAXVEL_X,
+  MAX_ENEMIES,
   ROWS,
   SCORE_DECAY,
   SCORE_ENEMY,
+  SCORE_HIT,
   SCORE_SPAWNER,
+  SCORE_START,
   TILE,
+  WORLD,
 } from "./config";
 
-/** Border walls plus a regular grid of 2×2 pillars for cover. */
-function buildArena(): Tilemap {
+const HURT_IMMUNITY = 0.6; // seconds of i-frames after a hit
+
+/** Spawner anchor positions: four down each side wall. */
+function spawnerSpots(): Array<[number, number]> {
+  const spots: Array<[number, number]> = [];
+  for (let row = 0; row < 4; row++) {
+    const y = row * 160 + 60;
+    spots.push([2 * TILE, y]);
+    spots.push([WORLD - 2 * TILE - 24, y]);
+  }
+  return spots;
+}
+
+/** Border walls + dirt floor + random platform blocks (Mode-style), with dirt
+ *  frames randomized for texture variety. Returns a solid-tile map. */
+function buildArena(rng: Rng): Tilemap {
   const data = new Uint16Array(COLS * ROWS);
-  const set = (c: number, r: number) => (data[r * COLS + c] = 1);
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      if (c === 0 || r === 0 || c === COLS - 1 || r === ROWS - 1) set(c, r);
+  const dirt = () => 1 + rng.int(16); // tile value → dirt frame 0..15
+  const solid = (c: number, r: number) => {
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) data[r * COLS + c] = dirt();
+  };
+  const block = (c0: number, r0: number, w: number, h: number) => {
+    for (let r = r0; r < r0 + h; r++) for (let c = c0; c < c0 + w; c++) solid(c, r);
+  };
+
+  // Border: 16px top + sides, 24px floor.
+  block(0, 0, COLS, 2);
+  block(0, 0, 2, ROWS);
+  block(COLS - 2, 0, 2, ROWS);
+  block(0, ROWS - 3, COLS, 3);
+
+  // Platform blocks in the interior rooms (room cols 1–2 of the 4×4 grid),
+  // leaving the side walls clear for spawners and movement.
+  for (let roomR = 0; roomR < 4; roomR++) {
+    for (let roomC = 1; roomC < 3; roomC++) {
+      const blocks = 2 + rng.int(3);
+      for (let i = 0; i < blocks; i++) {
+        const w = 2 + rng.int(9); // 2–10 tiles
+        // ≥2 tiles tall: the player falls up to 10px/step, so 1-tile (8px)
+        // platforms would tunnel (collision is discrete, not swept).
+        const h = 2 + rng.int(3); // 2–4 tiles
+        const c0 = roomC * 20 + 2 + rng.int(Math.max(1, 16 - w));
+        const r0 = roomR * 20 + 3 + rng.int(Math.max(1, 14 - h));
+        block(c0, r0, w, h);
+      }
     }
   }
-  for (let r = 4; r < ROWS - 4; r += 6) {
-    for (let c = 4; c < COLS - 4; c += 6) {
-      set(c, r);
-      set(c + 1, r);
-      set(c, r + 1);
-      set(c + 1, r + 1);
-    }
-  }
-  return new Tilemap(COLS, ROWS, TILE, TILE, data);
+
+  const map = new Tilemap(COLS, ROWS, TILE, TILE, data);
+  map.tilesetId = "tiles"; // resolve dirt frames (else falls back to white)
+  return map;
+}
+
+/** A full-world background layer (non-colliding) of tech tiles. */
+function buildBackground(rng: Rng): Tilemap {
+  const data = new Uint16Array(COLS * ROWS);
+  for (let i = 0; i < data.length; i++) data[i] = 1 + rng.int(6); // bg frame 0..5
+  const map = new Tilemap(COLS, ROWS, TILE, TILE, data);
+  map.tilesetId = "bg";
+  return map;
 }
 
 type GameState = "playing" | "won" | "lost";
 
-/** The Mode play scene: owns the level, entity groups, and game rules. */
+/** The Mode play scene: platformer arena, spawners, score-as-life. */
 export class PlayState extends Scene implements Arena {
   player!: Player;
   tilemap!: Tilemap;
-  score = 0;
+  score = SCORE_START;
   state: GameState = "playing";
 
+  private readonly rng = new Rng(0xb0a7);
   private readonly enemies = new Group<Enemy>();
   private readonly spawners = new Group<Spawner>();
   private readonly pBullets = new Group<Bullet>();
   private readonly eBullets = new Group<Bullet>();
-  private explosions!: Emitter;
-  private sparks!: Emitter;
+  private enemyGibs!: Emitter;
+  private spawnerGibs!: Emitter;
   private hud!: Text;
   private banner!: Text;
+  private _hurtCd = 0;
 
   constructor(
     private readonly input: InputManager,
@@ -69,62 +123,39 @@ export class PlayState extends Scene implements Arena {
     this.pBullets.recycling = true;
     this.eBullets.recycling = true;
 
-    this.tilemap = buildArena();
+    this.add(buildBackground(this.rng)); // non-colliding backdrop, drawn first
+    this.tilemap = buildArena(this.rng);
     this.add(this.tilemap);
-    // Draw order: tiles, enemies/spawners, bullets, player, particles, HUD.
     this.add(this.enemies);
     this.add(this.spawners);
     this.add(this.pBullets);
     this.add(this.eBullets);
 
-    this.explosions = new Emitter(0, 0);
-    Object.assign(this.explosions, {
-      speed: { min: 40, max: 170 },
-      life: { min: 0.3, max: 0.7 },
-      particleWidth: 3,
-      particleHeight: 3,
-      scaleStart: 1.5,
-      scaleEnd: 0,
-      tints: [0xffcc44, 0xff6622, 0xffee99],
-      maxParticles: 400,
-    });
-    this.add(this.explosions);
+    this.enemyGibs = this._gibs("gibs", 6, 6, 5);
+    this.spawnerGibs = this._gibs("spawner_gibs", 12, 12, 4);
+    this.add(this.enemyGibs);
+    this.add(this.spawnerGibs);
 
-    this.sparks = new Emitter(0, 0);
-    Object.assign(this.sparks, {
-      speed: { min: 30, max: 90 },
-      life: { min: 0.12, max: 0.28 },
-      particleWidth: 2,
-      particleHeight: 2,
-      tints: [0xffee88],
-      maxParticles: 200,
-    });
-    this.add(this.sparks);
-
-    this.player = new Player(this.input, this, ARENA_W / 2, ARENA_H / 2, PLAYER_MAX_HP);
+    this.player = new Player(this.input, this, 312, 280);
     this.add(this.player);
 
-    const m = 3 * TILE;
-    const corners: Array<[number, number]> = [
-      [m, m],
-      [ARENA_W - m - TILE, m],
-      [m, ARENA_H - m - TILE],
-      [ARENA_W - m - TILE, ARENA_H - m - TILE],
-    ];
-    for (const [sx, sy] of corners) this.spawners.add(new Spawner(this, sx, sy));
+    for (const [sx, sy] of spawnerSpots()) {
+      this.spawners.add(new Spawner(this, sx, sy));
+    }
 
     this.camera.zoom = this.zoom;
-    this.camera.bounds = { minX: 0, minY: 0, maxX: ARENA_W, maxY: ARENA_H };
-    this.camera.follow(this.player, 0.18);
+    this.camera.bounds = { minX: 0, minY: 0, maxX: WORLD, maxY: WORLD };
+    this.camera.deadzone = { x: 28, y: 22 };
+    this.camera.follow(this.player, 0.22);
     this.camera.snapToTarget();
 
     this.hud = new Text(this.font, "", 0, 0);
-    this.hud.scale = 0.6;
+    this.hud.scale = 0.5;
     this.add(this.hud);
 
     this.banner = new Text(this.font, "", 0, 0);
     this.banner.align = "center";
-    this.banner.scale = 1.5;
+    this.banner.scale = 1.2;
     this.add(this.banner);
   }
 
@@ -132,70 +163,68 @@ export class PlayState extends Scene implements Arena {
 
   firePlayerBullet(x: number, y: number, vx: number, vy: number): void {
     this.pBullets.recycle(() => new Bullet())!.spawn(x, y, vx, vy);
-    this.audio.play("shoot", { volume: 0.6 });
   }
 
   fireEnemyBullet(x: number, y: number, vx: number, vy: number): void {
     this.eBullets.recycle(() => new Bullet("ebullet"))!.spawn(x, y, vx, vy);
-    this.audio.play("enemyShoot", { volume: 0.5 });
   }
 
   spawnEnemy(x: number, y: number): void {
+    if (this._live(this.enemies) >= MAX_ENEMIES) return;
     this.enemies.recycle(() => new Enemy(this))!.spawn(x, y);
+  }
+
+  playSound(name: string, volume = 1): void {
+    this.audio.play(name, { volume });
   }
 
   // ---- Loop ----
 
   override fixedUpdate(dt: number): void {
-    super.fixedUpdate(dt); // entities + camera + particles
+    super.fixedUpdate(dt);
     if (this.state !== "playing") return;
 
-    // Tilemap collisions.
-    this.tilemap.collide(this.player);
-    this.enemies.forEach((e) => e.alive && this.tilemap.collide(e));
-    this.pBullets.forEach((b) => {
-      if (b.alive && this.tilemap.collide(b)) {
-        this._spark(b.centerX, b.centerY);
-        b.kill();
-      }
-    });
-    this.eBullets.forEach((b) => {
-      if (b.alive && this.tilemap.collide(b)) b.kill();
-    });
+    if (this._hurtCd > 0) {
+      this._hurtCd = Math.max(0, this._hurtCd - dt);
+      if (this._hurtCd === 0) this.player.tint = 0xffffff;
+    }
 
-    // Player bullets → enemies / spawners.
+    // Player + bullets collide with terrain; flying enemies don't.
+    this.tilemap.collide(this.player);
+    this.player.updateGround();
+    this.pBullets.forEach((b) => b.alive && this.tilemap.collide(b) && b.kill());
+    this.eBullets.forEach((b) => b.alive && this.tilemap.collide(b) && b.kill());
+
     this.overlap(this.pBullets, this.enemies, (b, e) => {
       if (!b.alive || !e.alive) return;
       b.kill();
       e.kill();
-      this._explode(e.centerX, e.centerY, false);
+      this._explode(this.enemyGibs, e.centerX, e.centerY, 8, 0.5);
       this.score += SCORE_ENEMY;
     });
     this.overlap(this.pBullets, this.spawners, (b, s) => {
       const sp = s as Spawner;
       if (!b.alive || !sp.alive) return;
       b.kill();
-      this._spark(b.centerX, b.centerY);
       if (sp.damage()) {
-        this._explode(sp.centerX, sp.centerY, true);
+        this._explode(this.spawnerGibs, sp.centerX, sp.centerY, 14, 0.9);
         this.score += SCORE_SPAWNER;
       }
     });
-
-    // Enemy fire / contact → player.
     this.overlap(this.eBullets, this.player, (b) => {
       if (!b.alive) return;
       b.kill();
-      this._hurt(HIT_BY_BULLET);
+      this._hit();
     });
-    this.overlap(this.enemies, this.player, (e) => {
-      if (e.alive) this._hurt(HIT_BY_ENEMY);
-    });
+    this.overlap(this.enemies, this.player, (e) => e.alive && this._hit());
 
-    this.score = Math.max(0, this.score - dt * SCORE_DECAY);
-
-    if (this.player.hp <= 0) this._end("lost");
-    else if (this._liveSpawners() === 0) this._end("won");
+    this.score -= SCORE_DECAY * dt;
+    if (this.score <= 0) {
+      this.score = 0;
+      this._end("lost");
+    } else if (this._live(this.spawners) === 0) {
+      this._end("won");
+    }
   }
 
   override update(dt: number): void {
@@ -210,26 +239,46 @@ export class PlayState extends Scene implements Arena {
 
   // ---- Internal ----
 
-  private _explode(x: number, y: number, big: boolean): void {
-    this.explosions.x = x;
-    this.explosions.y = y;
-    this.explosions.explode(big ? 24 : 10);
-    this.audio.play("explode", { volume: big ? 0.8 : 0.5 });
+  private _gibs(texture: string, fw: number, fh: number, frames: number): Emitter {
+    const e = new Emitter(0, 0, () => {
+      const p = new Particle();
+      p.setTexture(texture, fw, fh);
+      p.frame = Math.floor(Math.random() * frames);
+      return p;
+    });
+    e.particleWidth = fw;
+    e.particleHeight = fh;
+    e.gravityY = GIB_GRAVITY;
+    e.speed = { min: 50, max: 210 };
+    e.life = { min: 0.5, max: 1.1 };
+    e.spin = { min: -8, max: 8 };
+    e.alphaStart = 1;
+    e.alphaEnd = 1;
+    e.scaleStart = 1;
+    e.scaleEnd = 1;
+    e.maxParticles = 240;
+    return e;
   }
 
-  private _spark(x: number, y: number): void {
-    this.sparks.x = x;
-    this.sparks.y = y;
-    this.sparks.explode(5);
+  private _explode(emitter: Emitter, x: number, y: number, n: number, vol: number): void {
+    emitter.x = x;
+    emitter.y = y;
+    emitter.explode(n);
+    this.audio.play("explode", { volume: vol });
   }
 
-  private _hurt(amount: number): void {
-    this.player.hp -= amount;
-    this.player.tint = 0xff8866; // brief tint until next hit/heal
+  private _hit(): void {
+    if (this._hurtCd > 0) return;
+    this.score -= SCORE_HIT;
+    this._hurtCd = HURT_IMMUNITY;
+    this.player.tint = 0xff6666; // flash
+    this.player.velocity.x = -this.player.facing * MAXVEL_X; // knockback
+    this.player.velocity.y = -120;
+    this.audio.play("hurt", { volume: 0.7 });
   }
 
-  private _liveSpawners(): number {
-    return this.spawners.children.filter((s) => s.alive).length;
+  private _live(group: Group): number {
+    return group.children.filter((c) => c.alive).length;
   }
 
   private _end(state: GameState): void {
@@ -250,13 +299,12 @@ export class PlayState extends Scene implements Arena {
     const left = cam.x - vw / 2;
     const top = cam.y - vh / 2;
 
-    this.hud.x = left + 4;
-    this.hud.y = top + 3;
+    this.hud.x = left + 3;
+    this.hud.y = top + 2;
     this.hud.setText(
-      `SCORE ${Math.floor(this.score)}   HP ${Math.max(0, Math.ceil(this.player.hp))}   SPAWNERS ${this._liveSpawners()}`,
+      `SCORE ${Math.floor(this.score)}   SPAWNERS ${this._live(this.spawners)}`,
     );
 
-    // Center the banner (if any) in the view.
     this.banner.x = cam.x - this.banner.width / 2;
     this.banner.y = cam.y - this.banner.height / 2;
   }
