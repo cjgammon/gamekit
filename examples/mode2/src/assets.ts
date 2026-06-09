@@ -20,9 +20,9 @@ const SHEETS: Array<{ name: string; url: string; frameWidth?: number; frameHeigh
   { name: "bullet", url: "/data/bullet.png", frameWidth: 8, frameHeight: 8 },
   { name: "ebullet", url: "/data/bot_bullet.png", frameWidth: 4, frameHeight: 4 },
   { name: "spawner", url: "/data/spawner.png", frameWidth: 24, frameHeight: 24 },
-  { name: "tiles", url: "/data/dirt.png", frameWidth: 8, frameHeight: 8 },
-  { name: "tiles_top", url: "/data/dirt_top.png", frameWidth: 8, frameHeight: 8 },
-  { name: "bg", url: "/data/tech_tiles.png", frameWidth: 8, frameHeight: 8 },
+  { name: "dirt", url: "/data/dirt.png", frameWidth: 8, frameHeight: 8 },
+  { name: "dirt_top", url: "/data/dirt_top.png", frameWidth: 8, frameHeight: 8 },
+  { name: "tech", url: "/data/tech_tiles.png", frameWidth: 8, frameHeight: 8 },
   { name: "gibs", url: "/data/gibs.png", frameWidth: 6, frameHeight: 6 },
   { name: "spawner_gibs", url: "/data/spawner_gibs.png", frameWidth: 12, frameHeight: 12 },
 ];
@@ -48,6 +48,8 @@ export async function loadAudio(): Promise<AudioManager> {
     { name: "hurt", url: "/data/hurt.mp3" },
     { name: "jump", url: "/data/jump.mp3" },
     { name: "jam", url: "/data/jam.mp3" },
+    { name: "count", url: "/data/countdown.mp3" },
+    { name: "mode", url: "/data/mode.mp3" },
   ]);
   return audio;
 }
