@@ -13,6 +13,7 @@ export declare abstract class GKSprite {
     protected _friction: number;
     protected _density: number;
     protected _noRotation: boolean;
+    protected _frictionAir: number;
     _pixi: any;
     _body: any;
     _game: any;

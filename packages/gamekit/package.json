@@ -1,7 +1,7 @@
 {
   "name": "gamekit",
   "version": "0.1.0",
-  "description": "A friendly game engine for kids learning to code — PixiJS rendering, Matter.js physics, and Socket.io multiplayer in one simple package",
+  "description": "A 2D multiplayer game engine for the web, written in TypeScript from scratch. Zero runtime dependencies, Flixel-inspired, WebGPU renderer.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,6 +10,26 @@
       "development": "./src/index.ts",
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./net": {
+      "development": "./src/net/index.ts",
+      "import": "./dist/net/index.js",
+      "types": "./dist/net/index.d.ts"
+    },
+    "./input": {
+      "development": "./src/input/index.ts",
+      "import": "./dist/input/index.js",
+      "types": "./dist/input/index.d.ts"
+    },
+    "./renderer": {
+      "development": "./src/render/index.ts",
+      "import": "./dist/render/index.js",
+      "types": "./dist/render/index.d.ts"
+    },
+    "./audio": {
+      "development": "./src/audio/index.ts",
+      "import": "./dist/audio/index.js",
+      "types": "./dist/audio/index.d.ts"
     }
   },
   "files": [
@@ -21,26 +41,20 @@
   },
   "keywords": [
     "game-engine",
-    "kids",
-    "learning",
-    "pixi",
-    "matter-js",
+    "2d",
     "multiplayer",
-    "socket.io",
-    "webgl",
-    "physics"
+    "webgpu",
+    "typescript",
+    "flixel",
+    "zero-dependency"
   ],
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "matter-js": "^0.19.0",
-    "pixi.js": "^7.4.0",
-    "socket.io-client": "^4.7.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/matter-js": "^0.20.2",
+    "@webgpu/types": "^0.1.70",
     "typescript": "^6.0.2"
   }
 }

@@ -1,0 +1,19 @@
+{
+  "name": "gamekit-mode2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Mode2 — the Mode demo using the original game's art and sound (fetched on demand).",
+  "scripts": {
+    "fetch-assets": "node scripts/fetch-assets.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "gamekit": "*"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

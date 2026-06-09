@@ -22,7 +22,7 @@ export declare class Network {
     /**
      * Create a new room (become host)
      */
-    createRoom(playerName: string): Promise<{
+    createRoom(playerName: string, requestedCode?: string): Promise<{
         code: string;
     }>;
     /**

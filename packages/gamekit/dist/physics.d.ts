@@ -42,6 +42,7 @@ export declare class Physics {
         friction?: number;
         density?: number;
         noRotation?: boolean;
+        frictionAir?: number;
     }): Matter.Body;
     /**
      * Create a circle physics body
@@ -52,5 +53,6 @@ export declare class Physics {
         friction?: number;
         density?: number;
         noRotation?: boolean;
+        frictionAir?: number;
     }): Matter.Body;
 }

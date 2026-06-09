@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mode — gamekit</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0c0c10;
+        color: #ddd;
+        font: 14px monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding-top: 16px;
+      }
+      #hud { min-height: 1.2em; }
+      canvas { background: #14141c; border: 1px solid #333; }
+    </style>
+  </head>
+  <body>
+    <div id="hud">starting…</div>
+    <canvas id="view"></canvas>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

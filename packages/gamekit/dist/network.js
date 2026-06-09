@@ -31,9 +31,14 @@ export class Network {
     /**
      * Create a new room (become host)
      */
-    async createRoom(playerName) {
+    async createRoom(playerName, requestedCode) {
         console.log(`\n🌐 [Network] Connecting to server: ${this.serverUrl}`);
-        console.log(`🌐 [Network] Creating room as '${playerName}'...`);
+        if (requestedCode) {
+            console.log(`🌐 [Network] Creating room '${requestedCode}' as '${playerName}'...`);
+        }
+        else {
+            console.log(`🌐 [Network] Creating room as '${playerName}'...`);
+        }
         // Connect to server
         this.socket = io(this.serverUrl);
         this.playerName = playerName;
@@ -64,8 +69,11 @@ export class Network {
                 console.error('❌ [Network] Failed to create room:', error.message);
                 reject(new Error(error.message));
             });
-            // Send createRoom request (server expects { name })
-            this.socket.emit('createRoom', { name: playerName });
+            // Send createRoom request (server expects { name, code? })
+            this.socket.emit('createRoom', {
+                name: playerName,
+                ...(requestedCode && { code: requestedCode })
+            });
         });
     }
     /**

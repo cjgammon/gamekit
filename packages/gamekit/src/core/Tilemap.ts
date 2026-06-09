@@ -1,0 +1,219 @@
+import { AABB } from "../math/AABB.js";
+import { Entity } from "./Entity.js";
+
+/** Per-tile visit callback: grid coords, tile value, and world-space top-left. */
+export type TileVisitor = (
+  col: number,
+  row: number,
+  index: number,
+  worldX: number,
+  worldY: number,
+) => void;
+
+/**
+ * A grid of tiles backed by a flat typed array — the level geometry primitive.
+ * Tile value `0` is empty; non-zero values index into a tileset (frame
+ * `value - 1`). The map's own `x`/`y` place its top-left in the world.
+ *
+ * Solid tiles collide with entities far more cheaply than one entity per tile:
+ * {@link collide} only tests the tiles overlapping the entity's AABB and
+ * separates it out as an immovable body. By default every non-zero tile is
+ * solid; override per index with {@link setTileCollision}.
+ *
+ * Pure data + math (no DOM): rendering is handled by the renderer, which walks
+ * the visible tiles via {@link forEachTileIn}.
+ */
+export class Tilemap extends Entity {
+  readonly cols: number;
+  readonly rows: number;
+  readonly tileWidth: number;
+  readonly tileHeight: number;
+  /** Flat row-major tile values (length `cols * rows`). */
+  readonly data: Uint16Array;
+
+  /** Tileset texture id the renderer resolves (empty → solid white quads). */
+  tilesetId = "";
+  /** Multiplicative tint for all tiles (0xRRGGBB). */
+  tint = 0xffffff;
+
+  /** Per-index solidity overrides; absent indices use the default rule. */
+  private readonly _solid = new Map<number, boolean>();
+  private readonly _tileAABB = new AABB();
+
+  constructor(
+    cols: number,
+    rows: number,
+    tileWidth: number,
+    tileHeight: number,
+    data?: ArrayLike<number>,
+  ) {
+    super(0, 0);
+    this.cols = cols;
+    this.rows = rows;
+    this.tileWidth = tileWidth;
+    this.tileHeight = tileHeight;
+    this.width = cols * tileWidth;
+    this.height = rows * tileHeight;
+    this.data = new Uint16Array(cols * rows);
+    if (data) this.data.set(data as ArrayLike<number>);
+    // Tiles are authored, not integrated — don't let it move/interpolate.
+    this.interpolate = false;
+  }
+
+  // ---- Grid access ----
+
+  /** True if `(col, row)` is inside the grid. */
+  inBounds(col: number, row: number): boolean {
+    return col >= 0 && col < this.cols && row >= 0 && row < this.rows;
+  }
+
+  /** Tile value at `(col, row)`, or 0 outside the grid. */
+  getTile(col: number, row: number): number {
+    if (!this.inBounds(col, row)) return 0;
+    return this.data[row * this.cols + col];
+  }
+
+  /** Set the tile value at `(col, row)` (no-op outside the grid). */
+  setTile(col: number, row: number, value: number): void {
+    if (!this.inBounds(col, row)) return;
+    this.data[row * this.cols + col] = value;
+  }
+
+  /** Fill the whole grid with `value`. */
+  fill(value: number): void {
+    this.data.fill(value);
+  }
+
+  /** Column containing world x. */
+  worldToCol(worldX: number): number {
+    return Math.floor((worldX - this.x) / this.tileWidth);
+  }
+
+  /** Row containing world y. */
+  worldToRow(worldY: number): number {
+    return Math.floor((worldY - this.y) / this.tileHeight);
+  }
+
+  /** Tile value at a world point (0 if empty/outside). */
+  getTileAtWorld(worldX: number, worldY: number): number {
+    return this.getTile(this.worldToCol(worldX), this.worldToRow(worldY));
+  }
+
+  // ---- Collision ----
+
+  /** Override whether a given tile index is solid. */
+  setTileCollision(index: number, solid: boolean): void {
+    this._solid.set(index, solid);
+  }
+
+  /** Whether a tile value collides. Default: any non-zero tile is solid. */
+  isSolid(index: number): boolean {
+    const override = this._solid.get(index);
+    if (override !== undefined) return override;
+    return index !== 0;
+  }
+
+  /**
+   * Separate `entity` out of any solid tiles it overlaps (tiles are immovable,
+   * so the entity absorbs the full correction and has its velocity zeroed on the
+   * contact axis). Only the tiles under the entity's AABB are tested.
+   *
+   * @returns true if the entity touched any solid tile.
+   */
+  collide(entity: Entity): boolean {
+    const b0 = entity.bounds;
+    const w = b0.width;
+    const h = b0.height;
+    // Tile range under the entity (clamped to the grid).
+    const minCol = Math.max(0, this.worldToCol(b0.left));
+    const maxCol = Math.min(this.cols - 1, this.worldToCol(b0.right));
+    const minRow = Math.max(0, this.worldToRow(b0.top));
+    const maxRow = Math.min(this.rows - 1, this.worldToRow(b0.bottom));
+
+    // Pre-step edges (from syncPrev) — used to decide which side the entity
+    // entered from. This makes resolution *swept*: a fast mover that penetrates
+    // deeply (past a tile's midline) still snaps back to the surface it crossed,
+    // instead of the minimum-translation vector flipping it out the far side
+    // (which would tunnel a falling body straight through a thin floor).
+    const prevTop = entity.prevY;
+    const prevBottom = entity.prevY + h;
+    const prevLeft = entity.prevX;
+    const prevRight = entity.prevX + w;
+    const vx = entity.velocity.x;
+    const vy = entity.velocity.y;
+
+    let hit = false;
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        if (!this.isSolid(this.getTile(col, row))) continue;
+        const tileX = this.x + col * this.tileWidth;
+        const tileY = this.y + row * this.tileHeight;
+        const tile = this._tileAABB.set(tileX, tileY, this.tileWidth, this.tileHeight);
+        const eb = entity.bounds; // refetch — entity may have moved
+        if (!eb.overlaps(tile)) continue;
+
+        const tileBottom = tileY + this.tileHeight;
+        const tileRight = tileX + this.tileWidth;
+
+        if (vy > 0 && prevBottom <= tileY) {
+          entity.y = tileY - h; // fell onto the tile's top
+          entity.velocity.y = 0;
+        } else if (vy < 0 && prevTop >= tileBottom) {
+          entity.y = tileBottom; // rose into the tile's underside
+          entity.velocity.y = 0;
+        } else if (vx > 0 && prevRight <= tileX) {
+          entity.x = tileX - w; // ran into the tile's left face
+          entity.velocity.x = 0;
+        } else if (vx < 0 && prevLeft >= tileRight) {
+          entity.x = tileRight; // ran into the tile's right face
+          entity.velocity.x = 0;
+        } else {
+          // Already overlapping at step start (resting/embedded) — fall back to
+          // minimum-translation separation.
+          const mtv = eb.penetration(tile);
+          if (mtv.x === 0 && mtv.y === 0) continue;
+          entity.x += mtv.x;
+          entity.y += mtv.y;
+          if (mtv.x !== 0) entity.velocity.x = 0;
+          if (mtv.y !== 0) entity.velocity.y = 0;
+        }
+        hit = true;
+      }
+    }
+    return hit;
+  }
+
+  // ---- Rendering support ----
+
+  /**
+   * Visit every non-empty tile whose cell intersects the world rectangle
+   * `[minX, maxX] × [minY, maxY]` — the renderer uses this to draw only the
+   * tiles in view.
+   */
+  forEachTileIn(
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number,
+    visit: TileVisitor,
+  ): void {
+    const minCol = Math.max(0, this.worldToCol(minX));
+    const maxCol = Math.min(this.cols - 1, this.worldToCol(maxX));
+    const minRow = Math.max(0, this.worldToRow(minY));
+    const maxRow = Math.min(this.rows - 1, this.worldToRow(maxY));
+
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        const index = this.data[row * this.cols + col];
+        if (index === 0) continue;
+        visit(
+          col,
+          row,
+          index,
+          this.x + col * this.tileWidth,
+          this.y + row * this.tileHeight,
+        );
+      }
+    }
+  }
+}
