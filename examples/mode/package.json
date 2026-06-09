@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "gamekit": "*"
+    "@cjgammon/gamekit": "*"
   },
   "devDependencies": {
     "vite": "^5.4.0"

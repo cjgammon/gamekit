@@ -7,7 +7,7 @@ import {
   type Scene,
   type SnapshotEntity,
   type Transport,
-} from "gamekit";
+} from "@cjgammon/gamekit";
 import { PlayerEntity } from "../game/PlayerEntity.js";
 
 interface SyncedEntity {

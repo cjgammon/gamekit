@@ -3,9 +3,9 @@
 // original used a system font, not a sheet.
 //
 // Original media © Adam Saltsman (Adam Atomic): https://github.com/AdamAtomic/Mode
-import type { RenderGame } from "gamekit/renderer";
-import { AudioManager } from "gamekit/audio";
-import { BitmapFont } from "gamekit";
+import type { RenderGame } from "@cjgammon/gamekit/renderer";
+import { AudioManager } from "@cjgammon/gamekit/audio";
+import { BitmapFont } from "@cjgammon/gamekit";
 
 export const FONT_W = 8;
 export const FONT_H = 12;

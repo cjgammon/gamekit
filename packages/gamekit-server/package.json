@@ -1,15 +1,24 @@
 {
-  "name": "gamekit-server",
+  "name": "@cjgammon/gamekit-server",
   "version": "0.1.0",
   "description": "Authoritative multiplayer server for gamekit — headless fixed-rate loop, from-scratch WebSocket transport, snapshot broadcast. Zero runtime dependencies.",
   "type": "module",
+  "license": "MIT",
+  "author": "CJ Gammon",
+  "homepage": "https://github.com/cjgammon/gamekit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjgammon/gamekit.git",
+    "directory": "packages/gamekit-server"
+  },
+  "bugs": "https://github.com/cjgammon/gamekit/issues",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "development": "./src/index.ts",
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -17,7 +26,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "prepack": "tsc"
   },
   "keywords": [
     "gamekit",
@@ -27,12 +37,14 @@
     "authoritative",
     "zero-dependency"
   ],
-  "license": "MIT",
   "engines": {
     "node": ">=18"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
-    "gamekit": "workspace:*"
+    "@cjgammon/gamekit": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

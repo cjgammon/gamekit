@@ -1,4 +1,4 @@
-import { type Entity, type NetId, type Scene, type Transport } from "gamekit";
+import { type Entity, type NetId, type Scene, type Transport } from "@cjgammon/gamekit";
 /**
  * Owns connection and entity lifecycle, transport-agnostic. Each connection
  * gets a player entity spawned into the scene; the server is authoritative —

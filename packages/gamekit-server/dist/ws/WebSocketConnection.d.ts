@@ -1,5 +1,5 @@
 import type { Socket } from "node:net";
-import { Signal } from "gamekit";
+import { Signal } from "@cjgammon/gamekit";
 /**
  * One client connection over a raw TCP socket, speaking RFC 6455. Owns the read
  * accumulator (a single WS message may span multiple `data` events, and one

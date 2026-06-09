@@ -5,7 +5,7 @@ import {
   PLAYER_SPEED,
   simulatePlayer,
   type InputState,
-} from "gamekit";
+} from "@cjgammon/gamekit";
 
 /**
  * Server-side player. Its latest input (set by NetServer) drives the shared,

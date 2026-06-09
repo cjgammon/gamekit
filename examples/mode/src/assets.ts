@@ -1,8 +1,8 @@
 // Procedural assets — every texture, the bitmap font, and all SFX are generated
 // at runtime, so the project ships no binary asset files.
-import type { RenderGame } from "gamekit/renderer";
-import { AudioManager } from "gamekit/audio";
-import { BitmapFont } from "gamekit";
+import type { RenderGame } from "@cjgammon/gamekit/renderer";
+import { AudioManager } from "@cjgammon/gamekit/audio";
+import { BitmapFont } from "@cjgammon/gamekit";
 
 export const TILE = 16;
 export const FONT_W = 8;

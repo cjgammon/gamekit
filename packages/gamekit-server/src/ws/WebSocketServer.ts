@@ -1,6 +1,6 @@
 import { createServer, type Server, type IncomingMessage } from "node:http";
 import type { Socket } from "node:net";
-import { Signal } from "gamekit";
+import { Signal } from "@cjgammon/gamekit";
 import { buildHandshakeResponse, computeAcceptKey } from "./handshake.js";
 import { WebSocketConnection } from "./WebSocketConnection.js";
 

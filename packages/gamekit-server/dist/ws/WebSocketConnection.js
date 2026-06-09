@@ -1,4 +1,4 @@
-import { Signal } from "gamekit";
+import { Signal } from "@cjgammon/gamekit";
 import { Opcode, encodeFrame, parseFrames, } from "./frame.js";
 /** Drop a connection whose outbound kernel buffer exceeds this (slow client). */
 const BACKPRESSURE_CAP = 1 << 20; // 1 MB

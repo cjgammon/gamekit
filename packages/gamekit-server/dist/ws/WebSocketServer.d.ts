@@ -1,4 +1,4 @@
-import { Signal } from "gamekit";
+import { Signal } from "@cjgammon/gamekit";
 import { WebSocketConnection } from "./WebSocketConnection.js";
 /**
  * A from-scratch WebSocket server over `node:http`. Performs the RFC 6455

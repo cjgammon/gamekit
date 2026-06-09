@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { Signal } from "gamekit";
+import { Signal } from "@cjgammon/gamekit";
 import { buildHandshakeResponse, computeAcceptKey } from "./handshake.js";
 import { WebSocketConnection } from "./WebSocketConnection.js";
 /**

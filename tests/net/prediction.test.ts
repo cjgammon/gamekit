@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { PLAYER_SPEED, type InputState } from "gamekit";
+import { PLAYER_SPEED, type InputState } from "@cjgammon/gamekit";
 import { createHarness } from "./harness.js";
 
 const RIGHT: InputState = { up: false, down: false, left: false, right: true };

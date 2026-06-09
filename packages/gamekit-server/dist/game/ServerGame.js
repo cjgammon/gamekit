@@ -1,4 +1,4 @@
-import { Game, Scene } from "gamekit";
+import { Game, Scene } from "@cjgammon/gamekit";
 import { NetServer } from "../net/NetServer.js";
 /**
  * Headless authoritative game. Reuses the core fixed-timestep loop: `start()`

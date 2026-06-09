@@ -8,7 +8,7 @@ import {
   simulatePlayer,
   type SimulateFn,
   type Transport,
-} from "gamekit";
+} from "@cjgammon/gamekit";
 
 /** Matches the server's PlayerEntity simulation — for client prediction tests. */
 export const playerSim: SimulateFn = (e, input, dt, ctx) => {

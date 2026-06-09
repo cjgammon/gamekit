@@ -9,10 +9,10 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "types": ["@webgpu/types"],
     "paths": {
-      "gamekit": ["../../packages/gamekit/src/index.ts"],
-      "gamekit/renderer": ["../../packages/gamekit/src/render/index.ts"],
-      "gamekit/input": ["../../packages/gamekit/src/input/index.ts"],
-      "gamekit/audio": ["../../packages/gamekit/src/audio/index.ts"]
+      "@cjgammon/gamekit": ["../../packages/gamekit/src/index.ts"],
+      "@cjgammon/gamekit/renderer": ["../../packages/gamekit/src/render/index.ts"],
+      "@cjgammon/gamekit/input": ["../../packages/gamekit/src/input/index.ts"],
+      "@cjgammon/gamekit/audio": ["../../packages/gamekit/src/audio/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts"]

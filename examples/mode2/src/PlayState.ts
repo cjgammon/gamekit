@@ -7,9 +7,9 @@ import {
   Text,
   Tilemap,
   type BitmapFont,
-} from "gamekit";
-import type { InputManager } from "gamekit/input";
-import type { AudioManager } from "gamekit/audio";
+} from "@cjgammon/gamekit";
+import type { InputManager } from "@cjgammon/gamekit/input";
+import type { AudioManager } from "@cjgammon/gamekit/audio";
 import { Bullet, Enemy, Player, Spawner, type Arena } from "./entities";
 import {
   COLS,

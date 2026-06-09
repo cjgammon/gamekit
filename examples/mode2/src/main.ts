@@ -1,5 +1,5 @@
-import { RenderGame } from "gamekit/renderer";
-import { InputManager } from "gamekit/input";
+import { RenderGame } from "@cjgammon/gamekit/renderer";
+import { InputManager } from "@cjgammon/gamekit/input";
 import { loadAssets, loadAudio } from "./assets";
 import { PlayState } from "./PlayState";
 

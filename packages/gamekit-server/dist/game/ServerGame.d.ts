@@ -1,4 +1,4 @@
-import { Game, Scene, type GameConfig, type Transport } from "gamekit";
+import { Game, Scene, type GameConfig, type Transport } from "@cjgammon/gamekit";
 import { NetServer } from "../net/NetServer.js";
 export interface ServerGameOptions {
     /** Injectable clock (ms). Defaults to Date.now; tests pass a fake clock. */

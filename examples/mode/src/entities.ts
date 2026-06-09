@@ -1,5 +1,5 @@
-import { Sprite, type Tilemap } from "gamekit";
-import type { InputManager } from "gamekit/input";
+import { Sprite, type Tilemap } from "@cjgammon/gamekit";
+import type { InputManager } from "@cjgammon/gamekit/input";
 import {
   BULLET_LIFE,
   BULLET_SPEED,

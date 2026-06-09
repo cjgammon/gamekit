@@ -18,6 +18,9 @@
     "demo:mode2": "vite examples/mode2",
     "test:e2e": "bun test tests/",
     "test:e2e:watch": "bun test --watch tests/",
-    "test:e2e:debug": "bun test --bail tests/"
+    "test:e2e:debug": "bun test --bail tests/",
+    "version:packages": "npm version --no-git-tag-version -w @cjgammon/gamekit -w @cjgammon/gamekit-server",
+    "release:dry": "npm run build && npm publish --dry-run -w @cjgammon/gamekit -w @cjgammon/gamekit-server",
+    "release": "npm run build && npm publish -w @cjgammon/gamekit && npm publish -w @cjgammon/gamekit-server"
   }
 }

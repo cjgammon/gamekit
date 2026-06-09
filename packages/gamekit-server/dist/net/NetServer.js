@@ -1,4 +1,4 @@
-import { decodeClientMessage, encode, } from "gamekit";
+import { decodeClientMessage, encode, } from "@cjgammon/gamekit";
 import { PlayerEntity } from "../game/PlayerEntity.js";
 /**
  * Owns connection and entity lifecycle, transport-agnostic. Each connection

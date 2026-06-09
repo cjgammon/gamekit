@@ -1,6 +1,6 @@
-import { Emitter, Group, Scene, Text, Tilemap, type BitmapFont } from "gamekit";
-import type { InputManager } from "gamekit/input";
-import type { AudioManager } from "gamekit/audio";
+import { Emitter, Group, Scene, Text, Tilemap, type BitmapFont } from "@cjgammon/gamekit";
+import type { InputManager } from "@cjgammon/gamekit/input";
+import type { AudioManager } from "@cjgammon/gamekit/audio";
 import { Bullet, Enemy, Player, Spawner, type Arena } from "./entities";
 import {
   ARENA_H,

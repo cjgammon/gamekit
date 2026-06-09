@@ -33,14 +33,27 @@ procedurally-generated art and sound, so it works right after `npm install`.
 Prefer something tiny? `npm run demo:render` builds the engine and serves a
 minimal "sprite + camera + input" example on http://localhost:8080.
 
+## Using it in your own project
+
+The engine is published to npm as scoped packages:
+
+```bash
+npm install @cjgammon/gamekit            # the engine (browser)
+npm install @cjgammon/gamekit-server     # optional: the multiplayer server (Node)
+```
+
+Then import the core from `@cjgammon/gamekit`, and the browser-only pieces from
+its subpaths (`/renderer`, `/input`, `/audio`, `/net`). You'll want a bundler
+(Vite, etc.) and a WebGPU-capable browser.
+
 ## Your first game (the smallest example)
 
 The fastest way to start is to copy `examples/mode/` and edit it. But here's the
 whole idea in ~15 lines — a box that slides across the screen:
 
 ```ts
-import { Entity, Scene } from "gamekit";
-import { RenderGame } from "gamekit/renderer";
+import { Entity, Scene } from "@cjgammon/gamekit";
+import { RenderGame } from "@cjgammon/gamekit/renderer";
 
 class HelloScene extends Scene {
   create() {
@@ -71,15 +84,15 @@ Core ideas:
 ## What's in the box
 
 ```
-packages/gamekit/         the engine
-  gamekit                 core: Scene, Entity, Sprite, Group, Tilemap,
-                          Emitter, Camera, Rng, math, ...
-  gamekit/renderer        WebGPU renderer + RenderGame  (browser only)
-  gamekit/input           keyboard / mouse / gamepad     (browser only)
-  gamekit/audio           sound effects + music          (browser only)
-  gamekit/net             multiplayer client transport
-packages/gamekit-server/  authoritative multiplayer server (Node + WebSocket)
-examples/                 runnable demos (see below)
+packages/gamekit/                  the engine — published as @cjgammon/gamekit
+  @cjgammon/gamekit                core: Scene, Entity, Sprite, Group, Tilemap,
+                                   Emitter, Camera, Rng, math, ...
+  @cjgammon/gamekit/renderer       WebGPU renderer + RenderGame  (browser only)
+  @cjgammon/gamekit/input          keyboard / mouse / gamepad     (browser only)
+  @cjgammon/gamekit/audio          sound effects + music          (browser only)
+  @cjgammon/gamekit/net            multiplayer client transport
+packages/gamekit-server/           @cjgammon/gamekit-server (Node + WebSocket)
+examples/                          runnable demos (see below)
 ```
 
 The browser-only pieces live in subpaths so the multiplayer server can import
@@ -108,6 +121,25 @@ npm run demo:mode    # play the demo
 - **`ROADMAP.md`** — what's built and what's planned.
 - **`CLAUDE.md`** — architecture and conventions (the game loop, coordinate model, multiplayer model).
 
+## Publishing (maintainers)
+
+Both packages publish to npm under the `@cjgammon` scope. Each ships only its
+`dist/` + `LICENSE` (built automatically via a `prepack` step) and is marked
+`publishConfig.access = public`. Publish **both from the repo root**:
+
+```bash
+npm login                          # once
+npm run version:packages patch     # bump both versions together (patch|minor|major)
+npm run release:dry                # build + dry-run publish both — preview the tarballs
+npm run release                    # build + publish: engine first, then the server
+```
+
+`@cjgammon/gamekit-server` depends on `@cjgammon/gamekit`, so `release` publishes
+the engine first. Keep the two at the same version (the server pins
+`@cjgammon/gamekit@^0.1.x`); a **minor/major** bump of the engine also needs that
+range updated in `packages/gamekit-server/package.json`.
+
 ## License
 
-MIT.
+MIT — see [LICENSE](LICENSE).
+

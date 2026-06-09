@@ -1,5 +1,5 @@
 import type { Socket } from "node:net";
-import { Signal } from "gamekit";
+import { Signal } from "@cjgammon/gamekit";
 import {
   Opcode,
   encodeFrame,

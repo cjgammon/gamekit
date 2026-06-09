@@ -1,4 +1,4 @@
-import type { Signal, Transport } from "gamekit";
+import type { Signal, Transport } from "@cjgammon/gamekit";
 import type { WebSocketConnection } from "../ws/WebSocketConnection.js";
 
 /** Adapts a {@link WebSocketConnection} to the shared {@link Transport}. */

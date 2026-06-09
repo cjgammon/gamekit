@@ -1,4 +1,4 @@
-import { Entity, type InputState } from "gamekit";
+import { Entity, type InputState } from "@cjgammon/gamekit";
 /**
  * Server-side player. Its latest input (set by NetServer) drives the shared,
  * deterministic {@link simulatePlayer} step in the fixed tick — the same step
