@@ -74,6 +74,11 @@ export class NetClient {
   tickRate = 20;
   /** Last input seq the server acked. */
   lastSeq = 0;
+  /** Latest authoritative game state from the server (score, etc.), or
+   *  undefined until the server sends one. Cast it to your own shape. */
+  state: unknown = undefined;
+  /** Fires whenever a new `state` arrives in a snapshot. */
+  readonly onState = new Signal<unknown>();
 
   private readonly _transport: Transport;
   private readonly _factory: EntityFactory;
@@ -199,6 +204,10 @@ export class NetClient {
       this.interpolator.push(msg);
       this._reconcileMembership(msg);
       if (this._simulate) this._reconcileLocal(msg);
+      if (msg.state !== undefined) {
+        this.state = msg.state;
+        this.onState.emit(msg.state);
+      }
     }
   }
 

@@ -6,14 +6,19 @@ import { PlayerEntity } from "../game/PlayerEntity.js";
  * input only sets the player's latest intent, which its `fixedUpdate` consumes.
  */
 export class NetServer {
-    constructor(_scene, _tickRate, _worldW, _worldH) {
+    constructor(_scene, _tickRate, _worldW, _worldH, 
+    /** Builds the entity each connection controls. Defaults to a free-moving
+     *  PlayerEntity; supply your own to make paddles, ships, etc. */
+    _createPlayer = (i) => new PlayerEntity(50 + ((i.id * 60) % i.worldW), 50, i.worldW, i.worldH)) {
         this._scene = _scene;
         this._tickRate = _tickRate;
         this._worldW = _worldW;
         this._worldH = _worldH;
+        this._createPlayer = _createPlayer;
         this._clients = new Map();
         this._synced = new Map();
         this._nextId = 1;
+        this._state = undefined;
     }
     get clientCount() {
         return this._clients.size;
@@ -33,10 +38,22 @@ export class NetServer {
         rec.entity.kill();
         this._synced.delete(id);
     }
+    /** Snapshot of authoritative game state (score, round, …) broadcast to every
+     *  client. Pass any JSON-serializable value; clients read it as `state`. */
+    setState(state) {
+        this._state = state;
+    }
     /** Register a new client connection: spawn its player and greet it. */
     addConnection(transport, now) {
-        const entity = new PlayerEntity(50 + ((this._nextId * 60) % this._worldW), 50, this._worldW, this._worldH);
-        const id = this.spawn("player", entity);
+        const id = this._nextId++;
+        const entity = this._createPlayer({
+            id,
+            index: this._clients.size,
+            worldW: this._worldW,
+            worldH: this._worldH,
+        });
+        this._scene.add(entity);
+        this._synced.set(id, { entity, type: "player" });
         const rec = { id, transport, entity, queue: [], lastSeq: 0 };
         this._clients.set(id, rec);
         transport.onMessage.add((data) => this._onMessage(rec, data));
@@ -73,6 +90,7 @@ export class NetServer {
                 t: now,
                 lastSeq: rec.lastSeq,
                 ents,
+                state: this._state,
             }));
         }
     }

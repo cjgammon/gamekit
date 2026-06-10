@@ -11,6 +11,11 @@ export { ServerGame } from "./game/ServerGame.js";
 export type { ServerGameOptions } from "./game/ServerGame.js";
 export { PlayerEntity } from "./game/PlayerEntity.js";
 export { NetServer } from "./net/NetServer.js";
+export type {
+  PlayerFactory,
+  PlayerInfo,
+  Controllable,
+} from "./net/NetServer.js";
 export { ServerTransport } from "./net/ServerTransport.js";
 export { WebSocketServer } from "./ws/WebSocketServer.js";
 export { WebSocketConnection } from "./ws/WebSocketConnection.js";

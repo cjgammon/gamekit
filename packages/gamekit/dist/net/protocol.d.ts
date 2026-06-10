@@ -58,6 +58,10 @@ export interface SnapshotMessage {
      *  reconciliation — the client replays inputs newer than this. */
     lastSeq: number;
     ents: SnapshotEntity[];
+    /** Optional authoritative game state (score, round, etc.) the server wants
+     *  every client to see. Transforms travel in `ents`; this is for everything
+     *  else. Omitted when the server never sets it. */
+    state?: unknown;
 }
 export type ServerMessage = WelcomeMessage | SnapshotMessage;
 export declare function encode(msg: ClientMessage | ServerMessage): string;

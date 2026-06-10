@@ -43,6 +43,11 @@ export declare class NetClient {
     tickRate: number;
     /** Last input seq the server acked. */
     lastSeq: number;
+    /** Latest authoritative game state from the server (score, etc.), or
+     *  undefined until the server sends one. Cast it to your own shape. */
+    state: unknown;
+    /** Fires whenever a new `state` arrives in a snapshot. */
+    readonly onState: Signal<unknown>;
     private readonly _transport;
     private readonly _factory;
     private readonly _onSpawn;

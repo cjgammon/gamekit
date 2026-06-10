@@ -25,7 +25,7 @@ export class ServerGame extends Game {
         this._now = options.now ?? Date.now;
         this.scene = new Scene();
         this.switchScene(this.scene);
-        this.net = new NetServer(this.scene, this.tickRate, this.width, this.height);
+        this.net = new NetServer(this.scene, this.tickRate, this.width, this.height, options.createPlayer);
     }
     /** Attach a transport (real WS connection or in-memory pair) as a client. */
     accept(transport) {

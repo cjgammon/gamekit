@@ -26,6 +26,11 @@ export class NetClient {
         this.tickRate = 20;
         /** Last input seq the server acked. */
         this.lastSeq = 0;
+        /** Latest authoritative game state from the server (score, etc.), or
+         *  undefined until the server sends one. Cast it to your own shape. */
+        this.state = undefined;
+        /** Fires whenever a new `state` arrives in a snapshot. */
+        this.onState = new Signal();
         this._connected = false;
         this._seq = 0;
         this._clockOffset = 0; // localNow - serverTime
@@ -138,6 +143,10 @@ export class NetClient {
             this._reconcileMembership(msg);
             if (this._simulate)
                 this._reconcileLocal(msg);
+            if (msg.state !== undefined) {
+                this.state = msg.state;
+                this.onState.emit(msg.state);
+            }
         }
     }
     _reconcileMembership(msg) {
