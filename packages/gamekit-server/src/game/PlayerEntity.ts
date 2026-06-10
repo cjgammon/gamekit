@@ -4,6 +4,7 @@ import {
   PLAYER_SIZE,
   PLAYER_SPEED,
   simulatePlayer,
+  type Input,
   type InputState,
 } from "@cjgammon/gamekit";
 
@@ -13,7 +14,8 @@ import {
  * the client uses for prediction, so the two stay in agreement.
  */
 export class PlayerEntity extends Entity {
-  input: InputState = { ...EMPTY_INPUT };
+  /** Latest input from the network (the default 4-button shape). */
+  input: Input = { ...EMPTY_INPUT };
 
   constructor(
     x: number,
@@ -27,7 +29,7 @@ export class PlayerEntity extends Entity {
   }
 
   override fixedUpdate(_dt: number): void {
-    simulatePlayer(this, this.input, _dt, {
+    simulatePlayer(this, this.input as InputState, _dt, {
       speed: PLAYER_SPEED,
       worldW: this._worldW,
       worldH: this._worldH,

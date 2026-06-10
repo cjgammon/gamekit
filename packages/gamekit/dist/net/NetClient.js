@@ -7,6 +7,12 @@ const INTERPOLATION_DELAY = 100;
  *  (a stalled or dead connection); bounds memory at the cost of dropping the
  *  oldest unacked inputs, which a healthy connection never hits. */
 const MAX_INPUT_HISTORY = 256;
+/** Shallow-copy a flat input object so stored history isn't mutated later. */
+function cloneInput(input) {
+    return input && typeof input === "object"
+        ? { ...input }
+        : input;
+}
 /**
  * Client end of the protocol. Receives snapshots, reconciles the set of live
  * entities (spawn unknown ids via a factory, despawn ids absent from a
@@ -26,6 +32,11 @@ export class NetClient {
         this.tickRate = 20;
         /** Last input seq the server acked. */
         this.lastSeq = 0;
+        /** Latest authoritative game state from the server (score, etc.), or
+         *  undefined until the server sends one. Cast it to your own shape. */
+        this.state = undefined;
+        /** Fires whenever a new `state` arrives in a snapshot. */
+        this.onState = new Signal();
         this._connected = false;
         this._seq = 0;
         this._clockOffset = 0; // localNow - serverTime
@@ -53,9 +64,11 @@ export class NetClient {
     isLocal(id) {
         return id === this.you;
     }
-    /** Set the latest local input (polled by the app, e.g. on key change). */
+    /** Set the latest local input (polled by the app, e.g. on key change). Input
+     *  is any JSON value; a flat object is shallow-copied so later mutation of
+     *  your own object doesn't corrupt the prediction history. */
     setLocalInput(input) {
-        this._localInput = { ...input };
+        this._localInput = cloneInput(input);
     }
     /** Send a one-off input (2a path / no prediction). */
     sendInput(input) {
@@ -78,7 +91,7 @@ export class NetClient {
             return;
         const input = this._localInput;
         const seq = this._sendInput(input);
-        this._history.push({ seq, input: { ...input } });
+        this._history.push({ seq, input: cloneInput(input) });
         if (this._history.length > MAX_INPUT_HISTORY)
             this._history.shift();
         if (this._localEntity) {
@@ -138,14 +151,19 @@ export class NetClient {
             this._reconcileMembership(msg);
             if (this._simulate)
                 this._reconcileLocal(msg);
+            if (msg.state !== undefined) {
+                this.state = msg.state;
+                this.onState.emit(msg.state);
+            }
         }
     }
     _reconcileMembership(msg) {
         const present = new Set();
         for (const e of msg.ents) {
             present.add(e.id);
-            if (!this.entities.has(e.id)) {
-                const entity = this._factory(e.t);
+            let entity = this.entities.get(e.id);
+            if (!entity) {
+                entity = this._factory(e.t);
                 // Transforms are authored by interpolation/prediction, not by the
                 // entity's own motion integration — keep it passive in the scene, and
                 // skip render interpolation (the net layer already smooths it).
@@ -155,6 +173,11 @@ export class NetClient {
                 if (e.id === this.you)
                     this._localEntity = entity;
                 this._onSpawn(e.id, entity);
+            }
+            // Deliver the per-entity payload (latest value, not interpolated).
+            if (e.s !== undefined) {
+                const recv = entity;
+                recv.applyNetState?.(e.s);
             }
         }
         for (const [id, entity] of this.entities) {

@@ -9,6 +9,7 @@ export class PlayerEntity extends Entity {
         super(x, y);
         this._worldW = _worldW;
         this._worldH = _worldH;
+        /** Latest input from the network (the default 4-button shape). */
         this.input = { ...EMPTY_INPUT };
         this.width = PLAYER_SIZE;
         this.height = PLAYER_SIZE;

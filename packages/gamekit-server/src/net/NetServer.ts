@@ -2,7 +2,7 @@ import {
   decodeClientMessage,
   encode,
   type Entity,
-  type InputState,
+  type Input,
   type NetId,
   type Scene,
   type SnapshotEntity,
@@ -15,12 +15,37 @@ interface SyncedEntity {
   type: string;
 }
 
+/** An entity a connection drives: the server writes its consumed input here. */
+export interface Controllable extends Entity {
+  input: Input;
+}
+
+/** Implement on any synced entity to attach a custom per-entity payload
+ *  (health, frame, facing, …) to each snapshot, alongside its transform. */
+export interface Syncable {
+  netState(): unknown;
+}
+
+/** Context handed to a {@link PlayerFactory} when a client connects. */
+export interface PlayerInfo {
+  /** Stable NetId assigned to this player's entity. */
+  id: NetId;
+  /** 0-based connection order (0 = first player, 1 = second, ...). */
+  index: number;
+  worldW: number;
+  worldH: number;
+}
+
+/** Builds the entity a connecting client controls. Override the default
+ *  (a free-moving {@link PlayerEntity}) to make paddles, ships, etc. */
+export type PlayerFactory = (info: PlayerInfo) => Controllable;
+
 interface ClientRecord {
   id: NetId;
   transport: Transport;
-  entity: PlayerEntity;
+  entity: Controllable;
   /** Inputs received but not yet consumed (one is consumed per tick). */
-  queue: Array<{ seq: number; input: InputState }>;
+  queue: Array<{ seq: number; input: Input }>;
   /** Seq of the last input actually consumed (echoed to the client). */
   lastSeq: number;
 }
@@ -34,12 +59,22 @@ export class NetServer {
   private readonly _clients = new Map<NetId, ClientRecord>();
   private readonly _synced = new Map<NetId, SyncedEntity>();
   private _nextId: NetId = 1;
+  private _state: unknown = undefined;
 
   constructor(
     private readonly _scene: Scene,
     private readonly _tickRate: number,
     private readonly _worldW: number,
     private readonly _worldH: number,
+    /** Builds the entity each connection controls. Defaults to a free-moving
+     *  PlayerEntity; supply your own to make paddles, ships, etc. */
+    private readonly _createPlayer: PlayerFactory = (i) =>
+      new PlayerEntity(
+        50 + ((i.id * 60) % i.worldW),
+        50,
+        i.worldW,
+        i.worldH,
+      ),
   ) {}
 
   get clientCount(): number {
@@ -62,15 +97,23 @@ export class NetServer {
     this._synced.delete(id);
   }
 
+  /** Snapshot of authoritative game state (score, round, …) broadcast to every
+   *  client. Pass any JSON-serializable value; clients read it as `state`. */
+  setState(state: unknown): void {
+    this._state = state;
+  }
+
   /** Register a new client connection: spawn its player and greet it. */
   addConnection(transport: Transport, now: number): void {
-    const entity = new PlayerEntity(
-      50 + ((this._nextId * 60) % this._worldW),
-      50,
-      this._worldW,
-      this._worldH,
-    );
-    const id = this.spawn("player", entity);
+    const id = this._nextId++;
+    const entity = this._createPlayer({
+      id,
+      index: this._clients.size,
+      worldW: this._worldW,
+      worldH: this._worldH,
+    });
+    this._scene.add(entity);
+    this._synced.set(id, { entity, type: "player" });
     const rec: ClientRecord = { id, transport, entity, queue: [], lastSeq: 0 };
     this._clients.set(id, rec);
 
@@ -114,6 +157,7 @@ export class NetServer {
           t: now,
           lastSeq: rec.lastSeq,
           ents,
+          state: this._state,
         }),
       );
     }
@@ -141,7 +185,17 @@ export class NetServer {
     const out: SnapshotEntity[] = [];
     for (const [id, { entity, type }] of this._synced) {
       if (!entity.alive) continue;
-      out.push({ id, t: type, x: entity.x, y: entity.y, r: entity.rotation });
+      const e: SnapshotEntity = {
+        id,
+        t: type,
+        x: entity.x,
+        y: entity.y,
+        r: entity.rotation,
+      };
+      // Opt-in per-entity payload: include it only if the entity defines one.
+      const sync = entity as Partial<Syncable>;
+      if (typeof sync.netState === "function") e.s = sync.netState();
+      out.push(e);
     }
     return out;
   }

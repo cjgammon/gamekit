@@ -5,20 +5,52 @@
     "": {
       "name": "gamekit-workspace",
     },
-    "examples/test": {
-      "name": "gamekit-example-test",
+    "examples/mode": {
+      "name": "gamekit-mode",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cjgammon/gamekit": "*",
+      },
+      "devDependencies": {
+        "vite": "^5.4.0",
+      },
+    },
+    "examples/mode2": {
+      "name": "gamekit-mode2",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cjgammon/gamekit": "*",
+      },
+      "devDependencies": {
+        "vite": "^5.4.0",
+      },
+    },
+    "examples/multiplayer": {
+      "name": "multiplayer",
       "version": "1.0.0",
       "dependencies": {
-        "gamekit": "*",
-        "gamekit-server": "*",
+        "@cjgammon/gamekit": "*",
+        "@cjgammon/gamekit-server": "*",
       },
       "devDependencies": {
         "concurrently": "^8.2.0",
-        "vite": "^5.0.0",
+        "vite": "^5.4.21",
+      },
+    },
+    "examples/pong": {
+      "name": "pong",
+      "version": "1.0.0",
+      "dependencies": {
+        "@cjgammon/gamekit": "*",
+        "@cjgammon/gamekit-server": "*",
+      },
+      "devDependencies": {
+        "concurrently": "^8.2.0",
+        "vite": "^5.4.21",
       },
     },
     "packages/gamekit": {
-      "name": "gamekit",
+      "name": "@cjgammon/gamekit",
       "version": "0.1.0",
       "devDependencies": {
         "@webgpu/types": "^0.1.70",
@@ -26,10 +58,10 @@
       },
     },
     "packages/gamekit-server": {
-      "name": "gamekit-server",
+      "name": "@cjgammon/gamekit-server",
       "version": "0.1.0",
       "dependencies": {
-        "gamekit": "workspace:*",
+        "@cjgammon/gamekit": "^0.1.0",
       },
       "devDependencies": {
         "@types/node": "^20.0.0",
@@ -39,6 +71,10 @@
   },
   "packages": {
     "@babel/runtime": ["@babel/runtime@7.29.2", "", {}, "sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g=="],
+
+    "@cjgammon/gamekit": ["@cjgammon/gamekit@workspace:packages/gamekit"],
+
+    "@cjgammon/gamekit-server": ["@cjgammon/gamekit-server@workspace:packages/gamekit-server"],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.21.5", "", { "os": "aix", "cpu": "ppc64" }, "sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ=="],
 
@@ -166,11 +202,9 @@
 
     "fsevents": ["fsevents@2.3.3", "", { "os": "darwin" }, "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="],
 
-    "gamekit": ["gamekit@workspace:packages/gamekit"],
+    "gamekit-mode": ["gamekit-mode@workspace:examples/mode"],
 
-    "gamekit-example-test": ["gamekit-example-test@workspace:examples/test"],
-
-    "gamekit-server": ["gamekit-server@workspace:packages/gamekit-server"],
+    "gamekit-mode2": ["gamekit-mode2@workspace:examples/mode2"],
 
     "get-caller-file": ["get-caller-file@2.0.5", "", {}, "sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg=="],
 
@@ -180,9 +214,13 @@
 
     "lodash": ["lodash@4.18.1", "", {}, "sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q=="],
 
+    "multiplayer": ["multiplayer@workspace:examples/multiplayer"],
+
     "nanoid": ["nanoid@3.3.11", "", { "bin": "bin/nanoid.cjs" }, "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w=="],
 
     "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
+
+    "pong": ["pong@workspace:examples/pong"],
 
     "postcss": ["postcss@8.5.9", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-7a70Nsot+EMX9fFU3064K/kdHWZqGVY+BADLyXc8Dfv+mTLLVl6JzJpPaCZ2kQL9gIJvKXSLMHhqdRRjwQeFtw=="],
 

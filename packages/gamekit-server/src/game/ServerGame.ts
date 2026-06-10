@@ -1,9 +1,12 @@
 import { Game, Scene, type GameConfig, type Transport } from "@cjgammon/gamekit";
-import { NetServer } from "../net/NetServer.js";
+import { NetServer, type PlayerFactory } from "../net/NetServer.js";
 
 export interface ServerGameOptions {
   /** Injectable clock (ms). Defaults to Date.now; tests pass a fake clock. */
   now?: () => number;
+  /** Builds the entity each connection controls (default: a free-moving
+   *  player). Supply your own for paddles, ships, etc. */
+  createPlayer?: PlayerFactory;
 }
 
 /**
@@ -27,7 +30,13 @@ export class ServerGame extends Game {
     this._now = options.now ?? Date.now;
     this.scene = new Scene();
     this.switchScene(this.scene);
-    this.net = new NetServer(this.scene, this.tickRate, this.width, this.height);
+    this.net = new NetServer(
+      this.scene,
+      this.tickRate,
+      this.width,
+      this.height,
+      options.createPlayer,
+    );
   }
 
   /** Attach a transport (real WS connection or in-memory pair) as a client. */

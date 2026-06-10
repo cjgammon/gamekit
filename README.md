@@ -118,7 +118,8 @@ npm run demo:mode    # play the demo
 ## Where to go next
 
 - **`examples/mode/src/`** — a commented small game; a good template to learn from.
-- **`docs/tutorial-multiplayer.md`** — build a simple multiplayer game step by step.
+- **`docs/tutorial-pong.md`** — **build a 2-player online Pong from scratch** (the comprehensive multiplayer tutorial: custom entities, prediction, synced score + per-entity state).
+- **`docs/tutorial-multiplayer.md`** — a shorter intro to the multiplayer model (moving squares).
 - **`ROADMAP.md`** — what's built and what's planned.
 - **`CLAUDE.md`** — architecture and conventions (the game loop, coordinate model, multiplayer model).
 

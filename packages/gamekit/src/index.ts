@@ -68,6 +68,7 @@ export type {
   NetClientOptions,
   SimulateFn,
   PredictContext,
+  NetStateReceiver,
 } from "./net/NetClient.js";
 export { NetScene } from "./net/NetScene.js";
 export type { NetSceneOptions } from "./net/NetScene.js";

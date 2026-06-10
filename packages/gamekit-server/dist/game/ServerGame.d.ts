@@ -1,8 +1,11 @@
 import { Game, Scene, type GameConfig, type Transport } from "@cjgammon/gamekit";
-import { NetServer } from "../net/NetServer.js";
+import { NetServer, type PlayerFactory } from "../net/NetServer.js";
 export interface ServerGameOptions {
     /** Injectable clock (ms). Defaults to Date.now; tests pass a fake clock. */
     now?: () => number;
+    /** Builds the entity each connection controls (default: a free-moving
+     *  player). Supply your own for paddles, ships, etc. */
+    createPlayer?: PlayerFactory;
 }
 /**
  * Headless authoritative game. Reuses the core fixed-timestep loop: `start()`

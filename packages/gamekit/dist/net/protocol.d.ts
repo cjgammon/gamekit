@@ -7,7 +7,14 @@
  */
 /** Stable network identity for a synced entity. Monotonic on the server. */
 export type NetId = number;
-/** The buttons a client reports each frame. */
+/**
+ * Per-frame input a client sends. The wire shape is **arbitrary** (any JSON
+ * value), so a game can send whatever it needs — `{ jump, shoot, aimX }`, a
+ * bitmask, etc. {@link InputState} below is the default 4-button shape the
+ * built-in player uses; bring your own when you need more.
+ */
+export type Input = unknown;
+/** The default 4-button input shape (used by the built-in player + sim). */
 export interface InputState {
     up: boolean;
     down: boolean;
@@ -21,7 +28,7 @@ export interface InputMessage {
      *  processed back as `snap.lastSeq`, which the client uses to discard acked
      *  inputs and replay the rest during prediction reconciliation. */
     seq: number;
-    input: InputState;
+    input: Input;
 }
 export type ClientMessage = InputMessage;
 export interface WelcomeMessage {
@@ -47,6 +54,10 @@ export interface SnapshotEntity {
     y: number;
     /** Rotation in radians. */
     r: number;
+    /** Optional per-entity custom payload (health, frame, facing, …). The server
+     *  fills it from an entity's `netState()`; the client hands it to that
+     *  entity's `applyNetState()`. Omitted for entities that don't use it. */
+    s?: unknown;
 }
 export interface SnapshotMessage {
     k: "snap";
@@ -58,6 +69,10 @@ export interface SnapshotMessage {
      *  reconciliation — the client replays inputs newer than this. */
     lastSeq: number;
     ents: SnapshotEntity[];
+    /** Optional authoritative game state (score, round, etc.) the server wants
+     *  every client to see. Transforms travel in `ents`; this is for everything
+     *  else. Omitted when the server never sets it. */
+    state?: unknown;
 }
 export type ServerMessage = WelcomeMessage | SnapshotMessage;
 export declare function encode(msg: ClientMessage | ServerMessage): string;

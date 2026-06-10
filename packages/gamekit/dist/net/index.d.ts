@@ -9,7 +9,7 @@ export { createMemoryTransportPair } from "./MemoryTransport.js";
 export { Interpolator } from "./Interpolator.js";
 export type { InterpolatedState } from "./Interpolator.js";
 export { NetClient } from "./NetClient.js";
-export type { EntityFactory, NetClientOptions, SimulateFn, PredictContext, } from "./NetClient.js";
+export type { EntityFactory, NetClientOptions, SimulateFn, PredictContext, NetStateReceiver, } from "./NetClient.js";
 export { NetScene } from "./NetScene.js";
 export type { NetSceneOptions } from "./NetScene.js";
 export { simulatePlayer, PLAYER_SPEED, PLAYER_SIZE } from "./sim.js";
