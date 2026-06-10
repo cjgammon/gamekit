@@ -15,6 +15,7 @@ export type {
   PlayerFactory,
   PlayerInfo,
   Controllable,
+  Syncable,
 } from "./net/NetServer.js";
 export { ServerTransport } from "./net/ServerTransport.js";
 export { WebSocketServer } from "./ws/WebSocketServer.js";

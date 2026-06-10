@@ -2,16 +2,22 @@ import { Signal } from "../core/Signal.js";
 import type { Entity } from "../core/Entity.js";
 import { Interpolator } from "./Interpolator.js";
 import type { Transport } from "./Transport.js";
-import { type InputState, type NetId } from "./protocol.js";
+import { type Input, type NetId } from "./protocol.js";
 /** Creates a client-side entity for a given server type tag. */
 export type EntityFactory = (type: string) => Entity;
+/** Implement on a factory-created entity to receive its server-sent custom
+ *  payload (the value the server entity's `netState()` returned). */
+export interface NetStateReceiver {
+    applyNetState(state: unknown): void;
+}
 /** World context handed to a prediction simulate step. */
 export interface PredictContext {
     worldW: number;
     worldH: number;
 }
-/** Advances one entity by one input step. MUST match the server's simulation. */
-export type SimulateFn = (entity: Entity, input: InputState, dt: number, ctx: PredictContext) => void;
+/** Advances one entity by one input step. MUST match the server's simulation.
+ *  `input` is the value you sent via `setLocalInput` — cast it to your shape. */
+export type SimulateFn = (entity: Entity, input: Input, dt: number, ctx: PredictContext) => void;
 export interface NetClientOptions {
     transport: Transport;
     factory: EntityFactory;
@@ -69,10 +75,12 @@ export declare class NetClient {
     get connected(): boolean;
     /** True if `id` is this client's own player. */
     isLocal(id: NetId): boolean;
-    /** Set the latest local input (polled by the app, e.g. on key change). */
-    setLocalInput(input: InputState): void;
+    /** Set the latest local input (polled by the app, e.g. on key change). Input
+     *  is any JSON value; a flat object is shallow-copied so later mutation of
+     *  your own object doesn't corrupt the prediction history. */
+    setLocalInput(input: Input): void;
     /** Send a one-off input (2a path / no prediction). */
-    sendInput(input: InputState): void;
+    sendInput(input: Input): void;
     /**
      * Prediction tick — call once per client fixed step (e.g. from a Scene's
      * fixedUpdate). Sends the current input, records it for replay, and advances

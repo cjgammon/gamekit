@@ -6,7 +6,7 @@ import {
   EMPTY_INPUT,
   decodeServerMessage,
   encode,
-  type InputState,
+  type Input,
   type NetId,
   type ServerMessage,
 } from "./protocol.js";
@@ -14,16 +14,23 @@ import {
 /** Creates a client-side entity for a given server type tag. */
 export type EntityFactory = (type: string) => Entity;
 
+/** Implement on a factory-created entity to receive its server-sent custom
+ *  payload (the value the server entity's `netState()` returned). */
+export interface NetStateReceiver {
+  applyNetState(state: unknown): void;
+}
+
 /** World context handed to a prediction simulate step. */
 export interface PredictContext {
   worldW: number;
   worldH: number;
 }
 
-/** Advances one entity by one input step. MUST match the server's simulation. */
+/** Advances one entity by one input step. MUST match the server's simulation.
+ *  `input` is the value you sent via `setLocalInput` — cast it to your shape. */
 export type SimulateFn = (
   entity: Entity,
-  input: InputState,
+  input: Input,
   dt: number,
   ctx: PredictContext,
 ) => void;
@@ -52,7 +59,14 @@ const MAX_INPUT_HISTORY = 256;
 
 interface PendingInput {
   seq: number;
-  input: InputState;
+  input: Input;
+}
+
+/** Shallow-copy a flat input object so stored history isn't mutated later. */
+function cloneInput(input: Input): Input {
+  return input && typeof input === "object"
+    ? { ...(input as Record<string, unknown>) }
+    : input;
 }
 
 /**
@@ -98,7 +112,7 @@ export class NetClient {
 
   // Prediction state (only used when _simulate is set).
   private _localEntity: Entity | null = null;
-  private _localInput: InputState = { ...EMPTY_INPUT };
+  private _localInput: Input = { ...EMPTY_INPUT };
   private _history: PendingInput[] = [];
 
   constructor(options: NetClientOptions) {
@@ -120,13 +134,15 @@ export class NetClient {
     return id === this.you;
   }
 
-  /** Set the latest local input (polled by the app, e.g. on key change). */
-  setLocalInput(input: InputState): void {
-    this._localInput = { ...input };
+  /** Set the latest local input (polled by the app, e.g. on key change). Input
+   *  is any JSON value; a flat object is shallow-copied so later mutation of
+   *  your own object doesn't corrupt the prediction history. */
+  setLocalInput(input: Input): void {
+    this._localInput = cloneInput(input);
   }
 
   /** Send a one-off input (2a path / no prediction). */
-  sendInput(input: InputState): void {
+  sendInput(input: Input): void {
     this._sendInput(input);
   }
 
@@ -146,7 +162,7 @@ export class NetClient {
     if (!this._connected || !this._simulate) return;
     const input = this._localInput;
     const seq = this._sendInput(input);
-    this._history.push({ seq, input: { ...input } });
+    this._history.push({ seq, input: cloneInput(input) });
     if (this._history.length > MAX_INPUT_HISTORY) this._history.shift();
     if (this._localEntity) {
       this._simulate(this._localEntity, input, this._fixedStep, this._ctx());
@@ -154,7 +170,7 @@ export class NetClient {
   }
 
   /** Encode and send one input, advancing the sequence. Returns its seq. */
-  private _sendInput(input: InputState): number {
+  private _sendInput(input: Input): number {
     this._seq++;
     this._transport.send(encode({ k: "input", seq: this._seq, input }));
     return this._seq;
@@ -215,8 +231,9 @@ export class NetClient {
     const present = new Set<NetId>();
     for (const e of msg.ents) {
       present.add(e.id);
-      if (!this.entities.has(e.id)) {
-        const entity = this._factory(e.t);
+      let entity = this.entities.get(e.id);
+      if (!entity) {
+        entity = this._factory(e.t);
         // Transforms are authored by interpolation/prediction, not by the
         // entity's own motion integration — keep it passive in the scene, and
         // skip render interpolation (the net layer already smooths it).
@@ -225,6 +242,11 @@ export class NetClient {
         this.entities.set(e.id, entity);
         if (e.id === this.you) this._localEntity = entity;
         this._onSpawn(e.id, entity);
+      }
+      // Deliver the per-entity payload (latest value, not interpolated).
+      if (e.s !== undefined) {
+        const recv = entity as Partial<NetStateReceiver>;
+        recv.applyNetState?.(e.s);
       }
     }
     for (const [id, entity] of this.entities) {

@@ -2,7 +2,7 @@ import {
   decodeClientMessage,
   encode,
   type Entity,
-  type InputState,
+  type Input,
   type NetId,
   type Scene,
   type SnapshotEntity,
@@ -17,7 +17,13 @@ interface SyncedEntity {
 
 /** An entity a connection drives: the server writes its consumed input here. */
 export interface Controllable extends Entity {
-  input: InputState;
+  input: Input;
+}
+
+/** Implement on any synced entity to attach a custom per-entity payload
+ *  (health, frame, facing, …) to each snapshot, alongside its transform. */
+export interface Syncable {
+  netState(): unknown;
 }
 
 /** Context handed to a {@link PlayerFactory} when a client connects. */
@@ -39,7 +45,7 @@ interface ClientRecord {
   transport: Transport;
   entity: Controllable;
   /** Inputs received but not yet consumed (one is consumed per tick). */
-  queue: Array<{ seq: number; input: InputState }>;
+  queue: Array<{ seq: number; input: Input }>;
   /** Seq of the last input actually consumed (echoed to the client). */
   lastSeq: number;
 }
@@ -179,7 +185,17 @@ export class NetServer {
     const out: SnapshotEntity[] = [];
     for (const [id, { entity, type }] of this._synced) {
       if (!entity.alive) continue;
-      out.push({ id, t: type, x: entity.x, y: entity.y, r: entity.rotation });
+      const e: SnapshotEntity = {
+        id,
+        t: type,
+        x: entity.x,
+        y: entity.y,
+        r: entity.rotation,
+      };
+      // Opt-in per-entity payload: include it only if the entity defines one.
+      const sync = entity as Partial<Syncable>;
+      if (typeof sync.netState === "function") e.s = sync.netState();
+      out.push(e);
     }
     return out;
   }

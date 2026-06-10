@@ -68,6 +68,10 @@ export interface SnapshotEntity {
   y: number;
   /** Rotation in radians. */
   r: number;
+  /** Optional per-entity custom payload (health, frame, facing, …). The server
+   *  fills it from an entity's `netState()`; the client hands it to that
+   *  entity's `applyNetState()`. Omitted for entities that don't use it. */
+  s?: unknown;
 }
 
 export interface SnapshotMessage {

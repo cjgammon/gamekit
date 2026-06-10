@@ -117,7 +117,18 @@ export class NetServer {
         for (const [id, { entity, type }] of this._synced) {
             if (!entity.alive)
                 continue;
-            out.push({ id, t: type, x: entity.x, y: entity.y, r: entity.rotation });
+            const e = {
+                id,
+                t: type,
+                x: entity.x,
+                y: entity.y,
+                r: entity.rotation,
+            };
+            // Opt-in per-entity payload: include it only if the entity defines one.
+            const sync = entity;
+            if (typeof sync.netState === "function")
+                e.s = sync.netState();
+            out.push(e);
         }
         return out;
     }

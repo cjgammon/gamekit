@@ -54,7 +54,7 @@ export { createMemoryTransportPair } from "./net/MemoryTransport.js";
 export { Interpolator } from "./net/Interpolator.js";
 export type { InterpolatedState } from "./net/Interpolator.js";
 export { NetClient } from "./net/NetClient.js";
-export type { EntityFactory, NetClientOptions, SimulateFn, PredictContext, } from "./net/NetClient.js";
+export type { EntityFactory, NetClientOptions, SimulateFn, PredictContext, NetStateReceiver, } from "./net/NetClient.js";
 export { NetScene } from "./net/NetScene.js";
 export type { NetSceneOptions } from "./net/NetScene.js";
 export { simulatePlayer, PLAYER_SPEED, PLAYER_SIZE } from "./net/sim.js";

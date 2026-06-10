@@ -1,7 +1,12 @@
-import { type Entity, type InputState, type NetId, type Scene, type Transport } from "@cjgammon/gamekit";
+import { type Entity, type Input, type NetId, type Scene, type Transport } from "@cjgammon/gamekit";
 /** An entity a connection drives: the server writes its consumed input here. */
 export interface Controllable extends Entity {
-    input: InputState;
+    input: Input;
+}
+/** Implement on any synced entity to attach a custom per-entity payload
+ *  (health, frame, facing, …) to each snapshot, alongside its transform. */
+export interface Syncable {
+    netState(): unknown;
 }
 /** Context handed to a {@link PlayerFactory} when a client connects. */
 export interface PlayerInfo {

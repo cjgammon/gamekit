@@ -118,3 +118,90 @@ describe("synced game state", () => {
     expect(got).toEqual({ round: 2 });
   });
 });
+
+describe("generic (custom-shape) input", () => {
+  // An entity that uses its own input shape, not the default 4 buttons.
+  interface ShipInput {
+    thrust: number;
+    firing: boolean;
+  }
+  class Ship extends Entity implements Controllable {
+    input: unknown = { thrust: 0, firing: false };
+    fired = false;
+    speed = 0;
+    override fixedUpdate(): void {
+      const i = this.input as ShipInput;
+      this.speed = i.thrust;
+      if (i.firing) this.fired = true;
+    }
+  }
+
+  test("an arbitrary input object reaches the entity intact", () => {
+    const server = makeServer(() => new Ship());
+    const client = connect(server);
+    const ship = server.scene.root.children.find(
+      (e): e is Ship => e instanceof Ship,
+    )!;
+
+    client.sendInput({ thrust: 0.75, firing: true });
+    server.tick();
+
+    expect(ship.speed).toBe(0.75);
+    expect(ship.fired).toBe(true);
+  });
+});
+
+describe("per-entity custom payloads", () => {
+  // Server entity exposes netState(); the client entity receives it.
+  class Bot extends Entity {
+    hp = 3;
+    netState() {
+      return { hp: this.hp };
+    }
+  }
+  class BotView extends Entity {
+    hp = 0;
+    applyNetState(s: unknown) {
+      this.hp = (s as { hp: number }).hp;
+    }
+  }
+
+  test("netState() on the server reaches applyNetState() on the client", () => {
+    const server = makeServer(paddleFactory);
+    const bot = new Bot();
+    server.net.spawn("bot", bot);
+
+    const [clientT, serverT] = createMemoryTransportPair();
+    const views = new Map<number, BotView>();
+    const client = new NetClient({
+      transport: clientT,
+      factory: (type) => (type === "bot" ? new BotView() : new Entity()),
+      onSpawn: (id, e) => {
+        if (e instanceof BotView) views.set(id, e);
+      },
+      onDespawn: () => {},
+      now: () => 0,
+    });
+    server.accept(serverT);
+
+    bot.hp = 2;
+    server.tick();
+    const view = [...views.values()][0];
+    expect(view.hp).toBe(2);
+
+    bot.hp = 1; // updates flow on every snapshot, not just spawn
+    server.tick();
+    expect(view.hp).toBe(1);
+
+    void client; // (silence unused)
+  });
+
+  test("entities without netState() omit the payload (no client error)", () => {
+    const server = makeServer(paddleFactory);
+    const client = connect(server);
+    // A plain synced entity — no netState. Should just sync transforms.
+    server.net.spawn("rock", new Entity(5, 5));
+    expect(() => server.tick()).not.toThrow();
+    void client;
+  });
+});
