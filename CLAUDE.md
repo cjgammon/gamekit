@@ -17,10 +17,6 @@ Core principles that shape almost every decision:
 
 The project was rebuilt from scratch out of an older incarnation ("KidEngine") that wrapped **PixiJS + Matter.js + Socket.io**. The from-scratch core, the headless server loop, and the multiplayer layer are now implemented and tested. **`ROADMAP.md` is the live progress tracker — read it first.**
 
-Remaining legacy artifact (scheduled for deletion, not the current contract):
-
-- `examples/test/` (named "pong") — the old PixiJS/Matter/Socket.io demo. Ignore it. (`docs/superpowers/` legacy specs have been removed; both package.jsons are now zero-dependency.)
-
 ### Current build state
 
 | Area | Reality |
@@ -90,7 +86,6 @@ Server runtime note: the WS server targets **Node**'s `http` upgrade. Bun has a 
 packages/gamekit/         client engine — math, core, net (planned: renderer/input/audio)
 packages/gamekit-server/  authoritative server — RFC 6455 WS, NetServer, ServerGame
 examples/netdemo/         throwaway 2D-canvas demo validating multiplayer (milestone 2a)
-examples/test/            OLD PixiJS demo ("pong"); legacy, ignore
 tests/unit/               core + codec + interpolator unit tests (Bun)
 tests/net/                multiplayer integration tests (in-memory transport)
 ```
