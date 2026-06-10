@@ -1,6 +1,7 @@
 {
   "name": "pong",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "description": "pong demo",
   "main": "index.js",
