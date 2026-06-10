@@ -118,6 +118,7 @@ npm run demo:mode    # play the demo
 ## Where to go next
 
 - **`examples/mode/src/`** — a commented small game; a good template to learn from.
+- **`docs/tutorial-multiplayer.md`** — build a simple multiplayer game step by step.
 - **`ROADMAP.md`** — what's built and what's planned.
 - **`CLAUDE.md`** — architecture and conventions (the game loop, coordinate model, multiplayer model).
 

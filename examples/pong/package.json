@@ -1,0 +1,19 @@
+{
+  "name": "pong",
+  "version": "1.0.0",
+  "description": "pong demo",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cjgammon/gamekit": "*",
+    "@cjgammon/gamekit-server": "*"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "vite": "^5.0.0"
+  }
+}
