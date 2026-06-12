@@ -45,7 +45,7 @@ Everything below is implemented and covered by tests (`bun test tests/unit/` + `
 
 ### Not started / possible next steps
 
-- Binary snapshot encoding (currently JSON) and delta/area-of-interest culling.
+- Delta snapshots and area-of-interest culling (binary snapshot encoding is done — `net/codec.ts`).
 - Lag compensation / server-side hit rewind.
 - Broader collision (rotated bodies, spatial partitioning) beyond AABB separation.
 - Asset pipeline beyond the runtime `AssetLoader` (texture-atlas packing, etc.).
@@ -92,7 +92,7 @@ Signal<T>         typed event emitter used throughout (emits over a snapshot, so
 
 ### Multiplayer model
 
-Server runs the same headless core loop at a fixed tick rate (default 20 Hz), serializes world state after each tick, and broadcasts JSON snapshots over a from-scratch (RFC 6455) WebSocket. Clients buffer snapshots and **interpolate** all entities ~100ms behind real time, and **predict the local player** with reconciliation (`NetClient.predict` / `_reconcileLocal`). Net logic sits behind a `Transport` interface (`MemoryTransport` for tests, `WebSocketTransport` in the browser).
+Server runs the same headless core loop at a fixed tick rate (default 20 Hz), serializes world state after each tick, and broadcasts snapshots over a from-scratch (RFC 6455) WebSocket. The wire format is a compact **binary** codec by default (transforms packed as raw numbers, the game-defined `unknown` payloads written by a small self-describing value codec — MessagePack-style — so any shape goes binary with no schema); a `jsonCodec` is selectable for debugging (`net/codec.ts`). Clients buffer snapshots and **interpolate** all entities ~100ms behind real time, and **predict the local player** with reconciliation (`NetClient.predict` / `_reconcileLocal`). Net logic sits behind a `Transport` interface (`MemoryTransport` for tests, `WebSocketTransport` in the browser).
 
 Server runtime note: the WS server targets **Node**'s `http` upgrade. Bun has a `node:http` upgrade quirk that drops the handshake to browser clients, so run the real server on Node (`node examples/pong/server.js`). Bun is used as the **test runner** and to run TS sources directly.
 

@@ -3,6 +3,7 @@ import type { Entity } from "../core/Entity.js";
 import { Interpolator } from "./Interpolator.js";
 import type { Transport } from "./Transport.js";
 import { type Input, type NetId } from "./protocol.js";
+import { type Codec } from "./codec.js";
 /** Creates a client-side entity for a given server type tag. */
 export type EntityFactory = (type: string) => Entity;
 /** Implement on a factory-created entity to receive its server-sent custom
@@ -30,6 +31,8 @@ export interface NetClientOptions {
      * pure interpolation of all entities (2a).
      */
     simulate?: SimulateFn;
+    /** Wire codec. Defaults to the compact binary codec; must match the server. */
+    codec?: Codec;
 }
 /**
  * Client end of the protocol. Receives snapshots, reconciles the set of live
@@ -60,6 +63,7 @@ export declare class NetClient {
     private readonly _onDespawn;
     private readonly _now;
     private readonly _simulate;
+    private readonly _codec;
     private _connected;
     private _seq;
     private _clockOffset;

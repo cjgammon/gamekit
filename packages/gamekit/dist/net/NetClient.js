@@ -1,6 +1,7 @@
 import { Signal } from "../core/Signal.js";
 import { Interpolator } from "./Interpolator.js";
-import { EMPTY_INPUT, decodeServerMessage, encode, } from "./protocol.js";
+import { EMPTY_INPUT, } from "./protocol.js";
+import { defaultCodec } from "./codec.js";
 /** How far behind server time to render remote entities, in ms (≈2 ticks @ 20Hz). */
 const INTERPOLATION_DELAY = 100;
 /** Cap on buffered predicted inputs. Only reached if the server stops acking
@@ -55,6 +56,7 @@ export class NetClient {
         this._onDespawn = options.onDespawn;
         this._now = options.now ?? (() => Date.now());
         this._simulate = options.simulate ?? null;
+        this._codec = options.codec ?? defaultCodec;
         this._transport.onMessage.add((data) => this._onMessage(data));
     }
     get connected() {
@@ -101,7 +103,7 @@ export class NetClient {
     /** Encode and send one input, advancing the sequence. Returns its seq. */
     _sendInput(input) {
         this._seq++;
-        this._transport.send(encode({ k: "input", seq: this._seq, input }));
+        this._transport.send(this._codec.encode({ k: "input", seq: this._seq, input }));
         return this._seq;
     }
     /**
@@ -127,11 +129,9 @@ export class NetClient {
         return { worldW: this._world.width, worldH: this._world.height };
     }
     _onMessage(data) {
-        if (typeof data !== "string")
-            return;
         let msg;
         try {
-            msg = decodeServerMessage(data);
+            msg = this._codec.decodeServer(data);
         }
         catch {
             return;

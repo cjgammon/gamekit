@@ -45,3 +45,4 @@ export { NetClient } from "./net/NetClient.js";
 export { NetScene } from "./net/NetScene.js";
 export { simulatePlayer, PLAYER_SPEED, PLAYER_SIZE } from "./net/sim.js";
 export * from "./net/protocol.js";
+export { binaryCodec, jsonCodec, defaultCodec, BinaryWriter, BinaryReader, } from "./net/codec.js";

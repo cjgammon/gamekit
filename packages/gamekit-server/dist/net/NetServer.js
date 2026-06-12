@@ -1,4 +1,4 @@
-import { decodeClientMessage, encode, } from "@cjgammon/gamekit";
+import { defaultCodec, } from "@cjgammon/gamekit";
 import { PlayerEntity } from "../game/PlayerEntity.js";
 /**
  * Owns connection and entity lifecycle, transport-agnostic. Each connection
@@ -9,12 +9,15 @@ export class NetServer {
     constructor(_scene, _tickRate, _worldW, _worldH, 
     /** Builds the entity each connection controls. Defaults to a free-moving
      *  PlayerEntity; supply your own to make paddles, ships, etc. */
-    _createPlayer = (i) => new PlayerEntity(50 + ((i.id * 60) % i.worldW), 50, i.worldW, i.worldH)) {
+    _createPlayer = (i) => new PlayerEntity(50 + ((i.id * 60) % i.worldW), 50, i.worldW, i.worldH), 
+    /** Wire codec. Defaults to the compact binary codec; must match the client. */
+    _codec = defaultCodec) {
         this._scene = _scene;
         this._tickRate = _tickRate;
         this._worldW = _worldW;
         this._worldH = _worldH;
         this._createPlayer = _createPlayer;
+        this._codec = _codec;
         this._clients = new Map();
         this._synced = new Map();
         this._nextId = 1;
@@ -58,7 +61,7 @@ export class NetServer {
         this._clients.set(id, rec);
         transport.onMessage.add((data) => this._onMessage(rec, data));
         transport.onClose.add(() => this._onClose(rec));
-        transport.send(encode({
+        transport.send(this._codec.encode({
             k: "welcome",
             tickRate: this._tickRate,
             you: id,
@@ -84,7 +87,7 @@ export class NetServer {
     broadcast(tick, now) {
         const ents = this._collect();
         for (const rec of this._clients.values()) {
-            rec.transport.send(encode({
+            rec.transport.send(this._codec.encode({
                 k: "snap",
                 tick,
                 t: now,
@@ -95,11 +98,9 @@ export class NetServer {
         }
     }
     _onMessage(rec, data) {
-        if (typeof data !== "string")
-            return; // JSON only this milestone
         let msg;
         try {
-            msg = decodeClientMessage(data);
+            msg = this._codec.decodeClient(data);
         }
         catch {
             return; // ignore malformed input

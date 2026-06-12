@@ -175,18 +175,20 @@ this.collide(player, walls);
 
 ## A simple HUD
 
-Everything is world-space, so position HUD text using the camera's visible rect.
+Add HUD / score / menu entities to **`scene.hud`** — a screen-space overlay drawn
+on top of the world with no camera transform. Coordinates are screen pixels from
+the top-left, so there's no camera math, and it stays put as the camera moves.
 
 ```ts
-// in update(dt), after super.update(dt):
-const cam = this.camera;
-const left = cam.x - cam.viewportWidth / cam.zoom / 2;
-const top = cam.y - cam.viewportHeight / cam.zoom / 2;
-this.hudText.setPosition(left + 4, top + 4);
-this.hudText.setText(`Score ${this.score}`);
+// in create():
+this.scoreText = this.addHud(new Text(font, "", 8, 8)); // 8px from the top-left
+
+// in update(dt):
+this.scoreText.setText(`Score ${this.score}`);
 ```
 
-> A dedicated screen-space UI layer is on the roadmap to remove this camera math.
+`scene.hud` takes any entity — `Text`, `Sprite`s, or plain boxes for health bars.
+The renderer draws it automatically each frame after the world; no extra wiring.
 
 ## Go multiplayer
 

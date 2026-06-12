@@ -53,7 +53,7 @@ export class PlayState extends Scene implements Arena {
   private readonly eBullets = new Group<Bullet>();
   private explosions!: Emitter;
   private sparks!: Emitter;
-  private hud!: Text;
+  private hudText!: Text;
   private banner!: Text;
 
   constructor(
@@ -119,14 +119,14 @@ export class PlayState extends Scene implements Arena {
     this.camera.follow(this.player, 0.18);
     this.camera.snapToTarget();
 
-    this.hud = new Text(this.font, "", 0, 0);
-    this.hud.scale = 0.6;
-    this.add(this.hud);
+    // HUD + banner live in the screen-space overlay (scene.hud), so they need
+    // no camera math — just position them in pixels. (See _updateHud.)
+    this.hudText = new Text(this.font, "", 0, 0);
+    this.addHud(this.hudText);
 
     this.banner = new Text(this.font, "", 0, 0);
     this.banner.align = "center";
-    this.banner.scale = 1.5;
-    this.add(this.banner);
+    this.addHud(this.banner);
   }
 
   // ---- Arena interface ----
@@ -246,19 +246,22 @@ export class PlayState extends Scene implements Arena {
 
   private _updateHud(): void {
     const cam = this.camera;
-    const vw = cam.viewportWidth / cam.zoom;
-    const vh = cam.viewportHeight / cam.zoom;
-    const left = cam.x - vw / 2;
-    const top = cam.y - vh / 2;
+    // The hud overlay is in screen pixels (no camera zoom). Scale the text and
+    // the corner inset by the camera zoom so the on-screen size matches the world.
+    const z = cam.zoom;
 
-    this.hud.x = left + 4;
-    this.hud.y = top + 3;
-    this.hud.setText(
+    this.hudText.scale = 0.6 * z;
+    this.hudText.setPosition(4 * z, 3 * z);
+    this.hudText.setText(
       `SCORE ${Math.floor(this.score)}   HP ${Math.max(0, Math.ceil(this.player.hp))}   SPAWNERS ${this._liveSpawners()}`,
     );
 
-    // Center the banner (if any) in the view.
-    this.banner.x = cam.x - this.banner.width / 2;
-    this.banner.y = cam.y - this.banner.height / 2;
+    // Center the banner (if any) in the viewport.
+    this.banner.scale = 1.5 * z;
+    this.banner.measure(); // refresh width/height after the scale change
+    this.banner.setPosition(
+      (cam.viewportWidth - this.banner.width) / 2,
+      (cam.viewportHeight - this.banner.height) / 2,
+    );
   }
 }

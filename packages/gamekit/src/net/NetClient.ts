@@ -4,12 +4,11 @@ import { Interpolator } from "./Interpolator.js";
 import type { Transport } from "./Transport.js";
 import {
   EMPTY_INPUT,
-  decodeServerMessage,
-  encode,
   type Input,
   type NetId,
   type ServerMessage,
 } from "./protocol.js";
+import { defaultCodec, type Codec } from "./codec.js";
 
 /** Creates a client-side entity for a given server type tag. */
 export type EntityFactory = (type: string) => Entity;
@@ -47,6 +46,8 @@ export interface NetClientOptions {
    * pure interpolation of all entities (2a).
    */
   simulate?: SimulateFn;
+  /** Wire codec. Defaults to the compact binary codec; must match the server. */
+  codec?: Codec;
 }
 
 /** How far behind server time to render remote entities, in ms (≈2 ticks @ 20Hz). */
@@ -100,6 +101,7 @@ export class NetClient {
   private readonly _onDespawn: (id: NetId, entity: Entity) => void;
   private readonly _now: () => number;
   private readonly _simulate: SimulateFn | null;
+  private readonly _codec: Codec;
 
   private _connected = false;
   private _seq = 0;
@@ -122,6 +124,7 @@ export class NetClient {
     this._onDespawn = options.onDespawn;
     this._now = options.now ?? (() => Date.now());
     this._simulate = options.simulate ?? null;
+    this._codec = options.codec ?? defaultCodec;
     this._transport.onMessage.add((data) => this._onMessage(data));
   }
 
@@ -172,7 +175,7 @@ export class NetClient {
   /** Encode and send one input, advancing the sequence. Returns its seq. */
   private _sendInput(input: Input): number {
     this._seq++;
-    this._transport.send(encode({ k: "input", seq: this._seq, input }));
+    this._transport.send(this._codec.encode({ k: "input", seq: this._seq, input }));
     return this._seq;
   }
 
@@ -199,10 +202,9 @@ export class NetClient {
   }
 
   private _onMessage(data: string | ArrayBuffer): void {
-    if (typeof data !== "string") return;
     let msg: ServerMessage;
     try {
-      msg = decodeServerMessage(data);
+      msg = this._codec.decodeServer(data);
     } catch {
       return;
     }

@@ -49,8 +49,10 @@ export declare class WebGPURenderer implements InstanceSink<TextureEntry> {
     get device(): GPUDevice;
     /** Resize the drawing buffer to match a CSS/display size. */
     resize(width: number, height: number): void;
-    /** Begin a frame: upload the camera matrix and open the render pass. */
-    beginFrame(viewProjection: Mat3): void;
+    /** Begin a frame: upload the camera matrix and open the render pass. `clear`
+     *  (default true) clears the target; pass false to draw on top of a prior pass
+     *  in the same frame (e.g. a screen-space HUD overlay). */
+    beginFrame(viewProjection: Mat3, clear?: boolean): void;
     /** End the frame: close the pass and submit. */
     endFrame(): void;
     writeInstances(data: Float32Array, count: number): void;

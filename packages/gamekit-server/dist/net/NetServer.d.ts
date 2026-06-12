@@ -1,4 +1,4 @@
-import { type Entity, type Input, type NetId, type Scene, type Transport } from "@cjgammon/gamekit";
+import { type Codec, type Entity, type Input, type NetId, type Scene, type Transport } from "@cjgammon/gamekit";
 /** An entity a connection drives: the server writes its consumed input here. */
 export interface Controllable extends Entity {
     input: Input;
@@ -33,6 +33,8 @@ export declare class NetServer {
     /** Builds the entity each connection controls. Defaults to a free-moving
      *  PlayerEntity; supply your own to make paddles, ships, etc. */
     private readonly _createPlayer;
+    /** Wire codec. Defaults to the compact binary codec; must match the client. */
+    private readonly _codec;
     private readonly _clients;
     private readonly _synced;
     private _nextId;
@@ -40,7 +42,9 @@ export declare class NetServer {
     constructor(_scene: Scene, _tickRate: number, _worldW: number, _worldH: number, 
     /** Builds the entity each connection controls. Defaults to a free-moving
      *  PlayerEntity; supply your own to make paddles, ships, etc. */
-    _createPlayer?: PlayerFactory);
+    _createPlayer?: PlayerFactory, 
+    /** Wire codec. Defaults to the compact binary codec; must match the client. */
+    _codec?: Codec);
     get clientCount(): number;
     /** Spawn a synced entity into the scene and assign it a stable NetId. */
     spawn(type: string, entity: Entity): NetId;

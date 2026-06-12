@@ -1,4 +1,4 @@
-import type { Mat3 } from "../math/Mat3.js";
+import { Mat3 } from "../math/Mat3.js";
 import type { Scene } from "../core/Scene.js";
 import type { AssetLoader } from "./AssetLoader.js";
 import type { SpriteBatcher } from "./SpriteBatcher.js";
@@ -6,7 +6,9 @@ import type { TextureEntry } from "./WebGPURenderer.js";
 /** The slice of {@link WebGPURenderer} a view drives — fakeable in tests. */
 export interface SpriteRenderer {
     readonly batcher: SpriteBatcher<TextureEntry>;
-    beginFrame(viewProjection: Mat3): void;
+    /** Open a frame with the given projection. `clear` (default true) clears the
+     *  target; pass false to draw on top of a prior pass (the HUD overlay). */
+    beginFrame(viewProjection: Mat3, clear?: boolean): void;
     endFrame(): void;
 }
 export declare class RenderView {
@@ -16,6 +18,12 @@ export declare class RenderView {
      * silence (e.g. if you intentionally keep sized-later placeholders visible).
      */
     static warnOnZeroSize: boolean;
+    /**
+     * Skip entities whose (generously-padded) box falls outside the camera view —
+     * a large world then costs only what's on screen. Disabled automatically when
+     * the camera has no viewport (e.g. headless tests). Set false to draw all.
+     */
+    static cullSprites: boolean;
     private readonly _renderer;
     private readonly _loader;
     private readonly _t;
@@ -25,6 +33,7 @@ export declare class RenderView {
     private _viewMinY;
     private _viewMaxX;
     private _viewMaxY;
+    private _viewValid;
     private readonly _corner;
     constructor(renderer: SpriteRenderer, loader: AssetLoader);
     /** Draw `scene` for this frame. `alpha` is `Game.render`'s 0..1 factor. */

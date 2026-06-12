@@ -128,8 +128,10 @@ export class WebGPURenderer {
         this._canvas.height = height;
     }
     // ---- Frame ----
-    /** Begin a frame: upload the camera matrix and open the render pass. */
-    beginFrame(viewProjection) {
+    /** Begin a frame: upload the camera matrix and open the render pass. `clear`
+     *  (default true) clears the target; pass false to draw on top of a prior pass
+     *  in the same frame (e.g. a screen-space HUD overlay). */
+    beginFrame(viewProjection, clear = true) {
         packMat3Std140(viewProjection, this._uniformScratch);
         this._device.queue.writeBuffer(this._uniformBuffer, 0, this._uniformScratch);
         this._encoder = this._device.createCommandEncoder();
@@ -138,7 +140,7 @@ export class WebGPURenderer {
                 {
                     view: this._context.getCurrentTexture().createView(),
                     clearValue: this.clearColor,
-                    loadOp: "clear",
+                    loadOp: clear ? "clear" : "load",
                     storeOp: "store",
                 },
             ],

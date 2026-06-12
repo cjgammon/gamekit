@@ -1,11 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import { Entity, Group, Scene } from "../../packages/gamekit/src/index.js";
+import { Entity, Group, Rng, Scene } from "../../packages/gamekit/src/index.js";
 
 function box(x: number, y: number, w = 10, h = 10): Entity {
   const e = new Entity(x, y);
   e.width = w;
   e.height = h;
   return e;
+}
+
+function aabbOverlap(a: Entity, b: Entity): boolean {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
 }
 
 describe("Scene.overlap", () => {
@@ -72,5 +81,96 @@ describe("Scene.collide", () => {
     let hits = 0;
     expect(scene.collide(ga, gb, () => hits++)).toBe(true);
     expect(hits).toBe(1);
+  });
+});
+
+describe("Scene.hud overlay", () => {
+  test("addHud targets the screen-space overlay, not the world root", () => {
+    const scene = new Scene();
+    scene.add(new Entity());
+    scene.addHud(new Entity());
+    expect(scene.root.count).toBe(1);
+    expect(scene.hud.count).toBe(1);
+  });
+
+  test("update sweeps dead hud entities", () => {
+    const scene = new Scene();
+    const e = scene.addHud(new Entity());
+    e.kill();
+    scene.update(0.016);
+    expect(scene.hud.count).toBe(0);
+  });
+});
+
+describe("Scene broad-phase (spatial hash) parity", () => {
+  test("self-overlap matches the exhaustive O(n²) pairs at any cell size", () => {
+    const rng = new Rng(12345);
+    const scene = new Scene();
+    const g = new Group();
+    const boxes: Entity[] = [];
+    for (let i = 0; i < 250; i++) {
+      const e = box(
+        rng.range(0, 500),
+        rng.range(0, 500),
+        rng.range(4, 24),
+        rng.range(4, 24),
+      );
+      boxes.push(e);
+      g.add(e);
+    }
+    const index = new Map(boxes.map((e, i) => [e, i] as const));
+
+    // Exhaustive reference set of overlapping unordered pairs.
+    const expected = new Set<string>();
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        if (aabbOverlap(boxes[i], boxes[j])) expected.add(`${i},${j}`);
+      }
+    }
+    expect(expected.size).toBeGreaterThan(0); // the scene actually has overlaps
+
+    for (const cell of [16, 64, 128, 1000]) {
+      scene.collisionCellSize = cell;
+      const got = new Set<string>();
+      scene.overlap(g, g, (a, b) => {
+        const i = index.get(a)!;
+        const j = index.get(b)!;
+        got.add(i < j ? `${i},${j}` : `${j},${i}`);
+      });
+      expect([...got].sort()).toEqual([...expected].sort());
+    }
+  });
+
+  test("cross-group overlap matches the exhaustive pairs", () => {
+    const rng = new Rng(999);
+    const scene = new Scene();
+    const ga = new Group();
+    const gb = new Group();
+    const A: Entity[] = [];
+    const B: Entity[] = [];
+    for (let i = 0; i < 150; i++) {
+      const e = box(rng.range(0, 400), rng.range(0, 400), 12, 12);
+      A.push(e);
+      ga.add(e);
+    }
+    for (let i = 0; i < 150; i++) {
+      const e = box(rng.range(0, 400), rng.range(0, 400), 12, 12);
+      B.push(e);
+      gb.add(e);
+    }
+    const ia = new Map(A.map((e, i) => [e, i] as const));
+    const ib = new Map(B.map((e, i) => [e, i] as const));
+
+    const expected = new Set<string>();
+    for (let i = 0; i < A.length; i++) {
+      for (let j = 0; j < B.length; j++) {
+        if (aabbOverlap(A[i], B[j])) expected.add(`${i},${j}`);
+      }
+    }
+    expect(expected.size).toBeGreaterThan(0);
+
+    const got = new Set<string>();
+    scene.overlap(ga, gb, (a, b) => got.add(`${ia.get(a)!},${ib.get(b)!}`));
+    expect([...got].sort()).toEqual([...expected].sort());
   });
 });

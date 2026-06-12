@@ -60,3 +60,5 @@ export type { NetSceneOptions } from "./net/NetScene.js";
 export { simulatePlayer, PLAYER_SPEED, PLAYER_SIZE } from "./net/sim.js";
 export type { PlayerSimOptions } from "./net/sim.js";
 export * from "./net/protocol.js";
+export { binaryCodec, jsonCodec, defaultCodec, BinaryWriter, BinaryReader, } from "./net/codec.js";
+export type { Codec } from "./net/codec.js";

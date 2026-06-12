@@ -1,11 +1,14 @@
 import { Scene } from "../core/Scene.js";
 import { NetClient, type EntityFactory, type SimulateFn } from "./NetClient.js";
 import type { Transport } from "./Transport.js";
+import type { Codec } from "./codec.js";
 
 export interface NetSceneOptions {
   now?: () => number;
   /** Enables local-player prediction (2b); omit for interpolate-all (2a). */
   simulate?: SimulateFn;
+  /** Wire codec. Defaults to the compact binary codec; must match the server. */
+  codec?: Codec;
 }
 
 /**
@@ -30,6 +33,7 @@ export class NetScene extends Scene {
       onDespawn: (_id, entity) => entity.kill(),
       now: options.now,
       simulate: options.simulate,
+      codec: options.codec,
     });
   }
 

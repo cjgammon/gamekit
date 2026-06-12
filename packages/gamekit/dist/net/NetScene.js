@@ -16,6 +16,7 @@ export class NetScene extends Scene {
             onDespawn: (_id, entity) => entity.kill(),
             now: options.now,
             simulate: options.simulate,
+            codec: options.codec,
         });
     }
     fixedUpdate(dt) {

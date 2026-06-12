@@ -1,3 +1,4 @@
+import { Mat3 } from "../math/Mat3.js";
 import { Vec2 } from "../math/Vec2.js";
 import { Group } from "../core/Group.js";
 import { Sprite } from "../core/Sprite.js";
@@ -28,11 +29,13 @@ export class RenderView {
             scaleY: 1,
         };
         this._uv = { u: 0, v: 0, uScale: 0, vScale: 0 };
-        // Visible world rect (for tilemap culling), recomputed each frame.
+        // Visible world rect (for culling), recomputed each frame.
         this._viewMinX = 0;
         this._viewMinY = 0;
         this._viewMaxX = 0;
         this._viewMaxY = 0;
+        // True when the camera has a real viewport, so the view rect is meaningful.
+        this._viewValid = false;
         this._corner = new Vec2();
         this._renderer = renderer;
         this._loader = loader;
@@ -55,12 +58,23 @@ export class RenderView {
     }
     /** Draw `scene` for this frame. `alpha` is `Game.render`'s 0..1 factor. */
     draw(scene, alpha) {
+        const cam = scene.camera;
+        // World pass — camera projection; clears the target.
         this._computeViewRect(scene);
-        this._renderer.beginFrame(scene.camera.viewProjection(alpha));
+        this._renderer.beginFrame(cam.viewProjection(alpha), true);
         this._renderer.batcher.begin();
         this._drawGroup(scene.root, alpha);
         this._renderer.batcher.end();
         this._renderer.endFrame();
+        // HUD pass — screen-space projection (pixels from top-left), drawn on top.
+        if (scene.hud.count > 0) {
+            this._viewValid = false; // screen space: no frustum culling
+            this._renderer.beginFrame(Mat3.ortho(cam.viewportWidth, cam.viewportHeight), false);
+            this._renderer.batcher.begin();
+            this._drawGroup(scene.hud, alpha);
+            this._renderer.batcher.end();
+            this._renderer.endFrame();
+        }
     }
     // ---- Internal ----
     /** World-space AABB of the viewport (the 4 corners unprojected), for culling. */
@@ -93,6 +107,9 @@ export class RenderView {
         this._viewMinY = minY;
         this._viewMaxX = maxX;
         this._viewMaxY = maxY;
+        // Only cull against a real viewport; a 0×0 camera (headless tests) collapses
+        // the rect to a point and would wrongly cull everything.
+        this._viewValid = w > 0 && h > 0;
     }
     _drawGroup(group, alpha) {
         for (const child of group.children) {
@@ -132,6 +149,18 @@ export class RenderView {
         inst.width = e.width * t.scaleX;
         inst.height = e.height * t.scaleY;
         inst.rotation = t.rotation;
+        // Frustum cull: skip if the entity is well outside the view. The radius is
+        // generous (|w| + |h|) so it never clips a visible sprite regardless of the
+        // origin pivot or rotation.
+        if (RenderView.cullSprites && this._viewValid) {
+            const r = Math.abs(inst.width) + Math.abs(inst.height);
+            if (t.x + r < this._viewMinX ||
+                t.x - r > this._viewMaxX ||
+                t.y + r < this._viewMinY ||
+                t.y - r > this._viewMaxY) {
+                return; // off-screen
+            }
+        }
         if (e instanceof Sprite) {
             const entry = this._loader.resolve(e.textureId);
             entry.meta.frameUV(e.frame, e.flipX, e.flipY, this._uv);
@@ -213,3 +242,9 @@ export class RenderView {
  * silence (e.g. if you intentionally keep sized-later placeholders visible).
  */
 RenderView.warnOnZeroSize = true;
+/**
+ * Skip entities whose (generously-padded) box falls outside the camera view —
+ * a large world then costs only what's on screen. Disabled automatically when
+ * the camera has no viewport (e.g. headless tests). Set false to draw all.
+ */
+RenderView.cullSprites = true;

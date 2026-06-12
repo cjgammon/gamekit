@@ -28,6 +28,27 @@ export declare class Scene {
     readonly timers: TimerManager;
     /** Scene-managed property tweens, advanced on `update`. */
     readonly tweens: TweenManager;
+    /**
+     * Screen-space overlay drawn on top of the world with **no camera transform** —
+     * put HUDs, score text, and menus here and they stop needing per-frame camera
+     * math. Coordinates are screen pixels from the top-left. Add via {@link addHud}.
+     */
+    readonly hud: Group<Entity>;
+    /**
+     * Cell size (world units) for the spatial-hash broad-phase used by
+     * {@link overlap}/{@link collide}. Roughly your typical colliding entity's
+     * size works well; too small wastes cells, too large packs many candidates
+     * per cell. Tune per game if collision is a hot path.
+     */
+    collisionCellSize: number;
+    private readonly _leavesA;
+    private readonly _leavesB;
+    private readonly _grid;
+    private readonly _bucketPool;
+    private _seen;
+    private readonly _cands;
+    private _queryId;
+    private _bpBusy;
     /** Override to build the scene. Called once when the scene becomes active. */
     create(): void;
     /** Fixed-step update — physics & game logic. Forwards to the root group.
@@ -40,6 +61,8 @@ export declare class Scene {
     destroy(): void;
     /** Add an entity to the root group. */
     add<T extends Entity>(entity: T): T;
+    /** Add an entity to the screen-space {@link hud} overlay (pixels from top-left). */
+    addHud<T extends Entity>(entity: T): T;
     /** Remove an entity from the root group. */
     remove(entity: Entity): boolean;
     /**
@@ -57,6 +80,10 @@ export declare class Scene {
      * overlap, invoking `onOverlap` for each overlapping pair. Pass a single
      * argument to test a group against itself (each unordered pair once).
      *
+     * Uses a uniform spatial-hash broad-phase, so it scales ~linearly instead of
+     * O(n²); the pairs and their order match an exhaustive test. Tune
+     * {@link collisionCellSize} if collision is a hot path.
+     *
      * @returns true if any pair overlapped.
      */
     overlap(a: Entity, b?: Entity, onOverlap?: CollisionCallback): boolean;
@@ -73,9 +100,24 @@ export declare class Scene {
      */
     collide(a: Entity, b?: Entity, onCollide?: CollisionCallback): boolean;
     /**
+     * Spatial-hash broad-phase shared by {@link overlap}/{@link collide}. Buckets
+     * `b`'s leaves into a uniform grid, then for each `a` leaf gathers candidates
+     * from the cells its AABB spans, de-dupes them, and tests AABBs in ascending
+     * index order — identical pairs and order to the exhaustive O(n²) loop, minus
+     * the far-apart pairs the grid prunes. `onPair` runs for each overlapping
+     * pair. Two AABBs that overlap always share a cell, so no pair is missed.
+     */
+    private _broadphase;
+    /** Return all buckets to the pool and clear the grid for the next call. */
+    private _resetGrid;
+    /** Hash a cell coordinate to a bucket key. Hash collisions only add extra
+     *  candidates (filtered by the AABB test), so correctness is preserved. */
+    private static _cellKey;
+    /**
      * Flatten an entity-or-group into the alive, collidable leaf entities under
-     * it. Groups are containers, not bodies, so they're recursed into rather than
-     * tested directly; a plain entity is its own single leaf.
+     * it, appended to `out` (which is returned). Groups are containers, not
+     * bodies, so they're recursed into; a plain entity is its own single leaf.
+     * Writes into the caller's array — no per-call allocation or array spreads.
      */
     private static _leaves;
     /** Push two overlapping entities apart along the least-penetration axis. */

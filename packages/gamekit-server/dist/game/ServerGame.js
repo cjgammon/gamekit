@@ -1,4 +1,4 @@
-import { Game, Scene } from "@cjgammon/gamekit";
+import { Game, Scene, } from "@cjgammon/gamekit";
 import { NetServer } from "../net/NetServer.js";
 /**
  * Headless authoritative game. Reuses the core fixed-timestep loop: `start()`
@@ -25,7 +25,7 @@ export class ServerGame extends Game {
         this._now = options.now ?? Date.now;
         this.scene = new Scene();
         this.switchScene(this.scene);
-        this.net = new NetServer(this.scene, this.tickRate, this.width, this.height, options.createPlayer);
+        this.net = new NetServer(this.scene, this.tickRate, this.width, this.height, options.createPlayer, options.codec);
     }
     /** Attach a transport (real WS connection or in-memory pair) as a client. */
     accept(transport) {
