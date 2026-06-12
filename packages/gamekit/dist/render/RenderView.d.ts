@@ -9,19 +9,13 @@ export interface SpriteRenderer {
     beginFrame(viewProjection: Mat3): void;
     endFrame(): void;
 }
-/**
- * Bridges a {@link Scene} to the renderer each frame: walks the scene's entity
- * tree in draw order, computes each drawable's interpolated transform + frame
- * UVs, and feeds the batcher.
- *
- * Draw order is depth-first child order (Flixel z-model). A drawable is any
- * visible, non-zero-size leaf: `Sprite`s resolve `textureId`/`frame`/flips/tint;
- * plain `Entity`s draw as solid white quads (so boxes/blocks need no image).
- *
- * Scene-agnostic — pass whichever scene is active. All scratch objects are
- * reused, so a frame allocates nothing.
- */
 export declare class RenderView {
+    /**
+     * Warn (once per entity) when a visible entity has zero width or height, so
+     * the classic "I added it but nothing shows" is self-explaining. Set false to
+     * silence (e.g. if you intentionally keep sized-later placeholders visible).
+     */
+    static warnOnZeroSize: boolean;
     private readonly _renderer;
     private readonly _loader;
     private readonly _t;

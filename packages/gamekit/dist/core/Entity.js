@@ -54,6 +54,18 @@ export class Entity {
     get centerY() {
         return this.y + this.height * 0.5;
     }
+    /**
+     * Rotation in **degrees** — a convenience view over the radian
+     * {@link rotation} (degrees are how most people think about angles). Reads
+     * and writes the same underlying value: `e.rotationDegrees = 90` is identical
+     * to `e.rotation = Math.PI / 2`.
+     */
+    get rotationDegrees() {
+        return (this.rotation * 180) / Math.PI;
+    }
+    set rotationDegrees(deg) {
+        this.rotation = (deg * Math.PI) / 180;
+    }
     /** Mark for removal. The owning Group will destroy it on its next update
      *  (or, in a recycling Group, keep it for reuse via `recycle()`). */
     kill() {

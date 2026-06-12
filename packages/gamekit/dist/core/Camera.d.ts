@@ -38,6 +38,10 @@ export declare class Camera {
     zoom: number;
     /** View rotation in radians (rotates the world about the viewport center). */
     rotation: number;
+    /** View rotation in **degrees** — a convenience view over the radian
+     *  {@link rotation}. */
+    get rotationDegrees(): number;
+    set rotationDegrees(deg: number);
     /** Visible region in screen pixels. */
     viewportWidth: number;
     viewportHeight: number;

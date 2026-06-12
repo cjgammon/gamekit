@@ -1,6 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import { Entity } from "../../packages/gamekit/src/index.js";
 
+describe("Entity rotationDegrees", () => {
+  test("reads and writes the radian rotation", () => {
+    const e = new Entity();
+    e.rotationDegrees = 90;
+    expect(e.rotation).toBeCloseTo(Math.PI / 2);
+    e.rotation = Math.PI;
+    expect(e.rotationDegrees).toBeCloseTo(180);
+  });
+});
+
 describe("Entity motion integration", () => {
   test("velocity advances position by velocity * dt", () => {
     const e = new Entity(0, 0);

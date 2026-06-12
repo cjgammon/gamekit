@@ -104,6 +104,7 @@ describe("RenderView traversal", () => {
   });
 
   test("skips invisible and zero-size entities", () => {
+    RenderView.warnOnZeroSize = false; // exercised separately below
     const f = fakeRenderer();
     const view = new RenderView(f.renderer, loaderWith({}));
     const scene = new Scene();
@@ -116,6 +117,27 @@ describe("RenderView traversal", () => {
     view.draw(scene, 0);
     expect(f.instanceData.length / INSTANCE_FLOATS).toBe(1);
     expect(instX(f.instanceData, 0)).toBe(7);
+    RenderView.warnOnZeroSize = true;
+  });
+
+  test("warns once for a visible zero-size entity", () => {
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({}));
+    const scene = new Scene();
+    scene.add(new Entity(5, 5)); // visible, zero size
+
+    const original = console.warn;
+    let warnings = 0;
+    console.warn = () => {
+      warnings++;
+    };
+    try {
+      view.draw(scene, 0);
+      view.draw(scene, 0); // second frame must not re-warn
+    } finally {
+      console.warn = original;
+    }
+    expect(warnings).toBe(1);
   });
 
   test("batches by texture: sprite runs split, plain entities use white", () => {

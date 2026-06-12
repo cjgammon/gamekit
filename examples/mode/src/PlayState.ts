@@ -60,7 +60,6 @@ export class PlayState extends Scene implements Arena {
     private readonly input: InputManager,
     private readonly audio: AudioManager,
     private readonly font: BitmapFont,
-    private readonly zoom: number,
     private readonly onRestart: () => void,
   ) {
     super();
@@ -115,7 +114,7 @@ export class PlayState extends Scene implements Arena {
     ];
     for (const [sx, sy] of corners) this.spawners.add(new Spawner(this, sx, sy));
 
-    this.camera.zoom = this.zoom;
+    // Camera zoom is set from the game's `fov` (see main.ts) before create().
     this.camera.bounds = { minX: 0, minY: 0, maxX: ARENA_W, maxY: ARENA_H };
     this.camera.follow(this.player, 0.18);
     this.camera.snapToTarget();

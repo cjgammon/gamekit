@@ -71,6 +71,14 @@ export declare class Entity {
     get bounds(): AABB;
     get centerX(): number;
     get centerY(): number;
+    /**
+     * Rotation in **degrees** — a convenience view over the radian
+     * {@link rotation} (degrees are how most people think about angles). Reads
+     * and writes the same underlying value: `e.rotationDegrees = 90` is identical
+     * to `e.rotation = Math.PI / 2`.
+     */
+    get rotationDegrees(): number;
+    set rotationDegrees(deg: number);
     /** Mark for removal. The owning Group will destroy it on its next update
      *  (or, in a recycling Group, keep it for reuse via `recycle()`). */
     kill(): void;

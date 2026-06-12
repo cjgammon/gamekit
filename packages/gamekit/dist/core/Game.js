@@ -33,6 +33,7 @@ export class Game {
         this.height = config.height;
         this.tickRate = config.tickRate ?? 20;
         this.fixedStep = 1 / this.tickRate;
+        this.defaultZoom = config.defaultZoom ?? null;
     }
     // ---- Scene management ----
     /** Queue a scene to become active at the start of the next step. */
@@ -102,6 +103,11 @@ export class Game {
         this.accumulator = 0;
         // Default the camera viewport to the game size; create() may override.
         this.currentScene.camera.resize(this.width, this.height);
+        // Apply the default zoom (if configured) before create(), so a scene can
+        // still override it. Skipped when null, preserving each camera's own zoom.
+        if (this.defaultZoom !== null) {
+            this.currentScene.camera.zoom = this.defaultZoom;
+        }
         this.currentScene.create();
     }
 }

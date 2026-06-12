@@ -12,6 +12,14 @@ import { Mat3 } from "../math/Mat3.js";
  * which the owning Scene calls once per rendered frame.
  */
 export class Camera {
+    /** View rotation in **degrees** — a convenience view over the radian
+     *  {@link rotation}. */
+    get rotationDegrees() {
+        return (this.rotation * 180) / Math.PI;
+    }
+    set rotationDegrees(deg) {
+        this.rotation = (deg * Math.PI) / 180;
+    }
     constructor(viewportWidth = 0, viewportHeight = 0) {
         /** Camera center in world space (the world point shown at the viewport center). */
         this.x = 0;

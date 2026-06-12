@@ -3,10 +3,6 @@ import { InputManager } from "@cjgammon/gamekit/input";
 import { loadAssets, loadAudio } from "./assets";
 import { PlayState } from "./PlayState";
 
-const CSS_W = 800;
-const CSS_H = 600;
-const FOV_W = 416; // world units visible across the width
-
 async function main() {
   const canvas = document.getElementById("view") as HTMLCanvasElement;
   const hud = document.getElementById("hud")!;
@@ -15,45 +11,28 @@ async function main() {
     return;
   }
 
-  // Native-res rendering: device-pixel backing buffer, displayed at CSS size,
-  // camera zoom set so the field of view is constant regardless of DPR.
-  const dpr = window.devicePixelRatio || 1;
-  canvas.style.width = `${CSS_W}px`;
-  canvas.style.height = `${CSS_H}px`;
-  const backingW = Math.round(CSS_W * dpr);
-  const backingH = Math.round(CSS_H * dpr);
-  const zoom = backingW / FOV_W;
-
-  const game = await RenderGame.create(canvas, { width: backingW, height: backingH });
-  game.renderer.clearColor = { r: 0.05, g: 0.05, b: 0.07, a: 1 };
+  // `fov` = world units visible across the canvas width. The engine fits the
+  // backing buffer to the canvas's CSS size × devicePixelRatio and sets the
+  // camera zoom to match, so the field of view is constant on any display.
+  const game = await RenderGame.create(
+    canvas,
+    { fov: 416, autoResize: true },
+    { clearColor: { r: 0.05, g: 0.05, b: 0.07, a: 1 } },
+  );
 
   const font = await loadAssets(game);
   const audio = loadAudio();
+  audio.unlockOnGesture(); // browsers start audio suspended until a gesture
 
   const input = new InputManager({
-    moveUp: ["KeyW"],
-    moveDown: ["KeyS"],
-    moveLeft: ["KeyA"],
-    moveRight: ["KeyD"],
-    aimUp: ["ArrowUp"],
-    aimDown: ["ArrowDown"],
-    aimLeft: ["ArrowLeft"],
-    aimRight: ["ArrowRight"],
+    moveUp: ["KeyW"], moveDown: ["KeyS"], moveLeft: ["KeyA"], moveRight: ["KeyD"],
+    aimUp: ["ArrowUp"], aimDown: ["ArrowDown"],
+    aimLeft: ["ArrowLeft"], aimRight: ["ArrowRight"],
     restart: ["KeyR"],
   });
   input.attach(window);
 
-  // Browsers start audio suspended until a gesture — unlock on first input.
-  const unlock = () => {
-    void audio.resume();
-    window.removeEventListener("keydown", unlock);
-    window.removeEventListener("pointerdown", unlock);
-  };
-  window.addEventListener("keydown", unlock);
-  window.addEventListener("pointerdown", unlock);
-
-  const start = () =>
-    game.switchScene(new PlayState(input, audio, font, zoom, start));
+  const start = () => game.switchScene(new PlayState(input, audio, font, start));
   start();
   game.start();
 

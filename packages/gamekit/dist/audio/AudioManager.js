@@ -71,6 +71,35 @@ export class AudioManager {
         return this.context.resume();
     }
     /**
+     * Unlock audio on the first user gesture. Browsers start the context
+     * suspended until the user interacts; this registers one-shot `keydown` /
+     * `pointerdown` listeners that {@link resume} the context, then remove
+     * themselves. Returns a function that cancels the pending listeners (rarely
+     * needed). Browser-only — no-op without a DOM event target.
+     *
+     * ```ts
+     * const audio = new AudioManager();
+     * audio.unlockOnGesture(); // that's it — first key/click starts audio
+     * ```
+     */
+    unlockOnGesture(target = typeof window !== "undefined"
+        ? window
+        : undefined) {
+        if (!target)
+            return () => { };
+        const unlock = () => {
+            void this.resume();
+            cancel();
+        };
+        const cancel = () => {
+            target.removeEventListener("keydown", unlock);
+            target.removeEventListener("pointerdown", unlock);
+        };
+        target.addEventListener("keydown", unlock);
+        target.addEventListener("pointerdown", unlock);
+        return cancel;
+    }
+    /**
      * Play a one-shot sound effect. Returns the source (already started), or null
      * if the sound isn't loaded.
      */

@@ -42,6 +42,15 @@ export class Camera {
   /** View rotation in radians (rotates the world about the viewport center). */
   rotation = 0;
 
+  /** View rotation in **degrees** — a convenience view over the radian
+   *  {@link rotation}. */
+  get rotationDegrees(): number {
+    return (this.rotation * 180) / Math.PI;
+  }
+  set rotationDegrees(deg: number) {
+    this.rotation = (deg * Math.PI) / 180;
+  }
+
   /** Visible region in screen pixels. */
   viewportWidth: number;
   viewportHeight: number;

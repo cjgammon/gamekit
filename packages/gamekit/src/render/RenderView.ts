@@ -30,7 +30,17 @@ export interface SpriteRenderer {
  * Scene-agnostic — pass whichever scene is active. All scratch objects are
  * reused, so a frame allocates nothing.
  */
+/** Entities already warned about (zero size) — warn once each, not per frame. */
+const _zeroSizeWarned = new WeakSet<Entity>();
+
 export class RenderView {
+  /**
+   * Warn (once per entity) when a visible entity has zero width or height, so
+   * the classic "I added it but nothing shows" is self-explaining. Set false to
+   * silence (e.g. if you intentionally keep sized-later placeholders visible).
+   */
+  static warnOnZeroSize = true;
+
   private readonly _renderer: SpriteRenderer;
   private readonly _loader: AssetLoader;
 
@@ -130,7 +140,20 @@ export class RenderView {
       this._drawText(e);
       return;
     }
-    if (e.width === 0 || e.height === 0) return; // nothing to rasterize
+    if (e.width === 0 || e.height === 0) {
+      // Visible but unrasterizable — almost always a forgotten size. Warn once.
+      if (RenderView.warnOnZeroSize && !_zeroSizeWarned.has(e)) {
+        _zeroSizeWarned.add(e);
+        const kind = e instanceof Sprite ? "Sprite" : "Entity";
+        console.warn(
+          `gamekit: a visible ${kind} has zero size (width=${e.width}, ` +
+            `height=${e.height}), so it won't render. Set its width/height ` +
+            `(or call setTexture with a frame size). Silence with ` +
+            `RenderView.warnOnZeroSize = false.`,
+        );
+      }
+      return; // nothing to rasterize
+    }
 
     const t = e.sampleRender(alpha, this._t);
     const inst = this._inst;

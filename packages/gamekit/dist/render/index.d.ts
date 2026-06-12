@@ -8,6 +8,7 @@
 export { WebGPURenderer } from "./WebGPURenderer.js";
 export type { TextureEntry, RendererOptions } from "./WebGPURenderer.js";
 export { RenderGame } from "./RenderGame.js";
+export type { RenderGameConfig } from "./RenderGame.js";
 export { RenderView } from "./RenderView.js";
 export type { SpriteRenderer } from "./RenderView.js";
 export { AssetLoader, WHITE_TEXTURE } from "./AssetLoader.js";
