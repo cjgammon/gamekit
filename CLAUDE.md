@@ -15,9 +15,11 @@ Core principles that shape almost every decision:
 
 ## The rewrite (status)
 
-The project was rebuilt from scratch out of an older incarnation ("KidEngine") that wrapped **PixiJS + Matter.js + Socket.io**. The from-scratch core, the headless server loop, and the multiplayer layer are now implemented and tested. **`ROADMAP.md` is the live progress tracker — read it first.**
+The project was rebuilt from scratch out of an older incarnation ("KidEngine") that wrapped **PixiJS + Matter.js + Socket.io**. The from-scratch core, the WebGPU renderer, input, audio, the headless server loop, and the full multiplayer layer (snapshots + interpolation **and** client-side prediction + reconciliation) are all implemented and tested. **The "Current build state" table below is the live progress tracker — read it first, and keep it current when subsystem status changes.**
 
 ### Current build state
+
+Everything below is implemented and covered by tests (`bun test tests/unit/` + `tests/net/`; `npx tsc -p packages/gamekit --noEmit` is clean).
 
 | Area | Reality |
 |---|---|
@@ -28,11 +30,25 @@ The project was rebuilt from scratch out of an older incarnation ("KidEngine") t
 | `core/Scene.ts` | Implemented — root Group, `overlap()`/`collide()`, owns timers + tweens. |
 | `core/Game.ts` | Implemented — fixed-timestep loop, scene mgmt, spiral-of-death clamp, `render(alpha)` seam. |
 | `core/Timer.ts`, `core/Tween.ts`, `core/Ease.ts` | Implemented + unit-tested. |
-| `net/` (client) — `protocol`, `Transport`, `MemoryTransport`, `Interpolator`, `NetClient`, `NetScene`, `WebSocketTransport` | Implemented (milestone 2a: snapshots + interpolation). |
-| `gamekit-server` — RFC 6455 WS server, `NetServer`, `ServerGame`, `PlayerEntity` | Implemented + tested (memory transport + real-socket E2E). |
-| `core/Camera.ts` | Empty (0 bytes) — lands with the renderer (Phase 3). |
-| renderer, input, audio | Not started (Phase 3+). |
-| Client-side prediction / reconciliation | Deferred (milestone 2b; seams left in `NetClient`). |
+| `core/Camera.ts` | Implemented + unit-tested — `follow` (with lerp), deadzone, world-bounds clamp, `shake`, and `view()`/`viewProjection()` matrices. |
+| `core/Tilemap.ts` | Implemented + unit-tested — grid of tiles with collision against entities. |
+| `core/Emitter.ts` + `core/Particle.ts` | Implemented + unit-tested — particle system. |
+| `core/Text.ts` + `core/BitmapFont.ts` | Implemented + unit-tested — bitmap-font text rendering. |
+| `core/Pool.ts` | Implemented + unit-tested — object pool for recycling entities. |
+| `core/Rng.ts` | Implemented + unit-tested — deterministic (seedable) RNG for server-compatible logic. |
+| `render/` (WebGPU) — `WebGPURenderer`, `SpriteBatcher`, `RenderView`, `Texture`, `AssetLoader`, `RenderGame`, `std140` | Implemented + unit-tested. Browser-only; exported from the `gamekit/renderer` subpath. |
+| `input/InputManager.ts` | Implemented + unit-tested. Browser-only; exported from `gamekit/input`. |
+| `audio/AudioManager.ts` | Implemented + unit-tested. Browser-only; exported from `gamekit/audio`. |
+| `net/` (client) — `protocol`, `Transport`, `MemoryTransport`, `Interpolator`, `NetClient`, `NetScene`, `WebSocketTransport`, `sim` | Implemented + tested — milestone 2a (snapshots + interpolation) **and** 2b (client-side prediction + reconciliation). |
+| Client-side prediction / reconciliation | Implemented + tested — `NetClient.predict()` / `_reconcileLocal` replay buffered inputs against authoritative snapshots (`tests/net/prediction.test.ts`). |
+| `gamekit-server` — RFC 6455 WS server, `NetServer`, `ServerGame`, `PlayerEntity`, `ServerTransport` | Implemented + tested (memory transport + real-socket E2E). |
+
+### Not started / possible next steps
+
+- Binary snapshot encoding (currently JSON) and delta/area-of-interest culling.
+- Lag compensation / server-side hit rewind.
+- Broader collision (rotated bodies, spatial partitioning) beyond AABB separation.
+- Asset pipeline beyond the runtime `AssetLoader` (texture-atlas packing, etc.).
 
 ## Architecture
 
