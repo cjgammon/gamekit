@@ -7,6 +7,7 @@
  */
 export { WebGPURenderer } from "./WebGPURenderer.js";
 export { RenderGame } from "./RenderGame.js";
+export { mountUnsupportedNotice, isWebGPUAvailable, DEFAULT_UNSUPPORTED_MESSAGE, } from "./unsupported.js";
 export { RenderView } from "./RenderView.js";
 export { AssetLoader, WHITE_TEXTURE } from "./AssetLoader.js";
 export { Texture } from "./Texture.js";

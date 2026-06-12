@@ -1,0 +1,29 @@
+{
+  "name": "create-gamekit",
+  "version": "0.1.0",
+  "description": "Scaffold a new gamekit game — `npm create gamekit`.",
+  "type": "module",
+  "bin": {
+    "create-gamekit": "index.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "templates",
+    "README.md"
+  ],
+  "keywords": [
+    "gamekit",
+    "game-engine",
+    "scaffold",
+    "create",
+    "starter",
+    "template"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

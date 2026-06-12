@@ -489,6 +489,6 @@ animation frames, team colors — without touching positions or the protocol.
   `@cjgammon/gamekit/renderer` to draw sprites with WebGPU. None of the
   networking code changes.
 
-For a minimal runnable networking reference, see
-[`examples/netdemo/`](../examples/netdemo/); for the architecture behind
+For the finished, runnable version of this game — already upgraded to the WebGPU
+renderer — see [`examples/pong/`](../examples/pong/); for the architecture behind
 snapshots, interpolation, and prediction, see [`CLAUDE.md`](../CLAUDE.md).

@@ -1,10 +1,10 @@
-# Mode2
+# Mode (advanced)
 
 A faithful-as-possible port of the original [Mode](https://github.com/AdamAtomic/Mode)
 by Adam Saltsman (Adam Atomic), using its real art + sound. Built with Vite,
 importing the gamekit packages from TypeScript source.
 
-Unlike [`../mode`](../mode) (a top-down placeholder), this reproduces Mode's
+Unlike [`../mode-simple`](../mode-simple) (a top-down placeholder), this reproduces Mode's
 actual **platformer** gameplay and constants: gravity + run/drag + jumping, an
 8px-tile 640×640 world, 8 wall-mounted spawners, flying bots, and a decaying
 score that doubles as your life.
@@ -19,7 +19,7 @@ terms; this is a learning/showcase port. (The HUD font is generated
 procedurally — Mode used a system font.)
 
 ```bash
-cd examples/mode2
+cd examples/mode-advanced
 npm run fetch-assets   # downloads the original PNG/MP3 media into public/data/
 ```
 
@@ -29,7 +29,7 @@ Requires a **WebGPU-capable browser** (Chrome/Edge, or Safari 18+) and the asset
 fetched (above).
 
 ```bash
-npm run demo:mode2     # from the repo root — Vite dev server; open the printed URL
+npm run demo:mode-advanced   # from the repo root — Vite dev server; open the printed URL
 ```
 
 - **← →** — walk

@@ -1,11 +1,10 @@
 {
-  "name": "gamekit-mode2",
+  "name": "gamekit-mode-simple",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Mode2 — the Mode demo using the original game's art and sound (fetched on demand).",
+  "description": "Mode (simple) — a gamekit arena-shooter demo with procedural art, built with Vite.",
   "scripts": {
-    "fetch-assets": "node scripts/fetch-assets.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

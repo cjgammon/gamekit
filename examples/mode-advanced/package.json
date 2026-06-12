@@ -1,10 +1,11 @@
 {
-  "name": "gamekit-mode",
+  "name": "gamekit-mode-advanced",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Mode — a gamekit demo (Adam Atomic's Flixel showcase), built with Vite.",
+  "description": "Mode (advanced) — the Mode demo using the original game's art and sound (fetched on demand).",
   "scripts": {
+    "fetch-assets": "node scripts/fetch-assets.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

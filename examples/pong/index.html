@@ -1,8 +1,37 @@
-<!-- index.html -->
 <!doctype html>
-<html>
-  <body style="margin:0;background:#000">
-    <canvas id="view" width="480" height="320"></canvas>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pong — gamekit</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+      }
+      #wrap { position: relative; width: 480px; height: 320px; }
+      /* Display size — the engine fits the backing buffer to this (× DPR). */
+      #view { width: 480px; height: 320px; display: block; background: #000; }
+      #score {
+        position: absolute; top: 8px; left: 0; right: 0;
+        text-align: center; font: 32px monospace; color: #fff;
+        pointer-events: none;
+      }
+      #hint {
+        position: fixed; bottom: 12px; left: 0; right: 0;
+        text-align: center; color: #666; font: 13px system-ui, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrap">
+      <canvas id="view"></canvas>
+      <div id="score">0&emsp;0</div>
+    </div>
+    <div id="hint">W/S or ↑/↓ to move · open a second window to play the other paddle</div>
     <script type="module" src="/client.js"></script>
   </body>
 </html>
