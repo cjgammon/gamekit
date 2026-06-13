@@ -14,12 +14,17 @@
     "test:net": "npm run build:gamekit && bun test tests/net/",
     "demo:mode-simple": "vite examples/mode-simple",
     "demo:mode-advanced": "vite examples/mode-advanced",
+    "demo:bunnymark": "vite examples/bunnymark",
     "demo:pong": "npm run build && npm run dev -w gamekit-pong",
     "test:e2e": "bun test tests/",
     "test:e2e:watch": "bun test --watch tests/",
     "test:e2e:debug": "bun test --bail tests/",
+    "docs:api": "typedoc",
     "version:packages": "npm version --no-git-tag-version -w @cjgammon/gamekit -w @cjgammon/gamekit-server -w create-gamekit",
     "release:dry": "npm run build && npm publish --dry-run -w @cjgammon/gamekit -w @cjgammon/gamekit-server -w create-gamekit",
     "release": "npm run build && npm publish -w @cjgammon/gamekit && npm publish -w @cjgammon/gamekit-server && npm publish -w create-gamekit"
+  },
+  "devDependencies": {
+    "typedoc": "^0.28.0"
   }
 }

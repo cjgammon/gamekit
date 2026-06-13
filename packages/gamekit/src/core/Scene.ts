@@ -1,3 +1,4 @@
+import { AABB } from "../math/AABB.js";
 import { Camera } from "./Camera.js";
 import { Entity } from "./Entity.js";
 import { Group } from "./Group.js";
@@ -71,6 +72,8 @@ export class Scene {
   private readonly _cands: number[] = [];
   private _queryId = 0;
   private _bpBusy = false;
+  /** Reused swept-AABB box for {@link overlapSwept}. */
+  private readonly _sweptAABB = new AABB();
 
   // ---- Lifecycle (Game drives these; subclasses override `create`) ----
 
@@ -184,6 +187,20 @@ export class Scene {
     });
   }
 
+  /**
+   * Like {@link overlap}, but tests each `a` leaf's **swept** AABB — the box
+   * covering its motion from its previous position to its current one — against
+   * `b`. This catches fast movers that would tunnel through a target between
+   * fixed ticks: a bullet that jumps past an enemy in one step still registers a
+   * hit. Detection only (no separation) — use it for hit tests like
+   * bullets→enemies, not for physical response.
+   *
+   * @returns true if any pair overlapped.
+   */
+  overlapSwept(a: Entity, b: Entity = a, onOverlap?: CollisionCallback): boolean {
+    return this._broadphase(a, b, onOverlap, true);
+  }
+
   // ---- Internal ----
 
   /**
@@ -198,6 +215,7 @@ export class Scene {
     aRoot: Entity,
     bRoot: Entity,
     onPair?: CollisionCallback,
+    swept = false,
   ): boolean {
     const reuse = !this._bpBusy;
     this._bpBusy = true;
@@ -242,11 +260,29 @@ export class Scene {
       let hit = false;
       for (let i = 0; i < n; i++) {
         const ea = as[i];
-        const ab = ea.bounds;
-        const cx1 = Math.floor(ab.right * inv);
-        const cy1 = Math.floor(ab.bottom * inv);
-        const cx0 = Math.floor(ab.left * inv);
-        const cy0 = Math.floor(ab.top * inv);
+        // Query box: the swept AABB (prev→current, widened to cover fast motion)
+        // when sweeping, else the entity's current AABB.
+        let aL: number;
+        let aR: number;
+        let aT: number;
+        let aB: number;
+        if (swept) {
+          aL = Math.min(ea.prevX, ea.x);
+          aR = Math.max(ea.prevX, ea.x) + ea.width;
+          aT = Math.min(ea.prevY, ea.y);
+          aB = Math.max(ea.prevY, ea.y) + ea.height;
+          this._sweptAABB.set(aL, aT, aR - aL, aB - aT);
+        } else {
+          const ab = ea.bounds;
+          aL = ab.left;
+          aR = ab.right;
+          aT = ab.top;
+          aB = ab.bottom;
+        }
+        const cx0 = Math.floor(aL * inv);
+        const cy0 = Math.floor(aT * inv);
+        const cx1 = Math.floor(aR * inv);
+        const cy1 = Math.floor(aB * inv);
         const stamp = ++this._queryId;
         cands.length = 0;
         for (let cx = cx0; cx <= cx1; cx++) {
@@ -267,8 +303,10 @@ export class Scene {
         for (let c = 0; c < cands.length; c++) {
           const eb = bs[cands[c]];
           if (ea === eb) continue;
-          // Re-read ea.bounds: a separation earlier this pass may have moved it.
-          if (ea.bounds.overlaps(eb.bounds)) {
+          // Swept: the fixed swept box. Non-swept: re-read ea.bounds (a prior
+          // separation this pass may have moved it).
+          const aBox = swept ? this._sweptAABB : ea.bounds;
+          if (aBox.overlaps(eb.bounds)) {
             hit = true;
             onPair?.(ea, eb);
           }

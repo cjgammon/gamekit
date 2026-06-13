@@ -173,6 +173,16 @@ this.overlap(playerBullets, enemies, (bullet, enemy) => {
 this.collide(player, walls);
 ```
 
+Fast movers (bullets) can skip past a target between fixed ticks. Use
+`overlapSwept`, which tests each `a`'s path (previous → current position):
+
+```ts
+this.overlapSwept(playerBullets, enemies, (bullet, enemy) => {
+  bullet.kill();
+  enemy.kill();
+});
+```
+
 ## A simple HUD
 
 Add HUD / score / menu entities to **`scene.hud`** — a screen-space overlay drawn

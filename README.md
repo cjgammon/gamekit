@@ -122,6 +122,7 @@ the core without any DOM/WebGPU dependency.
 |---|---|
 | `npm run demo:mode-simple` | A small arena shooter — full game, procedural art (no setup). |
 | `npm run demo:mode-advanced` | The same idea as a faithful platformer using the original [Mode](https://github.com/AdamAtomic/Mode) art/sound (run `npm run fetch-assets` in `examples/mode-advanced/` first). |
+| `npm run demo:bunnymark` | A sprite stress test (count + FPS) that runs on either backend — add `?canvas` to force the Canvas2D fallback. |
 | `npm run demo:pong` | A 2-player online Pong — authoritative server + client prediction, WebGPU client. Open the printed URL in two windows. |
 
 ## Handy commands
@@ -130,7 +131,10 @@ the core without any DOM/WebGPU dependency.
 npm run build           # type-check + compile the engine to dist/
 npm test                # run the unit tests (requires Bun)
 npm run demo:mode-simple # play the demo
+npm run docs:api        # generate the API reference (typedoc → docs/api/)
 ```
+
+See [`CHANGELOG.md`](CHANGELOG.md) for what's new.
 
 ## Where to go next
 

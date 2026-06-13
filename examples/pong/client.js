@@ -4,7 +4,7 @@
 // boxes (no art needed). The score is a DOM overlay, updated from the synced
 // game state the server broadcasts. Networking is unchanged from a 2D-canvas
 // client: a NetScene predicts our paddle and interpolates everything else.
-import { Entity } from "@cjgammon/gamekit";
+import { Entity, createEntityFactory } from "@cjgammon/gamekit";
 import { NetScene, WebSocketTransport } from "@cjgammon/gamekit/net";
 import {
   RenderGame,
@@ -25,13 +25,22 @@ if (!isWebGPUAvailable()) {
 }
 
 async function main() {
-  // Build a client-side entity for each server entity type.
-  function factory(type) {
-    const e = new Entity();
-    if (type === "ball") { e.width = BALL_SIZE; e.height = BALL_SIZE; }
-    else { e.width = PADDLE_W; e.height = PADDLE_H; }
-    return e;
-  }
+  // A registry of client-side entities, keyed by the server's type tag. Throws a
+  // clear error if the server ever sends a type we didn't register.
+  const factory = createEntityFactory({
+    player: () => {
+      const e = new Entity();
+      e.width = PADDLE_W;
+      e.height = PADDLE_H;
+      return e;
+    },
+    ball: () => {
+      const e = new Entity();
+      e.width = BALL_SIZE;
+      e.height = BALL_SIZE;
+      return e;
+    },
+  });
 
   // The world is [0..WIDTH] × [0..HEIGHT]; center the camera so (0,0) is the
   // top-left corner of the canvas (the camera centers on its position).

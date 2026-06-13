@@ -1,4 +1,10 @@
-import { Entity, Game, PLAYER_SPEED, PLAYER_SIZE } from "@cjgammon/gamekit";
+import {
+  Entity,
+  Game,
+  PLAYER_SPEED,
+  PLAYER_SIZE,
+  createEntityFactory,
+} from "@cjgammon/gamekit";
 import { NetScene, WebSocketTransport } from "@cjgammon/gamekit/net";
 import {
   simulatePlayer,
@@ -13,14 +19,18 @@ const H = 480;
 const canvas = document.getElementById("view") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
 
-// The factory builds a client-side entity for each thing the server tells us
-// about. This game only spawns "player" entities.
-function factory(_type: string): Entity {
-  const e = new Entity();
-  e.width = PLAYER_SIZE;
-  e.height = PLAYER_SIZE;
-  return e;
-}
+// A registry of client-side entities, keyed by the server's type tag. This game
+// only spawns "player" entities; typing it with that union makes an unhandled
+// server type a compile error (and an unknown tag throws at runtime).
+type NetType = "player";
+const factory = createEntityFactory<NetType>({
+  player: () => {
+    const e = new Entity();
+    e.width = PLAYER_SIZE;
+    e.height = PLAYER_SIZE;
+    return e;
+  },
+});
 
 // NetScene keeps our entities in sync with the server: remote players are
 // interpolated, and OUR player is predicted from input + reconciled against the

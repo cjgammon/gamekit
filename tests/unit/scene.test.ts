@@ -84,6 +84,38 @@ describe("Scene.collide", () => {
   });
 });
 
+describe("Scene.overlapSwept (anti-tunneling)", () => {
+  test("catches a fast mover that jumps past a target in one tick", () => {
+    const scene = new Scene();
+    const bullet = box(0, 0, 4, 4); // prev = (0, 0)
+    bullet.x = 100; // moved 100px right this tick; prevX stays 0
+    const target = box(50, 0, 4, 4);
+
+    // Plain overlap at the current position misses (the bullet is now at 100).
+    expect(scene.overlap(bullet, target)).toBe(false);
+
+    // Swept overlap catches the crossing.
+    let hits = 0;
+    expect(scene.overlapSwept(bullet, target, () => hits++)).toBe(true);
+    expect(hits).toBe(1);
+  });
+
+  test("still detects a normal current overlap", () => {
+    const scene = new Scene();
+    const a = box(0, 0); // prev == current
+    const b = box(5, 5);
+    expect(scene.overlapSwept(a, b)).toBe(true);
+  });
+
+  test("does not hit a target off the swept path", () => {
+    const scene = new Scene();
+    const bullet = box(0, 0, 4, 4);
+    bullet.x = 100; // sweeps along y ≈ 0
+    const target = box(50, 200, 4, 4); // far below the path
+    expect(scene.overlapSwept(bullet, target)).toBe(false);
+  });
+});
+
 describe("Scene.hud overlay", () => {
   test("addHud targets the screen-space overlay, not the world root", () => {
     const scene = new Scene();

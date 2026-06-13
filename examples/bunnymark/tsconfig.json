@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "types": ["@webgpu/types"],
+    "paths": {
+      "@cjgammon/gamekit": ["../../packages/gamekit/src/index.ts"],
+      "@cjgammon/gamekit/renderer": ["../../packages/gamekit/src/render/index.ts"],
+      "@cjgammon/gamekit/input": ["../../packages/gamekit/src/input/index.ts"],
+      "@cjgammon/gamekit/audio": ["../../packages/gamekit/src/audio/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

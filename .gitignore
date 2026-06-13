@@ -1,6 +1,13 @@
 node_modules
 .DS_Store
 
+# Build output — rebuilt by each package's `prepack` before publish, and by
+# `npm run build`. The `files: ["dist"]` allowlist still ships it to npm.
+dist/
+
+# Generated API docs (typedoc → npm run docs:api)
+docs/api/
+
 # Test artifacts
 test-artifacts/
 

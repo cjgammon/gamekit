@@ -9,6 +9,14 @@ export { WebGPURenderer } from "./WebGPURenderer.js";
 export type { TextureEntry, RendererOptions } from "./WebGPURenderer.js";
 export { RenderGame } from "./RenderGame.js";
 export type { RenderGameConfig } from "./RenderGame.js";
+export { Canvas2DRenderer } from "./Canvas2DRenderer.js";
+export type {
+  Canvas2DTexture,
+  Canvas2DRendererOptions,
+} from "./Canvas2DRenderer.js";
+export { Canvas2DGame } from "./Canvas2DGame.js";
+export { createGame } from "./createGame.js";
+export type { AnyRenderGame } from "./createGame.js";
 export {
   mountUnsupportedNotice,
   isWebGPUAvailable,
