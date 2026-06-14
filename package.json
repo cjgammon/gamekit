@@ -9,22 +9,22 @@
   "scripts": {
     "build": "npx tsc -p packages/gamekit && npx tsc -p packages/gamekit-server",
     "build:gamekit": "npx tsc -p packages/gamekit",
-    "test": "bun test tests/unit/",
-    "test:watch": "bun test --watch tests/unit/",
-    "test:net": "npm run build:gamekit && bun test tests/net/",
+    "test": "vitest run tests/unit",
+    "test:watch": "vitest tests/unit",
+    "test:net": "npm run build:gamekit && vitest run tests/net",
     "demo:mode-simple": "vite examples/mode-simple",
     "demo:mode-advanced": "vite examples/mode-advanced",
     "demo:bunnymark": "vite examples/bunnymark",
     "demo:pong": "npm run build && npm run dev -w gamekit-pong",
-    "test:e2e": "bun test tests/",
-    "test:e2e:watch": "bun test --watch tests/",
-    "test:e2e:debug": "bun test --bail tests/",
+    "test:e2e": "npm run build:gamekit && vitest run",
+    "test:e2e:watch": "npm run build:gamekit && vitest",
     "docs:api": "typedoc",
     "version:packages": "npm version --no-git-tag-version -w @cjgammon/gamekit -w @cjgammon/gamekit-server -w create-gamekit",
     "release:dry": "npm run build && npm publish --dry-run -w @cjgammon/gamekit -w @cjgammon/gamekit-server -w create-gamekit",
     "release": "npm run build && npm publish -w @cjgammon/gamekit && npm publish -w @cjgammon/gamekit-server && npm publish -w create-gamekit"
   },
   "devDependencies": {
-    "typedoc": "^0.28.0"
+    "typedoc": "^0.28.0",
+    "vitest": "^3.2.0"
   }
 }

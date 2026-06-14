@@ -43,6 +43,8 @@ together.
 - **Examples reorganized:** `mode` → `mode-simple`, `mode2` → `mode-advanced`; the
   multiplayer **pong** demo was upgraded to WebGPU and is now the canonical
   networking example (`npm run demo:pong`).
+- **Tooling:** tests run on Node via **Vitest** (was Bun) — one runtime for the
+  whole project; an API-reference target (`npm run docs:api`, typedoc) was added.
 
 ### Removed
 

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { BitmapFont, Text } from "../../packages/gamekit/src/index.js";
 
 /** 8×8 monospaced font, ASCII 32–126. */

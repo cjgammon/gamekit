@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Entity, createEntityFactory } from "../../packages/gamekit/src/index.js";
 
 type NetType = "player" | "ball";

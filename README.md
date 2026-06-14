@@ -10,10 +10,10 @@ authoritative **multiplayer** server. Inspired by [Flixel](https://github.com/Ad
 
 ## Requirements
 
-- **[Node.js](https://nodejs.org) 18+** and npm.
+- **[Node.js](https://nodejs.org) 18+** and npm. (Tests run on Node via Vitest —
+  no extra runtime to install.)
 - A **WebGPU-capable browser** to see graphics: Chrome or Edge (any recent
   version), or Safari 18+.
-- Optional: **[Bun](https://bun.sh)** — only needed if you want to run the tests.
 
 ## Quick start
 
@@ -129,7 +129,7 @@ the core without any DOM/WebGPU dependency.
 
 ```bash
 npm run build           # type-check + compile the engine to dist/
-npm test                # run the unit tests (requires Bun)
+npm test                # run the unit tests (Vitest)
 npm run demo:mode-simple # play the demo
 npm run docs:api        # generate the API reference (typedoc → docs/api/)
 ```

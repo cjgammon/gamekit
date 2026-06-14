@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Scene, Timer, TimerManager } from "../../packages/gamekit/src/index.js";
 
 describe("Timer", () => {

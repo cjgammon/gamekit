@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Entity, Group, Rng, Scene } from "../../packages/gamekit/src/index.js";
 
 function box(x: number, y: number, w = 10, h = 10): Entity {

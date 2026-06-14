@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Entity, Scene, Sprite } from "../../packages/gamekit/src/index.js";
 import {
   Canvas2DRenderer,

@@ -19,7 +19,7 @@ The project was rebuilt from scratch out of an older incarnation ("KidEngine") t
 
 ### Current build state
 
-Everything below is implemented and covered by tests (`bun test tests/unit/` + `tests/net/`; `npx tsc -p packages/gamekit --noEmit` is clean).
+Everything below is implemented and covered by tests (`npm test` + `npm run test:net`; `npx tsc -p packages/gamekit --noEmit` is clean).
 
 | Area | Reality |
 |---|---|
@@ -94,7 +94,7 @@ Signal<T>         typed event emitter used throughout (emits over a snapshot, so
 
 Server runs the same headless core loop at a fixed tick rate (default 20 Hz), serializes world state after each tick, and broadcasts snapshots over a from-scratch (RFC 6455) WebSocket. The wire format is a compact **binary** codec by default (transforms packed as raw numbers, the game-defined `unknown` payloads written by a small self-describing value codec — MessagePack-style — so any shape goes binary with no schema); a `jsonCodec` is selectable for debugging (`net/codec.ts`). Clients buffer snapshots and **interpolate** all entities ~100ms behind real time, and **predict the local player** with reconciliation (`NetClient.predict` / `_reconcileLocal`). Net logic sits behind a `Transport` interface (`MemoryTransport` for tests, `WebSocketTransport` in the browser).
 
-Server runtime note: the WS server targets **Node**'s `http` upgrade. Bun has a `node:http` upgrade quirk that drops the handshake to browser clients, so run the real server on Node (`node examples/pong/server.js`). Bun is used as the **test runner** and to run TS sources directly.
+Server runtime note: the WS server targets **Node**'s `http` upgrade. Bun has a `node:http` upgrade quirk that drops the handshake to browser clients, so run the real server on Node (`node examples/pong/server.js`). Tests run on Node via **Vitest**.
 
 ## Packages & layout
 
@@ -104,7 +104,7 @@ packages/gamekit-server/  authoritative server — RFC 6455 WS, NetServer, Serve
 packages/create-gamekit/  `npm create gamekit` scaffolder (zero-dep CLI + templates)
 examples/                  runnable demos — mode-simple, mode-advanced, pong (multiplayer)
 docs/                      recipes.md, your-first-game.md, multiplayer tutorials
-tests/unit/               core + codec + interpolator unit tests (Bun)
+tests/unit/               core + codec + interpolator unit tests (Vitest)
 tests/net/                multiplayer integration tests (in-memory transport)
 ```
 
@@ -114,14 +114,14 @@ tests/net/                multiplayer integration tests (in-memory transport)
 npm run build           # tsc: build gamekit then gamekit-server (dist + .d.ts)
 npm run build:gamekit   # build just the client package
 
-npm test                # bun test tests/unit/   (fast pure unit tests)
+npm test                # vitest run tests/unit   (fast pure unit tests)
 npm run test:watch
-npm run test:net        # build:gamekit, then bun test tests/net/ (integration)
-npm run test:e2e        # bun test tests/  (everything)
+npm run test:net        # build:gamekit, then vitest run tests/net (integration)
+npm run test:e2e        # build:gamekit, then vitest run (everything)
 
-# Run a single bun test file / filter
-bun test tests/unit/<file>.test.ts
-bun test tests/ -t "<test name pattern>"
+# Run a single test file / filter (Vitest)
+npx vitest run tests/unit/<file>.test.ts
+npx vitest run -t "<test name pattern>"
 
 # Multiplayer Pong demo (builds, then runs the Node server + Vite client together)
 npm run demo:pong       # server on ws://localhost:39400; open the printed Vite URL in two windows
@@ -129,7 +129,7 @@ npm run demo:pong       # server on ws://localhost:39400; open the printed Vite 
 
 The server imports the core via the `gamekit` package name, which resolves to its built `dist` — so **`gamekit` must be built before running the server or `tests/net/`** (`test:net` and `demo:pong` do this for you). Unit tests import core from source via relative paths and need no build.
 
-Test env lives in `.env.test`; runner config in `bunfig.toml`.
+Tests run on **Node** via **Vitest** (one runtime for the whole project); config in `vitest.config.ts`. Test env lives in `.env.test`.
 
 ## Conventions when adding to the new engine
 

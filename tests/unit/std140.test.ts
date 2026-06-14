@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Mat3 } from "../../packages/gamekit/src/index.js";
 import {
   MAT3_STD140_FLOATS,
