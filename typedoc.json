@@ -1,0 +1,18 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "gamekit",
+  "entryPoints": [
+    "packages/gamekit/src/index.ts",
+    "packages/gamekit/src/render/index.ts",
+    "packages/gamekit/src/input/index.ts",
+    "packages/gamekit/src/audio/index.ts",
+    "packages/gamekit/src/net/index.ts"
+  ],
+  "tsconfig": "packages/gamekit/tsconfig.json",
+  "out": "docs/api",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "includeVersion": false,
+  "githubPages": false
+}

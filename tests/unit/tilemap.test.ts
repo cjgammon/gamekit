@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Entity, Tilemap } from "../../packages/gamekit/src/index.js";
 
 // 4×3 grid of 16px tiles. Row 2 is a solid floor; one wall at (2,1).

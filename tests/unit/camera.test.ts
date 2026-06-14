@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Camera, Entity, Vec2 } from "../../packages/gamekit/src/index.js";
 
 function entity(x: number, y: number, w = 0, h = 0): Entity {

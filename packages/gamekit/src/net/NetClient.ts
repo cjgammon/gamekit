@@ -4,15 +4,47 @@ import { Interpolator } from "./Interpolator.js";
 import type { Transport } from "./Transport.js";
 import {
   EMPTY_INPUT,
-  decodeServerMessage,
-  encode,
   type Input,
   type NetId,
   type ServerMessage,
 } from "./protocol.js";
+import { defaultCodec, type Codec } from "./codec.js";
 
 /** Creates a client-side entity for a given server type tag. */
 export type EntityFactory = (type: string) => Entity;
+
+/**
+ * Build an {@link EntityFactory} from a typed map of `type tag → builder`. This
+ * replaces a hand-written `switch (type)` with a single registry:
+ *
+ * ```ts
+ * // share this tag union between your client and server code
+ * export type NetType = "player" | "ball";
+ *
+ * const factory = createEntityFactory<NetType>({
+ *   player: () => sized(new Entity(), PADDLE_W, PADDLE_H),
+ *   ball: () => sized(new Entity(), BALL_SIZE, BALL_SIZE),
+ * });
+ * ```
+ *
+ * Typing it `<NetType>` makes the map **exhaustive** — forget a tag and it's a
+ * compile error, so client/server drift is caught at build time. An unregistered
+ * tag throws a clear error at runtime (unless you pass a `fallback`).
+ */
+export function createEntityFactory<T extends string>(
+  builders: Record<T, () => Entity>,
+  fallback?: (type: string) => Entity,
+): EntityFactory {
+  const table = builders as Record<string, (() => Entity) | undefined>;
+  return (type: string) => {
+    const build = table[type];
+    if (build) return build();
+    if (fallback) return fallback(type);
+    throw new Error(
+      `createEntityFactory: no builder registered for entity type "${type}"`,
+    );
+  };
+}
 
 /** Implement on a factory-created entity to receive its server-sent custom
  *  payload (the value the server entity's `netState()` returned). */
@@ -47,6 +79,8 @@ export interface NetClientOptions {
    * pure interpolation of all entities (2a).
    */
   simulate?: SimulateFn;
+  /** Wire codec. Defaults to the compact binary codec; must match the server. */
+  codec?: Codec;
 }
 
 /** How far behind server time to render remote entities, in ms (≈2 ticks @ 20Hz). */
@@ -100,6 +134,7 @@ export class NetClient {
   private readonly _onDespawn: (id: NetId, entity: Entity) => void;
   private readonly _now: () => number;
   private readonly _simulate: SimulateFn | null;
+  private readonly _codec: Codec;
 
   private _connected = false;
   private _seq = 0;
@@ -122,6 +157,7 @@ export class NetClient {
     this._onDespawn = options.onDespawn;
     this._now = options.now ?? (() => Date.now());
     this._simulate = options.simulate ?? null;
+    this._codec = options.codec ?? defaultCodec;
     this._transport.onMessage.add((data) => this._onMessage(data));
   }
 
@@ -172,7 +208,7 @@ export class NetClient {
   /** Encode and send one input, advancing the sequence. Returns its seq. */
   private _sendInput(input: Input): number {
     this._seq++;
-    this._transport.send(encode({ k: "input", seq: this._seq, input }));
+    this._transport.send(this._codec.encode({ k: "input", seq: this._seq, input }));
     return this._seq;
   }
 
@@ -199,10 +235,9 @@ export class NetClient {
   }
 
   private _onMessage(data: string | ArrayBuffer): void {
-    if (typeof data !== "string") return;
     let msg: ServerMessage;
     try {
-      msg = decodeServerMessage(data);
+      msg = this._codec.decodeServer(data);
     } catch {
       return;
     }

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { InputManager } from "../../packages/gamekit/src/input/index.js";
 
 // Movement bindings: each action has a keyboard + WASD + gamepad code.

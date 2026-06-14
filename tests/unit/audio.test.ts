@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import {
   AudioManager,
   type AudioBackend,
@@ -198,5 +198,26 @@ describe("AudioManager context", () => {
     await audio.resume();
     expect(f.resumed).toBe(true);
     expect(audio.suspended).toBe(false);
+  });
+
+  test("unlockOnGesture resumes on the first gesture", async () => {
+    const f = fakeBackend();
+    const audio = new AudioManager(f.backend);
+    const target = new EventTarget();
+    audio.unlockOnGesture(target);
+    expect(f.resumed).toBe(false);
+    target.dispatchEvent(new Event("pointerdown"));
+    await Promise.resolve();
+    expect(f.resumed).toBe(true);
+  });
+
+  test("unlockOnGesture cancel() detaches before any gesture", () => {
+    const f = fakeBackend();
+    const audio = new AudioManager(f.backend);
+    const target = new EventTarget();
+    const cancel = audio.unlockOnGesture(target);
+    cancel();
+    target.dispatchEvent(new Event("keydown"));
+    expect(f.resumed).toBe(false);
   });
 });

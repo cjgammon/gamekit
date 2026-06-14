@@ -1,4 +1,4 @@
-import type { Mat3 } from "../math/Mat3.js";
+import { Mat3 } from "../math/Mat3.js";
 import { Vec2 } from "../math/Vec2.js";
 import { Entity, type RenderTransform } from "../core/Entity.js";
 import { Group } from "../core/Group.js";
@@ -14,7 +14,9 @@ import type { TextureEntry } from "./WebGPURenderer.js";
 /** The slice of {@link WebGPURenderer} a view drives — fakeable in tests. */
 export interface SpriteRenderer {
   readonly batcher: SpriteBatcher<TextureEntry>;
-  beginFrame(viewProjection: Mat3): void;
+  /** Open a frame with the given projection. `clear` (default true) clears the
+   *  target; pass false to draw on top of a prior pass (the HUD overlay). */
+  beginFrame(viewProjection: Mat3, clear?: boolean): void;
   endFrame(): void;
 }
 
@@ -30,7 +32,24 @@ export interface SpriteRenderer {
  * Scene-agnostic — pass whichever scene is active. All scratch objects are
  * reused, so a frame allocates nothing.
  */
+/** Entities already warned about (zero size) — warn once each, not per frame. */
+const _zeroSizeWarned = new WeakSet<Entity>();
+
 export class RenderView {
+  /**
+   * Warn (once per entity) when a visible entity has zero width or height, so
+   * the classic "I added it but nothing shows" is self-explaining. Set false to
+   * silence (e.g. if you intentionally keep sized-later placeholders visible).
+   */
+  static warnOnZeroSize = true;
+
+  /**
+   * Skip entities whose (generously-padded) box falls outside the camera view —
+   * a large world then costs only what's on screen. Disabled automatically when
+   * the camera has no viewport (e.g. headless tests). Set false to draw all.
+   */
+  static cullSprites = true;
+
   private readonly _renderer: SpriteRenderer;
   private readonly _loader: AssetLoader;
 
@@ -45,11 +64,13 @@ export class RenderView {
   private readonly _uv: FrameUV = { u: 0, v: 0, uScale: 0, vScale: 0 };
   private readonly _inst: SpriteInstance<TextureEntry>;
 
-  // Visible world rect (for tilemap culling), recomputed each frame.
+  // Visible world rect (for culling), recomputed each frame.
   private _viewMinX = 0;
   private _viewMinY = 0;
   private _viewMaxX = 0;
   private _viewMaxY = 0;
+  // True when the camera has a real viewport, so the view rect is meaningful.
+  private _viewValid = false;
   private readonly _corner = new Vec2();
 
   constructor(renderer: SpriteRenderer, loader: AssetLoader) {
@@ -75,12 +96,28 @@ export class RenderView {
 
   /** Draw `scene` for this frame. `alpha` is `Game.render`'s 0..1 factor. */
   draw(scene: Scene, alpha: number): void {
+    const cam = scene.camera;
+
+    // World pass — camera projection; clears the target.
     this._computeViewRect(scene);
-    this._renderer.beginFrame(scene.camera.viewProjection(alpha));
+    this._renderer.beginFrame(cam.viewProjection(alpha), true);
     this._renderer.batcher.begin();
     this._drawGroup(scene.root, alpha);
     this._renderer.batcher.end();
     this._renderer.endFrame();
+
+    // HUD pass — screen-space projection (pixels from top-left), drawn on top.
+    if (scene.hud.count > 0) {
+      this._viewValid = false; // screen space: no frustum culling
+      this._renderer.beginFrame(
+        Mat3.ortho(cam.viewportWidth, cam.viewportHeight),
+        false,
+      );
+      this._renderer.batcher.begin();
+      this._drawGroup(scene.hud, alpha);
+      this._renderer.batcher.end();
+      this._renderer.endFrame();
+    }
   }
 
   // ---- Internal ----
@@ -111,6 +148,9 @@ export class RenderView {
     this._viewMinY = minY;
     this._viewMaxX = maxX;
     this._viewMaxY = maxY;
+    // Only cull against a real viewport; a 0×0 camera (headless tests) collapses
+    // the rect to a point and would wrongly cull everything.
+    this._viewValid = w > 0 && h > 0;
   }
 
   private _drawGroup(group: Group, alpha: number): void {
@@ -130,7 +170,20 @@ export class RenderView {
       this._drawText(e);
       return;
     }
-    if (e.width === 0 || e.height === 0) return; // nothing to rasterize
+    if (e.width === 0 || e.height === 0) {
+      // Visible but unrasterizable — almost always a forgotten size. Warn once.
+      if (RenderView.warnOnZeroSize && !_zeroSizeWarned.has(e)) {
+        _zeroSizeWarned.add(e);
+        const kind = e instanceof Sprite ? "Sprite" : "Entity";
+        console.warn(
+          `gamekit: a visible ${kind} has zero size (width=${e.width}, ` +
+            `height=${e.height}), so it won't render. Set its width/height ` +
+            `(or call setTexture with a frame size). Silence with ` +
+            `RenderView.warnOnZeroSize = false.`,
+        );
+      }
+      return; // nothing to rasterize
+    }
 
     const t = e.sampleRender(alpha, this._t);
     const inst = this._inst;
@@ -139,6 +192,21 @@ export class RenderView {
     inst.width = e.width * t.scaleX;
     inst.height = e.height * t.scaleY;
     inst.rotation = t.rotation;
+
+    // Frustum cull: skip if the entity is well outside the view. The radius is
+    // generous (|w| + |h|) so it never clips a visible sprite regardless of the
+    // origin pivot or rotation.
+    if (RenderView.cullSprites && this._viewValid) {
+      const r = Math.abs(inst.width) + Math.abs(inst.height);
+      if (
+        t.x + r < this._viewMinX ||
+        t.x - r > this._viewMaxX ||
+        t.y + r < this._viewMinY ||
+        t.y - r > this._viewMaxY
+      ) {
+        return; // off-screen
+      }
+    }
 
     if (e instanceof Sprite) {
       const entry = this._loader.resolve(e.textureId);

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{name}}</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #0c0c10;
+        color: #ddd;
+        font: 14px system-ui, sans-serif;
+      }
+      canvas { background: #14141c; border: 1px solid #333; }
+    </style>
+  </head>
+  <body>
+    <canvas id="view" width="640" height="480"></canvas>
+    <p>Move with <b>WASD</b>. Open this URL in a second tab to see two players.</p>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

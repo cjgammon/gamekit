@@ -62,7 +62,7 @@ export type { Transport } from "./net/Transport.js";
 export { createMemoryTransportPair } from "./net/MemoryTransport.js";
 export { Interpolator } from "./net/Interpolator.js";
 export type { InterpolatedState } from "./net/Interpolator.js";
-export { NetClient } from "./net/NetClient.js";
+export { NetClient, createEntityFactory } from "./net/NetClient.js";
 export type {
   EntityFactory,
   NetClientOptions,
@@ -75,3 +75,11 @@ export type { NetSceneOptions } from "./net/NetScene.js";
 export { simulatePlayer, PLAYER_SPEED, PLAYER_SIZE } from "./net/sim.js";
 export type { PlayerSimOptions } from "./net/sim.js";
 export * from "./net/protocol.js";
+export {
+  binaryCodec,
+  jsonCodec,
+  defaultCodec,
+  BinaryWriter,
+  BinaryReader,
+} from "./net/codec.js";
+export type { Codec } from "./net/codec.js";

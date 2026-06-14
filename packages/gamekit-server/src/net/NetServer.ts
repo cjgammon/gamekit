@@ -1,6 +1,6 @@
 import {
-  decodeClientMessage,
-  encode,
+  defaultCodec,
+  type Codec,
   type Entity,
   type Input,
   type NetId,
@@ -75,6 +75,8 @@ export class NetServer {
         i.worldW,
         i.worldH,
       ),
+    /** Wire codec. Defaults to the compact binary codec; must match the client. */
+    private readonly _codec: Codec = defaultCodec,
   ) {}
 
   get clientCount(): number {
@@ -121,7 +123,7 @@ export class NetServer {
     transport.onClose.add(() => this._onClose(rec));
 
     transport.send(
-      encode({
+      this._codec.encode({
         k: "welcome",
         tickRate: this._tickRate,
         you: id,
@@ -151,7 +153,7 @@ export class NetServer {
     const ents = this._collect();
     for (const rec of this._clients.values()) {
       rec.transport.send(
-        encode({
+        this._codec.encode({
           k: "snap",
           tick,
           t: now,
@@ -164,10 +166,9 @@ export class NetServer {
   }
 
   private _onMessage(rec: ClientRecord, data: string | ArrayBuffer): void {
-    if (typeof data !== "string") return; // JSON only this milestone
     let msg;
     try {
-      msg = decodeClientMessage(data);
+      msg = this._codec.decodeClient(data);
     } catch {
       return; // ignore malformed input
     }

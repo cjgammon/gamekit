@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Entity, Group } from "../../packages/gamekit/src/index.js";
 
 /** Entity that records lifecycle/update calls without integrating motion. */

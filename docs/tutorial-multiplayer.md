@@ -270,6 +270,6 @@ To grow this into a real game:
   from `@cjgammon/gamekit/renderer` to draw sprites with WebGPU; the networking
   code stays exactly the same.
 
-See the runnable reference in [`examples/netdemo/`](../examples/netdemo/), and
+See the runnable multiplayer reference in [`examples/pong/`](../examples/pong/), and
 [`CLAUDE.md`](../CLAUDE.md) for the architecture behind the snapshot/interpolation/
 prediction model.

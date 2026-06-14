@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Rng } from "../../packages/gamekit/src/index.js";
 
 describe("Rng determinism", () => {

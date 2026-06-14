@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bunnymark — gamekit</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #0c0c10;
+        color: #ddd;
+        font: 13px system-ui, sans-serif;
+      }
+      #view { width: 800px; height: 600px; background: #14141c; border: 1px solid #333; }
+      #hud { font-variant-numeric: tabular-nums; }
+      #hud b { color: #fff; }
+      a { color: #6cf; }
+    </style>
+  </head>
+  <body>
+    <div id="hud">starting…</div>
+    <canvas id="view"></canvas>
+    <p>
+      Hold the mouse on the canvas to add bunnies.
+      Add <code>?canvas</code> to the URL to force the Canvas2D backend.
+    </p>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

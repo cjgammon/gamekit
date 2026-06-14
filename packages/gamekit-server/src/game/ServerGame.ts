@@ -1,4 +1,10 @@
-import { Game, Scene, type GameConfig, type Transport } from "@cjgammon/gamekit";
+import {
+  Game,
+  Scene,
+  type Codec,
+  type GameConfig,
+  type Transport,
+} from "@cjgammon/gamekit";
 import { NetServer, type PlayerFactory } from "../net/NetServer.js";
 
 export interface ServerGameOptions {
@@ -7,6 +13,8 @@ export interface ServerGameOptions {
   /** Builds the entity each connection controls (default: a free-moving
    *  player). Supply your own for paddles, ships, etc. */
   createPlayer?: PlayerFactory;
+  /** Wire codec. Defaults to the compact binary codec; must match the client. */
+  codec?: Codec;
 }
 
 /**
@@ -36,6 +44,7 @@ export class ServerGame extends Game {
       this.width,
       this.height,
       options.createPlayer,
+      options.codec,
     );
   }
 

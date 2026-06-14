@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import type { InputState } from "@cjgammon/gamekit";
 import { createHarness } from "./harness.js";
 
