@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["@webgpu/types", "vite/client"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "noEmit": true,
+    "paths": {
+      "@cjgammon/gamekit": ["../packages/gamekit/src/index.ts"],
+      "@cjgammon/gamekit/renderer": ["../packages/gamekit/src/render/index.ts"],
+      "@cjgammon/gamekit/input": ["../packages/gamekit/src/input/index.ts"],
+      "@cjgammon/gamekit/audio": ["../packages/gamekit/src/audio/index.ts"],
+      "@cjgammon/gamekit/net": ["../packages/gamekit/src/net/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "examples/*"
+    "examples/*",
+    "site"
   ],
   "scripts": {
     "build": "npx tsc -p packages/gamekit && npx tsc -p packages/gamekit-server",
@@ -16,6 +17,7 @@
     "demo:mode-advanced": "vite examples/mode-advanced",
     "demo:bunnymark": "vite examples/bunnymark",
     "demo:pong": "npm run build && npm run dev -w gamekit-pong",
+    "site": "vite site",
     "test:e2e": "npm run build:gamekit && vitest run",
     "test:e2e:watch": "npm run build:gamekit && vitest",
     "docs:api": "typedoc",
