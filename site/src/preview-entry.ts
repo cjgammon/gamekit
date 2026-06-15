@@ -18,8 +18,13 @@ const hudEl = document.getElementById("hud") as HTMLDivElement;
 
 /** Tutorial helper: write a line of text over the canvas — a stand-in for a real
  *  BitmapFont HUD so the steps stay asset-free. */
+let lastHud: string | null = null;
 function hud(text: unknown): void {
   const s = text == null ? "" : String(text);
+  // Steps may call hud() every frame (e.g. while moving). Only do work when the
+  // text actually changes, so we don't flood the parent with postMessages.
+  if (s === lastHud) return;
+  lastHud = s;
   hudEl.textContent = s;
   // Report it so the tutorial can tell when a mission is complete.
   parent.postMessage({ type: "hud", text: s }, "*");

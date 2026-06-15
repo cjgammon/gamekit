@@ -86,7 +86,9 @@ export function PlayTrack() {
 
   function onSignal(sig: PreviewSignal) {
     if (sig.kind === "ok") setRan(true);
-    else if (sig.kind === "hud") setHuds((h) => [...h, sig.text]);
+    else if (sig.kind === "hud")
+      // Ignore a duplicate tail and keep the list bounded (goals only scan recent text).
+      setHuds((h) => (h[h.length - 1] === sig.text ? h : [...h, sig.text].slice(-50)));
   }
 
   function setCode(v: string) {
