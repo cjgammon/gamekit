@@ -80,16 +80,29 @@ a { color: var(--accent); }
   color: #ffd28a;
   font-size: 13px;
 }
-.learn-answer {
+/* The exact code to copy, shown above the typing box. */
+.learn-target {
   flex: 0 0 auto;
+  margin: 12px 0 0;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: rgba(108, 168, 255, 0.08);
+  overflow: hidden;
+}
+.learn-target-head {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+.learn-target pre {
   margin: 0;
-  max-height: 40%;
+  max-height: 22vh;
   overflow: auto;
   padding: 10px 12px;
-  border-top: 1px solid var(--border);
-  background: var(--panel-2);
-  color: #cfe;
-  font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #eaf2ff;
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: pre;
 }
 .learn-waiting { color: var(--muted); text-align: center; }

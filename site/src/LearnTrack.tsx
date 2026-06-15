@@ -28,7 +28,7 @@ export function LearnTrack() {
   });
   const [typed, setTyped] = useState("");
   const [wrong, setWrong] = useState(false);
-  const [peek, setPeek] = useState(false);
+  const [showTarget, setShowTarget] = useState(true); // the code to copy is shown by default
 
   const [runKey, setRunKey] = useState(0);
   const [js, setJs] = useState("");
@@ -67,7 +67,7 @@ export function LearnTrack() {
   useEffect(() => {
     setTyped("");
     setWrong(false);
-    setPeek(false);
+    setShowTarget(true);
   }, [idx]);
 
   function check() {
@@ -125,14 +125,21 @@ export function LearnTrack() {
           <article class="prose" dangerouslySetInnerHTML={{ __html: explainHtml }} />
         )}
 
+        {!done && showTarget && (
+          <section class="learn-target">
+            <div class="learn-target-head">✍️ Type this into the box below</div>
+            <pre>{pieceAdd(idx)}</pre>
+          </section>
+        )}
+
         {!done && (
           <div class="workbench">
             <section class="editor-pane">
               <div class="pane-bar">
-                <span>Type this piece</span>
+                <span>Your turn — type it here</span>
                 <span class="spacer" />
-                <button class="btn" onClick={() => setPeek((p) => !p)}>
-                  {peek ? "Hide 👀" : "Peek 👀"}
+                <button class="btn" onClick={() => setShowTarget((s) => !s)}>
+                  {showTarget ? "Hide answer" : "Show answer"}
                 </button>
                 <button class="btn" onClick={fillIn}>Fill it in</button>
                 <button class="btn primary" onClick={check}>Check ✓</button>
@@ -140,11 +147,10 @@ export function LearnTrack() {
               <CodeEditor value={typed} onChange={(v) => { setTyped(v); setWrong(false); }} />
               {wrong && (
                 <p class="learn-hint">
-                  Not quite — check the spelling and symbols, or tap <em>Peek 👀</em> to
-                  see it. You can always <em>Fill it in</em>.
+                  Not quite — match the example above letter for letter (don't worry
+                  about spaces). Or just tap <em>Fill it in</em>.
                 </p>
               )}
-              {peek && <pre class="learn-answer">{pieceAdd(idx)}</pre>}
             </section>
 
             <section class="preview-pane">

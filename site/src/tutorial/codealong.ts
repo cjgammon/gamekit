@@ -32,36 +32,45 @@ export const pieces: Piece[] = [
     label: "Make the game",
     explain: `# Let's make a game! 🎮
 
-A program is just **instructions** you write for the computer. We'll write ours
-one line at a time — type each piece, press **Check ✓**, and watch your game grow.
+A program is just **instructions** for the computer, written one line at a time.
+You'll type each piece, press **Check ✓**, and watch your game appear.
 
-Here's the very first line:
+Here's your very first line — it builds the game itself. Let's name every part:
 
-- \`const game\` means **"remember this and call it \`game\`."** \`const\` makes a
-  named box to keep something in.
-- \`createGame(...)\` is a **function** — a ready-made machine. You hand it the
-  \`canvas\` (the screen) and some settings, and it gives you back a game.
-- \`await\` means **"wait for it to be ready"** before moving on.
+- **\`const game\`** — \`const\` makes a labeled box to keep something in, and we're
+  calling this one \`game\`. From now on, "\`game\`" means *our game*.
+- **\`=\`** — puts whatever is on the right **into** the box on the left.
+- **\`await\`** — *"wait here until it's ready."* Building a game takes a moment, so
+  we wait for it to finish before moving on.
+- **\`createGame(...)\`** — a **function**: a ready-made machine that builds a game
+  for us. Whatever we put inside the \`( )\` is what we hand to the machine.
+- **\`canvas\`** — the rectangle on the page where the game gets drawn. (We've set
+  it up for you — you just hand it over.)
+- **\`{ fov: 480, autoResize: true }\`** — the **settings**, written as
+  \`name: value\` pairs inside curly braces \`{ }\`. \`fov: 480\` means *"show about
+  480 steps across"* (how zoomed-in it looks), and \`autoResize: true\` means
+  *"stretch to fit the window."*
 
-Type it exactly as shown, then press **Check ✓**.`,
+Type it into the box below, then press **Check ✓**.`,
   },
   {
     id: "scene",
     label: "Make a scene",
     explain: `# A world to play in 🎬
 
-Every game needs a **scene** — the little world it lives in. We make our own kind
-of scene using a **class**.
+Every game needs a **scene** — the little world it lives in. We build our own kind
+of scene from a ready-made one called \`Scene\`, using a **class**.
 
-Think of a **class** as a **blueprint** (like LEGO instructions).
-\`class PlayScene extends Scene\` means *"make a new blueprint called PlayScene
-that's a Scene, with our own extra stuff."*
-
-Inside, \`create()\` is a **function that runs once at the start** — perfect for
-setting things up. \`this\` means *"this scene,"* and
-\`this.camera.centerOn(240, 180)\` aims the camera at the middle of our play area.
-
-The curly braces \`{ }\` hold everything that belongs inside.`,
+- A **class** is a **blueprint** (like LEGO instructions). \`class PlayScene
+  extends Scene\` means *"make a new blueprint named \`PlayScene\` that's a \`Scene\`,
+  with our own extra stuff."* \`extends\` = *"start with everything a Scene already
+  has."*
+- Everything between the \`{ }\` belongs **inside** the blueprint.
+- \`create()\` is a **function that runs once at the very start** — the perfect spot
+  to set things up. (Its own \`{ }\` holds the setup steps.)
+- \`this\` means *"this scene right here."* \`this.camera\` is the scene's **camera**
+  (what you look through), and \`centerOn(240, 180)\` aims it at the spot **240
+  across and 180 down** — the middle of our play area.`,
   },
   {
     id: "play",
@@ -84,37 +93,47 @@ but real. We'll fill it up next.`,
     label: "Add a hero",
     explain: `# Add a hero 🦸
 
-Time for a player! A **Sprite** is a picture (or a colored box) you can put in
-the scene.
+Time for a player! A **Sprite** is something you can see in the scene — a picture,
+or just a colored box. We make one and set it up line by line:
 
-We make one, give it a **size** (\`width\` / \`height\`), a **color**
-(\`tint\` — \`0x66ccff\` is sky blue), and a **spot** (\`setPosition(x, y)\`).
-Then \`this.add(...)\` drops it into the scene.
+- \`this.player = new Sprite()\` — \`new Sprite()\` **makes a brand-new sprite**, and
+  \`this.player =\` stores it in a box on the scene named \`player\`, so our other
+  functions can find it later.
+- \`this.player.width = 40\` and \`.height = 40\` — its **size**, 40 steps each way.
+- \`this.player.tint = 0x66ccff\` — its **color**. The \`0x...\` is just how we write
+  a color in code; \`0x66ccff\` is sky blue.
+- \`this.player.setPosition(220, 200)\` — where it starts: **220 across, 200 down**.
+- \`this.add(this.player)\` — **drops it into the scene** so it actually shows up.
 
-This all goes **inside \`create()\`**, right after the camera line — so it happens
-the moment the game starts. Run it to meet your hero!`,
+This all goes **inside \`create()\`**, right after the camera line. Run it to meet
+your hero!`,
   },
   {
     id: "coin",
     label: "Add a coin",
     explain: `# Add some treasure 🪙
 
-A game needs a **goal**. Let's add a coin — another Sprite, gold this time
-(\`0xffcc44\`). Same recipe as the hero: make it, size it, color it, place it,
-add it.
+A game needs a **goal** — something to chase. Let's add a coin. It's another
+\`Sprite\`, built with the **exact same recipe** as the hero: make it, size it,
+color it, place it, then \`this.add\` it.
 
-Put this **right after the hero**, still inside \`create()\`.`,
+The only differences: it's a bit smaller (\`30\`), it's gold instead of blue
+(\`0xffcc44\`), and it starts in a different spot. Put this **right after the
+hero**, still inside \`create()\`.`,
   },
   {
     id: "score",
     label: "Keep score",
     explain: `# Keep score 🔢
 
-Let's count the coins you grab. \`this.score = 0\` makes a number that belongs to
-the scene, starting at zero.
+Let's count the coins you grab.
 
-\`hud("Score: 0")\` writes text on top of the screen. (\`hud\` is a little helper
-we gave you for showing words.)
+- \`this.score = 0\` makes a box on the scene named \`score\` and starts it at **0**.
+  (Like \`this.player\` and \`this.coin\`, the \`this.\` keeps it on the scene so every
+  function can reach it.)
+- \`hud("Score: 0")\` shows words on top of the screen. Anything inside \`" "\` quotes
+  is **text** — exactly the letters that show up. (\`hud\` is a little helper we gave
+  you for putting words on screen.)
 
 These are the **last lines inside \`create()\`**.`,
   },
@@ -123,14 +142,19 @@ These are the **last lines inside \`create()\`**.`,
     label: "Listen for keys",
     explain: `# Listen for the keyboard ⌨️
 
-To move, the game has to **listen** for key presses. \`InputManager\` does that.
-We give it names — \`up\`, \`down\`, \`left\`, \`right\` — and which keys count for
-each. We list **both** WASD **and** the arrow keys, so either works.
+To move, the game has to **listen** for key presses. \`new InputManager({ ... })\`
+makes a listener, and the \`{ }\` tells it which keys to watch:
 
-\`input.attach(window)\` switches the listening on.
+- \`up\`, \`down\`, \`left\`, \`right\` are **names we pick** for the four directions.
+- The \`[ ]\` square brackets hold a **list**. \`up: ["KeyW", "ArrowUp"]\` means
+  *"either the W key **or** the up-arrow counts as up."* That's why WASD **and**
+  the arrow keys both work.
+- \`const input =\` keeps the listener in a box named \`input\`.
+- \`input.attach(window)\` switches it on. \`window\` is the **whole page**, so now
+  it's listening to your keyboard.
 
-This is its own block, **above the class** (at the top level). Nothing looks
-different yet — but the game is now listening.`,
+This is its own block, **above the class**. Nothing looks different yet — but the
+game is now listening.`,
   },
   {
     id: "move",
@@ -139,10 +163,16 @@ different yet — but the game is now listening.`,
 
 Moving needs code that runs **every frame**, not just once. So we add a second
 function to our scene: \`fixedUpdate(dt)\`. The game loop calls it ~60 times a
-second. \`super.fixedUpdate(dt)\` lets the normal scene work happen too.
+second, and \`dt\` is how much time has passed since last time.
+\`super.fixedUpdate(dt)\` lets the normal scene work happen too.
 
-We check which keys are held to get a direction (\`dx\`, \`dy\`), then
-\`velocity.set(...)\` tells the hero how fast to go. Bigger number = faster!
+- \`input.isDown("right")\` asks *"is the right key held down?"* — the answer is
+  \`true\` or \`false\`.
+- \`... ? 1 : 0\` is a tiny question: *"if yes use 1, if no use 0."* So **right
+  minus left** gives \`-1\`, \`0\`, or \`1\` — that's our sideways direction \`dx\`
+  (and \`dy\` is up/down the same way).
+- \`this.player.velocity.set(dx * 220, dy * 220)\` sets the hero's **speed**.
+  \`220\` is how fast — bigger = faster!
 
 Add this **inside the class, just after \`create()\`**. Run it and use WASD or the
 arrow keys!`,
@@ -152,12 +182,20 @@ arrow keys!`,
     label: "Grab the coin",
     explain: `# Grab the coin! 🎯
 
-Now make grabbing work. \`this.overlap(a, b, () => { ... })\` checks every frame
-whether the hero is **touching** the coin — and runs the code in \`{ ... }\` when
-they do.
+Now make grabbing work. \`this.overlap(...)\` checks **every frame** whether two
+things are **touching**.
 
-When they touch: add \`1\` to the score, **move the coin** to a new random spot,
-and update the text. \`Math.random()\` gives a surprise number each time.
+- The first two parts, \`this.player\` and \`this.coin\`, are the two things to check.
+- \`() => { ... }\` is a **little list of instructions to run** *only when they
+  touch* (it's a function too — this one just has no name).
+
+When they touch:
+- \`this.score++\` — \`++\` means **add 1**, so the score goes up.
+- \`this.coin.setPosition(40 + Math.random() * 400, ...)\` — \`Math.random()\` gives a
+  surprise number between 0 and 1, so \`Math.random() * 400\` is somewhere 0–400.
+  Adding \`40\` keeps it on screen, so the coin **jumps to a new random spot**.
+- \`hud("Score: " + this.score)\` — here the \`+\` **glues** the word \`"Score: "\` onto
+  the number, showing things like \`Score: 3\`.
 
 This goes **inside \`fixedUpdate\`**, after the movement lines.`,
   },
