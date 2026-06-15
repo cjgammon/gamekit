@@ -1,11 +1,10 @@
-name: Deploy demos to GitHub Pages
+name: Deploy site + demos to GitHub Pages
 
-# Builds the playable demos and publishes them to GitHub Pages so you can share a
-# link. The `mode` demo uses procedural art, so it needs no asset downloads.
-#
-# Pages serves a project site at https://<user>.github.io/<repo>/, so the demo is
-# built with a base path of /<repo>/mode/. Change REPO below if your repo name
-# differs, or set it to "" for a user/org or custom-domain site.
+# Publishes the interactive tutorial site as the Pages root, with the playable
+# demos under /demos/*. Pages serves a project site at
+# https://<user>.github.io/<repo>/, so everything is built with that base path.
+# Change REPO below if your repo name differs (or set it to "" for a user/org or
+# custom-domain site, and drop the base flags).
 
 on:
   push:
@@ -37,29 +36,14 @@ jobs:
 
       - run: npm install
 
-      - name: Build the engine
-        run: npm run build:gamekit
+      - name: Build the tutorial site (Pages root)
+        run: SITE_BASE="/${REPO}/" npx vite build site --outDir "$GITHUB_WORKSPACE/_site"
 
       - name: Build the mode demo
-        run: npx vite build examples/mode-simple --base="/${REPO}/mode/" --outDir "$GITHUB_WORKSPACE/_site/mode"
+        run: npx vite build examples/mode-simple --base="/${REPO}/demos/mode/" --outDir "$GITHUB_WORKSPACE/_site/demos/mode"
 
-      - name: Landing page
-        run: |
-          mkdir -p _site
-          cat > _site/index.html <<HTML
-          <!doctype html>
-          <meta charset="utf-8" />
-          <title>gamekit demos</title>
-          <style>
-            body { font: 16px system-ui, sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; }
-            a { color: #06c; }
-          </style>
-          <h1>gamekit demos</h1>
-          <ul>
-            <li><a href="./mode/">Mode</a> — a small arena shooter (WASD + arrows). Needs a WebGPU browser.</li>
-          </ul>
-          <p>Source: <a href="https://github.com/cjgammon/${REPO}">github.com/cjgammon/${REPO}</a></p>
-          HTML
+      - name: Build the bunnymark demo
+        run: npx vite build examples/bunnymark --base="/${REPO}/demos/bunnymark/" --outDir "$GITHUB_WORKSPACE/_site/demos/bunnymark"
 
       - uses: actions/upload-pages-artifact@v3
         with:
