@@ -1,7 +1,17 @@
 # gamekit site
 
-The interactive **Get Started** tutorial — build a small game step by step with a
-live, editable code editor and an instant preview.
+The interactive **Get Started** tutorial. Two tracks, switchable from the top bar
+(and deep-linkable via the URL hash — `#learn` / `#play`):
+
+- **⌨️ Type it out** (`#learn` · `src/LearnTrack.tsx` + `src/tutorial/codealong.ts`)
+  — for someone who's never coded. Build the whole game from nothing, one small
+  piece at a time, with every word (`const`, `class`, `new`, …) explained. The
+  learner types each piece, presses **Check** (a forgiving comparison that ignores
+  spacing, quotes, semicolons, optional trailing commas, and TS type annotations),
+  and watches a read-only "program so far" grow and run at each milestone. **Peek**
+  reveals the answer; **Fill it in** is the escape hatch.
+- **🛠️ Play & tweak** (`#play` · `src/PlayTrack.tsx` + `src/tutorial/steps.ts`) —
+  a working game per step with an achievement to earn by editing it.
 
 ```bash
 npm run site        # from the repo root → Vite dev server

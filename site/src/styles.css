@@ -46,6 +46,106 @@ a { color: var(--accent); }
 .toplinks a { color: var(--muted); text-decoration: none; }
 .toplinks a:hover { color: var(--text); }
 
+/* ---- track switch (Type it out | Play & tweak) ---- */
+.trackswitch {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 3px;
+}
+.track-tab {
+  font: 13px inherit;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.track-tab:hover { color: var(--text); }
+.track-tab.active { background: var(--accent); color: #04101f; font-weight: 600; }
+@media (max-width: 720px) { .track-tab { padding: 5px 8px; font-size: 12px; } }
+
+/* ---- Type-it-out track ---- */
+.learn-hint {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: rgba(255, 180, 80, 0.1);
+  color: #ffd28a;
+  font-size: 13px;
+}
+/* The exact code to copy, shown above the typing box. */
+.learn-target {
+  flex: 0 0 auto;
+  margin: 12px 0 0;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: rgba(108, 168, 255, 0.08);
+  overflow: hidden;
+}
+.learn-target-head {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+.learn-target pre {
+  margin: 0;
+  max-height: 22vh;
+  overflow: auto;
+  padding: 10px 12px;
+  color: #eaf2ff;
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+.learn-waiting { color: var(--muted); text-align: center; }
+.learn-waiting p { max-width: 320px; margin: 0; padding: 0 20px; }
+.learn-final {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  background: var(--panel);
+  color: #d7e0ee;
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+.program-so-far {
+  flex: 0 0 auto;
+  margin: 12px 0 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.program-so-far > summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+.program-so-far pre {
+  margin: 0;
+  max-height: 18vh;
+  overflow: auto;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  color: #d7e0ee;
+  font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+
 /* ---- body: sidebar + main ---- */
 .body { display: flex; flex: 1; min-height: 0; }
 
