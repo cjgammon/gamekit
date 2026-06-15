@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Game, Scene } from "../../packages/gamekit/src/index.js";
 
 /** Scene that counts how often the loop drives it. */

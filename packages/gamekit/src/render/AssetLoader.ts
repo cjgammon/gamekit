@@ -1,18 +1,15 @@
 import type { TextureEntry } from "./WebGPURenderer.js";
 
-/** The texture-creation surface the loader needs — satisfied by
- *  {@link WebGPURenderer}, and fakeable for headless tests. */
-export interface TextureFactory {
+/** The texture-creation surface the loader needs — satisfied by a backend
+ *  (e.g. {@link WebGPURenderer} or the Canvas2D renderer), and fakeable for
+ *  headless tests. Generic over the backend's texture-handle type `T`. */
+export interface TextureFactory<T = TextureEntry> {
   createTextureFromImage(
     image: ImageBitmap,
     frameWidth?: number,
     frameHeight?: number,
-  ): TextureEntry;
-  createSolidTexture(
-    rgba?: Uint8Array,
-    width?: number,
-    height?: number,
-  ): TextureEntry;
+  ): T;
+  createSolidTexture(rgba?: Uint8Array, width?: number, height?: number): T;
 }
 
 /** One image to load, keyed by the name sprites reference via `textureId`. */
@@ -28,34 +25,35 @@ export interface AssetSpec {
 export const WHITE_TEXTURE = "__white__";
 
 /**
- * Loads images into GPU textures and keeps a name → {@link TextureEntry}
- * registry the renderer resolves `Sprite.textureId` against. Always provides a
- * 1×1 white texture (under {@link WHITE_TEXTURE}) so solid-colored or
- * untextured entities can render with no image.
+ * Loads images into backend textures and keeps a name → texture-handle registry
+ * the renderer resolves `Sprite.textureId` against. Always provides a 1×1 white
+ * texture (under {@link WHITE_TEXTURE}) so solid-colored or untextured entities
+ * can render with no image. Generic over the backend's texture-handle type `T`
+ * (defaults to the WebGPU {@link TextureEntry}).
  *
  * Browser-only: {@link load} uses `fetch` + `createImageBitmap`. The registry
  * itself is pure, so it's unit-tested with a fake factory.
  */
-export class AssetLoader {
-  /** The built-in 1×1 white texture (premultiplied). */
-  readonly white: TextureEntry;
+export class AssetLoader<T = TextureEntry> {
+  /** The built-in 1×1 white texture. */
+  readonly white: T;
 
-  private readonly _factory: TextureFactory;
-  private readonly _textures = new Map<string, TextureEntry>();
+  private readonly _factory: TextureFactory<T>;
+  private readonly _textures = new Map<string, T>();
 
-  constructor(factory: TextureFactory) {
+  constructor(factory: TextureFactory<T>) {
     this._factory = factory;
     this.white = factory.createSolidTexture();
     this._textures.set(WHITE_TEXTURE, this.white);
   }
 
   /** Register a pre-built texture under a name (used by {@link load}). */
-  register(name: string, entry: TextureEntry): void {
+  register(name: string, entry: T): void {
     this._textures.set(name, entry);
   }
 
   /** The texture registered under `name`, or undefined. */
-  get(name: string): TextureEntry | undefined {
+  get(name: string): T | undefined {
     return this._textures.get(name);
   }
 
@@ -66,7 +64,7 @@ export class AssetLoader {
 
   /** The texture for `name`, falling back to the white texture when missing or
    *  when `name` is empty — so the renderer always has something to bind. */
-  resolve(name: string): TextureEntry {
+  resolve(name: string): T {
     return (name && this._textures.get(name)) || this.white;
   }
 
@@ -76,7 +74,7 @@ export class AssetLoader {
     url: string,
     frameWidth = 0,
     frameHeight = 0,
-  ): Promise<TextureEntry> {
+  ): Promise<T> {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to load asset "${name}": ${res.status}`);
     const bitmap = await createImageBitmap(await res.blob());

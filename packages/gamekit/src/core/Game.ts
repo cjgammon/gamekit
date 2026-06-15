@@ -5,6 +5,14 @@ export interface GameConfig {
   height: number;
   /** Fixed logic ticks per second. Default 20 — matches the server tick rate. */
   tickRate?: number;
+  /**
+   * Default camera zoom applied to each scene as it becomes active (before its
+   * `create()` runs, so a scene can still override it). Omit to leave each
+   * scene's camera at its own zoom — the headless server never sets this. The
+   * WebGPU `RenderGame` derives it from a `fov` to keep the field of view
+   * constant across device-pixel ratios.
+   */
+  defaultZoom?: number;
 }
 
 /**
@@ -24,11 +32,16 @@ export class Game {
    *  "spiral of death" when a frame stalls (tab backgrounded, GC pause). */
   static readonly MAX_FRAME_DT = 0.25;
 
-  readonly width: number;
-  readonly height: number;
+  /** Backing/viewport size in pixels (the world size on the headless server,
+   *  where it never changes). The WebGPU `RenderGame` updates these when the
+   *  canvas resizes; the server treats them as fixed world bounds. */
+  width: number;
+  height: number;
   readonly tickRate: number;
   /** Fixed logic step in seconds (1 / tickRate). */
   readonly fixedStep: number;
+  /** Camera zoom applied to each scene on activation, or null to leave it. */
+  defaultZoom: number | null;
 
   currentScene: Scene | null = null;
   /** Set by switchScene; promoted at the top of the next step (never mid-tick). */
@@ -45,6 +58,7 @@ export class Game {
     this.height = config.height;
     this.tickRate = config.tickRate ?? 20;
     this.fixedStep = 1 / this.tickRate;
+    this.defaultZoom = config.defaultZoom ?? null;
   }
 
   // ---- Scene management ----
@@ -125,6 +139,11 @@ export class Game {
     this.accumulator = 0;
     // Default the camera viewport to the game size; create() may override.
     this.currentScene.camera.resize(this.width, this.height);
+    // Apply the default zoom (if configured) before create(), so a scene can
+    // still override it. Skipped when null, preserving each camera's own zoom.
+    if (this.defaultZoom !== null) {
+      this.currentScene.camera.zoom = this.defaultZoom;
+    }
     this.currentScene.create();
   }
 

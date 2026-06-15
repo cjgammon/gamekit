@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Emitter, Particle, Rng } from "../../packages/gamekit/src/index.js";
 
 /** Run an emitter forward by `steps` fixed ticks of `dt`. */

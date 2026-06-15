@@ -1,0 +1,19 @@
+{
+  "name": "gamekit-mode-advanced",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Mode (advanced) — the Mode demo using the original game's art and sound (fetched on demand).",
+  "scripts": {
+    "fetch-assets": "node scripts/fetch-assets.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@cjgammon/gamekit": "*"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

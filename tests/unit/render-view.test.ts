@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import {
   BitmapFont,
   Entity,
@@ -104,6 +104,7 @@ describe("RenderView traversal", () => {
   });
 
   test("skips invisible and zero-size entities", () => {
+    RenderView.warnOnZeroSize = false; // exercised separately below
     const f = fakeRenderer();
     const view = new RenderView(f.renderer, loaderWith({}));
     const scene = new Scene();
@@ -116,6 +117,27 @@ describe("RenderView traversal", () => {
     view.draw(scene, 0);
     expect(f.instanceData.length / INSTANCE_FLOATS).toBe(1);
     expect(instX(f.instanceData, 0)).toBe(7);
+    RenderView.warnOnZeroSize = true;
+  });
+
+  test("warns once for a visible zero-size entity", () => {
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({}));
+    const scene = new Scene();
+    scene.add(new Entity(5, 5)); // visible, zero size
+
+    const original = console.warn;
+    let warnings = 0;
+    console.warn = () => {
+      warnings++;
+    };
+    try {
+      view.draw(scene, 0);
+      view.draw(scene, 0); // second frame must not re-warn
+    } finally {
+      console.warn = original;
+    }
+    expect(warnings).toBe(1);
   });
 
   test("batches by texture: sprite runs split, plain entities use white", () => {
@@ -223,6 +245,85 @@ describe("RenderView text drawing", () => {
     view.draw(scene, 0);
     expect(f.instanceData.length / INSTANCE_FLOATS).toBe(5); // space skipped
     expect(f.draws).toEqual([{ texture: fontTex, first: 0, count: 5 }]);
+  });
+});
+
+describe("RenderView sprite culling", () => {
+  test("skips entities outside the view, keeps those inside", () => {
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({}));
+    const scene = new Scene();
+    scene.camera.resize(200, 200).centerOn(0, 0); // view ≈ [-100, 100]²
+    scene.add(boxEntity(0, 0)); // in view
+    scene.add(boxEntity(5000, 0)); // far off-screen → culled
+    view.draw(scene, 0);
+    expect(f.instanceData.length / INSTANCE_FLOATS).toBe(1);
+    expect(instX(f.instanceData, 0)).toBe(0);
+  });
+
+  test("draws everything when cullSprites is disabled", () => {
+    RenderView.cullSprites = false;
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({}));
+    const scene = new Scene();
+    scene.camera.resize(200, 200).centerOn(0, 0);
+    scene.add(boxEntity(0, 0));
+    scene.add(boxEntity(5000, 0));
+    view.draw(scene, 0);
+    expect(f.instanceData.length / INSTANCE_FLOATS).toBe(2);
+    RenderView.cullSprites = true;
+  });
+
+  test("does not cull without a viewport (headless)", () => {
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({}));
+    const scene = new Scene(); // 0×0 camera → culling inactive
+    scene.add(boxEntity(5000, 0));
+    view.draw(scene, 0);
+    expect(f.instanceData.length / INSTANCE_FLOATS).toBe(1);
+  });
+});
+
+describe("RenderView HUD overlay", () => {
+  test("draws the screen-space hud in a second pass on top of the world", () => {
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({}));
+    const scene = new Scene();
+    scene.camera.resize(200, 200).centerOn(0, 0);
+    scene.add(boxEntity(0, 0)); // world
+    scene.addHud(boxEntity(5, 5)); // screen-space overlay
+
+    view.draw(scene, 0);
+
+    expect(f.began).toBe(2); // world pass + hud pass
+    expect(f.ended).toBe(2);
+    // The last pass is the hud; its instance is the hud box at (5,5).
+    expect(instX(f.instanceData, 0)).toBe(5);
+  });
+
+  test("no hud pass when the overlay is empty", () => {
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({}));
+    const scene = new Scene();
+    scene.camera.resize(200, 200).centerOn(0, 0);
+    scene.add(boxEntity(0, 0));
+
+    view.draw(scene, 0);
+
+    expect(f.began).toBe(1);
+  });
+
+  test("hud entities are never frustum-culled", () => {
+    const f = fakeRenderer();
+    const view = new RenderView(f.renderer, loaderWith({}));
+    const scene = new Scene();
+    scene.camera.resize(50, 50).centerOn(0, 0); // tiny world view
+    scene.addHud(boxEntity(900, 900)); // way outside the world view, but it's a HUD
+
+    view.draw(scene, 0);
+
+    expect(f.began).toBe(2); // empty world pass (clears) + hud pass
+    expect(f.instanceData.length / INSTANCE_FLOATS).toBe(1); // hud box not culled
   });
 });
 

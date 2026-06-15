@@ -189,8 +189,10 @@ export class WebGPURenderer implements InstanceSink<TextureEntry> {
 
   // ---- Frame ----
 
-  /** Begin a frame: upload the camera matrix and open the render pass. */
-  beginFrame(viewProjection: Mat3): void {
+  /** Begin a frame: upload the camera matrix and open the render pass. `clear`
+   *  (default true) clears the target; pass false to draw on top of a prior pass
+   *  in the same frame (e.g. a screen-space HUD overlay). */
+  beginFrame(viewProjection: Mat3, clear = true): void {
     packMat3Std140(viewProjection, this._uniformScratch);
     this._device.queue.writeBuffer(this._uniformBuffer, 0, this._uniformScratch);
 
@@ -200,7 +202,7 @@ export class WebGPURenderer implements InstanceSink<TextureEntry> {
         {
           view: this._context.getCurrentTexture().createView(),
           clearValue: this.clearColor,
-          loadOp: "clear",
+          loadOp: clear ? "clear" : "load",
           storeOp: "store",
         },
       ],

@@ -1,15 +1,14 @@
 {
-  "name": "pong",
+  "name": "gamekit-pong",
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "description": "pong demo",
-  "main": "index.js",
+  "description": "Pong — a 2-player online demo: authoritative server + client-side prediction, WebGPU client.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "concurrently -k -n server,client -c blue,green \"node server.js\" \"vite\"",
+    "build": "vite build"
   },
-  "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@cjgammon/gamekit": "*",
     "@cjgammon/gamekit-server": "*"
