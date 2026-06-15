@@ -19,7 +19,10 @@ const hudEl = document.getElementById("hud") as HTMLDivElement;
 /** Tutorial helper: write a line of text over the canvas — a stand-in for a real
  *  BitmapFont HUD so the steps stay asset-free. */
 function hud(text: unknown): void {
-  hudEl.textContent = text == null ? "" : String(text);
+  const s = text == null ? "" : String(text);
+  hudEl.textContent = s;
+  // Report it so the tutorial can tell when a mission is complete.
+  parent.postMessage({ type: "hud", text: s }, "*");
 }
 
 // The names the tutorial code runs against (no imports needed in the editor).

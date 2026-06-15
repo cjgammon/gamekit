@@ -40,6 +40,8 @@ a { color: var(--accent); }
   background: var(--panel);
 }
 .brand { font-weight: 700; font-size: 17px; }
+.tagline { color: var(--muted); font-size: 14px; }
+@media (max-width: 640px) { .tagline { display: none; } }
 .toplinks { margin-left: auto; display: flex; gap: 16px; }
 .toplinks a { color: var(--muted); text-decoration: none; }
 .toplinks a:hover { color: var(--text); }
@@ -90,6 +92,8 @@ a { color: var(--accent); }
   flex-shrink: 0;
 }
 .steplist .step.active .num { background: var(--accent); color: #04101f; }
+.steplist .step.done .num { background: #36c46a; color: #04101f; }
+.sidebar-foot { color: var(--muted); font-size: 12px; margin: 14px 10px 0; }
 
 /* ---- main ---- */
 .main {
@@ -124,6 +128,60 @@ a { color: var(--accent); }
   overflow-x: auto;
 }
 .prose pre code { background: none; border: none; padding: 0; }
+
+/* ---- mission bar ---- */
+.mission {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--accent);
+  border-radius: 12px;
+  background: rgba(108, 168, 255, 0.08);
+}
+.mission.won {
+  border-style: solid;
+  border-color: #36c46a;
+  background: rgba(54, 196, 106, 0.12);
+}
+.mission-badge { font-size: 20px; line-height: 1; }
+.mission-text { font-weight: 600; }
+.mission-next { margin-left: auto; }
+
+/* ---- celebration toast ---- */
+.celebrate {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: start center;
+  padding-top: 12vh;
+  pointer-events: none;
+  z-index: 50;
+}
+.celebrate-card {
+  text-align: center;
+  background: var(--panel);
+  border: 2px solid #36c46a;
+  border-radius: 16px;
+  padding: 18px 26px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  animation: pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.celebrate-emoji { font-size: 44px; animation: bounce 0.7s ease 0.2s 2; }
+.celebrate-text { font-size: 18px; font-weight: 700; margin-top: 6px; }
+@keyframes pop {
+  from { transform: scale(0.6) translateY(-12px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebrate-card, .celebrate-emoji { animation: none; }
+}
 
 /* ---- workbench: editor | preview ---- */
 .workbench {
