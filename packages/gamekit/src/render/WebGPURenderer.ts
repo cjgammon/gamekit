@@ -55,6 +55,7 @@ export class WebGPURenderer implements InstanceSink<TextureEntry> {
 
   private _instanceBuffer: GPUBuffer;
   private _instanceCapacityFloats: number;
+  private _destroyed = false;
 
   // Per-frame, valid between beginFrame and endFrame.
   private _encoder: GPUCommandEncoder | null = null;
@@ -179,6 +180,25 @@ export class WebGPURenderer implements InstanceSink<TextureEntry> {
   /** The GPU device, for callers that need to create their own resources. */
   get device(): GPUDevice {
     return this._device;
+  }
+
+  /** Release all GPU resources and destroy the device. Idempotent; the renderer
+   *  is unusable afterward. Call when tearing the game down (e.g. page unload) so
+   *  the device + its buffers/textures are freed immediately rather than lingering
+   *  until garbage collection — important when many short-lived games are created
+   *  (e.g. a live code editor that reloads a preview per run). */
+  destroy(): void {
+    if (this._destroyed) return;
+    this._destroyed = true;
+    this._instanceBuffer.destroy();
+    this._uniformBuffer.destroy();
+    this._quadBuffer.destroy();
+    try {
+      this._context.unconfigure();
+    } catch {
+      /* context may already be gone if the canvas/document is being torn down */
+    }
+    this._device.destroy();
   }
 
   /** Resize the drawing buffer to match a CSS/display size. */

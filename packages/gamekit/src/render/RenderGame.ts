@@ -91,6 +91,14 @@ export class RenderGame extends Game {
     this._resizeObserver = null;
   }
 
+  /** Stop the loop and release the WebGPU device + buffers. The game is unusable
+   *  afterward — build a fresh one with {@link create} to run again. Call this on
+   *  page/preview teardown so devices don't accumulate. */
+  destroy(): void {
+    this.stop();
+    this.renderer.destroy();
+  }
+
   protected override render(alpha: number): void {
     if (this.currentScene) this._view.draw(this.currentScene, alpha);
   }
