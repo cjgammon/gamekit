@@ -16,22 +16,48 @@ export type AnyRenderGame = RenderGame | Canvas2DGame;
  * the shared options (the two backends type it differently); set it after via
  * `game.renderer.clearColor`.
  *
+ * **Config is optional.** With no config the game fits the canvas: world units
+ * match CSS pixels (`fov` = the canvas's CSS width) and it re-fits as the canvas
+ * resizes. Pass `fov`/`width` to override.
+ *
  * ```ts
- * const game = await createGame(canvas, { fov: 480, autoResize: true });
+ * const game = await createGame(canvas);          // fits the canvas, 1 unit = 1px
+ * // or: await createGame(canvas, { fov: 480 });  // show 480 world units across
  * game.switchScene(new PlayScene());
  * game.start();
  * ```
  */
 export async function createGame(
   canvas: HTMLCanvasElement,
-  config: RenderGameConfig,
+  config: RenderGameConfig = {},
 ): Promise<AnyRenderGame> {
+  const resolved = withFitDefaults(canvas, config);
   if (isWebGPUAvailable()) {
     try {
-      return await RenderGame.create(canvas, config);
+      return await RenderGame.create(canvas, resolved);
     } catch {
       // Device acquisition failed despite navigator.gpu — fall back.
     }
   }
-  return Canvas2DGame.create(canvas, config);
+  return Canvas2DGame.create(canvas, resolved);
+}
+
+/**
+ * When neither a `fov` nor an explicit `width` is given, default to fit-to-canvas
+ * mode: `fov` = the canvas's CSS width (so 1 world unit ≈ 1 CSS pixel) and
+ * `autoResize` on, so `createGame(canvas)` "just works". Explicit configs pass
+ * through untouched.
+ */
+function withFitDefaults(
+  canvas: HTMLCanvasElement,
+  config: RenderGameConfig,
+): RenderGameConfig {
+  if (config.fov !== undefined || config.width !== undefined) return config;
+  const cssWidth =
+    canvas.getBoundingClientRect().width || canvas.clientWidth || canvas.width || 480;
+  return {
+    ...config,
+    fov: Math.max(1, Math.round(cssWidth)),
+    autoResize: config.autoResize ?? true,
+  };
 }
