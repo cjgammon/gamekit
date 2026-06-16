@@ -46,10 +46,9 @@ Here's your very first line — it builds the game itself. Let's name every part
   for us. Whatever we put inside the \`( )\` is what we hand to the machine.
 - **\`canvas\`** — the rectangle on the page where the game gets drawn. (We've set
   it up for you — you just hand it over.)
-- **\`{ fov: 480, autoResize: true }\`** — the **settings**, written as
-  \`name: value\` pairs inside curly braces \`{ }\`. \`fov: 480\` means *"show about
-  480 steps across"* (how zoomed-in it looks), and \`autoResize: true\` means
-  *"stretch to fit the window."*
+
+That's all it needs! \`createGame\` picks smart **defaults** (it sizes itself to fit
+the canvas), so you don't have to. Later you *could* hand it settings to customize.
 
 Type it into the box below, then press **Check ✓**.`,
   },
@@ -221,7 +220,7 @@ export const RUNNABLE_FROM = 2;
 // 2 switchScene+start · 3 hero · 4 coin · 5 score · 6 input · 7 fixedUpdate ·
 // 8 overlap · 9 shake. Closing braces carry their opening milestone's tag.
 const SEGMENTS: Seg[] = [
-  { m: 0, text: `const game = await createGame(canvas, { fov: 480, autoResize: true });` },
+  { m: 0, text: `const game = await createGame(canvas);` },
   {
     m: 6,
     text: `\n\nconst input = new InputManager({\n  up: ["KeyW", "ArrowUp"],\n  down: ["KeyS", "ArrowDown"],\n  left: ["KeyA", "ArrowLeft"],\n  right: ["KeyD", "ArrowRight"],\n});\ninput.attach(window);`,
