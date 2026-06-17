@@ -3,6 +3,7 @@ import { marked } from "marked";
 import { steps } from "./tutorial/steps";
 import { CodeEditor } from "./components/CodeEditor";
 import { Preview, type PreviewSignal } from "./components/Preview";
+import { SidebarToggle, useSidebarCollapsed } from "./components/SidebarToggle";
 import { tsToJs } from "./runner/transpile";
 
 const STEP_KEY = "gamekit-tutorial-step";
@@ -99,11 +100,12 @@ export function PlayTrack() {
     doRun(step.starter);
   }
   const go = (i: number) => setStepIndex(Math.max(0, Math.min(steps.length - 1, i)));
+  const [collapsed, toggleCollapsed] = useSidebarCollapsed();
 
   return (
     <>
       <div class="body">
-        <aside class="sidebar">
+        <aside class={`sidebar${collapsed ? " collapsed" : ""}`}>
           <h2>Your quest</h2>
           <ol class="steplist">
             {steps.map((s, i) => (
@@ -111,14 +113,16 @@ export function PlayTrack() {
                 <button
                   class={`step${i === stepIndex ? " active" : ""}${done.has(s.id) ? " done" : ""}`}
                   onClick={() => go(i)}
+                  title={s.title}
                 >
                   <span class="num">{done.has(s.id) ? "✓" : i + 1}</span>
-                  {s.title}
+                  <span class="step-label">{s.title}</span>
                 </button>
               </li>
             ))}
           </ol>
           <p class="sidebar-foot">{done.size} / {steps.length} done</p>
+          <SidebarToggle collapsed={collapsed} onToggle={toggleCollapsed} />
         </aside>
 
         <main class="main">
