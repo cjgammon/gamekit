@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "site", "--", "--port", "5173", "--strictPort"],
+      "port": 5173
+    },
+    {
+      "name": "demo:mode-simple",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "demo:mode-simple", "--", "--port", "5174", "--strictPort"],
+      "port": 5174
+    },
+    {
+      "name": "demo:mode-advanced",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "demo:mode-advanced", "--", "--port", "5175", "--strictPort"],
+      "port": 5175
+    },
+    {
+      "name": "demo:bunnymark",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "demo:bunnymark", "--", "--port", "5176", "--strictPort"],
+      "port": 5176
+    },
+    {
+      "name": "demo:pong",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "gamekit-pong"],
+      "port": 5173
+    }
+  ]
+}

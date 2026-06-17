@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { marked } from "marked";
 import { CodeEditor } from "./components/CodeEditor";
 import { Preview } from "./components/Preview";
+import { SidebarToggle, useSidebarCollapsed } from "./components/SidebarToggle";
 import { tsToJs } from "./runner/transpile";
 import {
   pieces,
@@ -28,10 +29,18 @@ export function LearnTrack() {
   });
   const [typed, setTyped] = useState("");
   const [wrong, setWrong] = useState(false);
-  const [showTarget, setShowTarget] = useState(true); // the code to copy is shown by default
+  // The two collapsible panels below the editor (controlled so they stay where
+  // the user puts them; "Type this" reopens for each new piece).
+  const [targetOpen, setTargetOpen] = useState(true);
+  const [programOpen, setProgramOpen] = useState(true);
 
   const [runKey, setRunKey] = useState(0);
   const [js, setJs] = useState("");
+
+  // Finished state: an editable copy of the whole program + its transpile error.
+  const [finalCode, setFinalCode] = useState("");
+  const [finalErr, setFinalErr] = useState<string | null>(null);
+  const liveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const done = idx >= pieces.length;
   const piece = done ? null : pieces[idx];
@@ -47,12 +56,13 @@ export function LearnTrack() {
     localStorage.setItem(IDX_KEY, String(idx));
   }, [idx]);
 
-  // Run the latest finished program whenever the build advances.
+  // Run the latest milestone while building. The finished state is driven by the
+  // editable final program instead (see the effect below), so skip it here.
   useEffect(() => {
-    const m = done ? pieces.length - 1 : built;
-    if (m >= RUNNABLE_FROM) {
+    if (done) return;
+    if (built >= RUNNABLE_FROM) {
       try {
-        setJs(tsToJs(programThrough(m)));
+        setJs(tsToJs(programThrough(built)));
         setRunKey((k) => k + 1);
       } catch {
         /* assembled program is always valid; ignore */
@@ -67,7 +77,7 @@ export function LearnTrack() {
   useEffect(() => {
     setTyped("");
     setWrong(false);
-    setShowTarget(true);
+    setTargetOpen(true);
   }, [idx]);
 
   function check() {
@@ -88,11 +98,52 @@ export function LearnTrack() {
     setIdx(0);
   }
 
+  // ---- Finished state: edit the whole program and see it live ----
+
+  function runFinal(src: string) {
+    try {
+      setJs(tsToJs(src));
+      setFinalErr(null);
+      setRunKey((k) => k + 1);
+    } catch (e) {
+      // Keep the last good preview running; just surface the syntax error.
+      setFinalErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  // When the build finishes, seed the editor with the whole program and run it
+  // instantly. Clears any pending live-run when leaving the finished state.
+  useEffect(() => {
+    if (!done) return;
+    const src = programThrough(pieces.length - 1);
+    setFinalCode(src);
+    runFinal(src);
+    return () => {
+      if (liveTimer.current) clearTimeout(liveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
+
+  // Live-refresh the preview ~350ms after the last edit (debounced so we don't
+  // reload the iframe on every keystroke).
+  function onFinalChange(v: string) {
+    setFinalCode(v);
+    if (liveTimer.current) clearTimeout(liveTimer.current);
+    liveTimer.current = setTimeout(() => runFinal(v), 350);
+  }
+  function resetFinal() {
+    if (liveTimer.current) clearTimeout(liveTimer.current);
+    const src = programThrough(pieces.length - 1);
+    setFinalCode(src);
+    runFinal(src);
+  }
+
   const runnableNow = built >= RUNNABLE_FROM || done;
+  const [collapsed, toggleCollapsed] = useSidebarCollapsed();
 
   return (
     <div class="body">
-      <aside class="sidebar">
+      <aside class={`sidebar${collapsed ? " collapsed" : ""}`}>
         <h2>Type it out</h2>
         <ol class="steplist">
           {pieces.map((p, i) => (
@@ -100,14 +151,16 @@ export function LearnTrack() {
               <button
                 class={`step${i === idx ? " active" : ""}${i < idx ? " done" : ""}`}
                 onClick={() => setIdx(i)}
+                title={p.label}
               >
                 <span class="num">{i < idx ? "✓" : i + 1}</span>
-                {p.label}
+                <span class="step-label">{p.label}</span>
               </button>
             </li>
           ))}
         </ol>
         <p class="sidebar-foot">{Math.min(idx, pieces.length)} / {pieces.length} typed</p>
+        <SidebarToggle collapsed={collapsed} onToggle={toggleCollapsed} />
       </aside>
 
       <main class="main">
@@ -119,17 +172,14 @@ export function LearnTrack() {
               a coin to chase, a score, and a little screen shake. That's exactly how
               games get made: one small piece at a time.
             </p>
-            <p>Play it below with WASD or the arrow keys. 🎮</p>
+            <p>
+              Play it below with WASD or the arrow keys. 🎮 Want to change
+              something? <strong>Edit the code</strong> on the left — your game
+              updates as you type. Try a new color, a faster hero, or a bigger coin!
+            </p>
           </article>
         ) : (
           <article class="prose" dangerouslySetInnerHTML={{ __html: explainHtml }} />
-        )}
-
-        {!done && showTarget && (
-          <section class="learn-target">
-            <div class="learn-target-head">✍️ Type this into the box below</div>
-            <pre>{pieceAdd(idx)}</pre>
-          </section>
         )}
 
         {!done && (
@@ -138,17 +188,14 @@ export function LearnTrack() {
               <div class="pane-bar">
                 <span>Your turn — type it here</span>
                 <span class="spacer" />
-                <button class="btn" onClick={() => setShowTarget((s) => !s)}>
-                  {showTarget ? "Hide answer" : "Show answer"}
-                </button>
                 <button class="btn" onClick={fillIn}>Fill it in</button>
                 <button class="btn primary" onClick={check}>Check ✓</button>
               </div>
               <CodeEditor value={typed} onChange={(v) => { setTyped(v); setWrong(false); }} />
               {wrong && (
                 <p class="learn-hint">
-                  Not quite — match the example above letter for letter (don't worry
-                  about spaces). Or just tap <em>Fill it in</em>.
+                  Not quite — match the “Type this” example below letter for letter
+                  (don't worry about spaces). Or just tap <em>Fill it in</em>.
                 </p>
               )}
             </section>
@@ -171,8 +218,13 @@ export function LearnTrack() {
         {done && (
           <div class="workbench">
             <section class="editor-pane">
-              <div class="pane-bar"><span>Your whole program</span></div>
-              <pre class="learn-final">{programThrough(pieces.length - 1)}</pre>
+              <div class="pane-bar">
+                <span>Your whole program — edit it live!</span>
+                <span class="spacer" />
+                <button class="btn" onClick={resetFinal}>Reset</button>
+              </div>
+              <CodeEditor value={finalCode} onChange={onFinalChange} />
+              {finalErr && <pre class="preview-error">{finalErr}</pre>}
             </section>
             <section class="preview-pane">
               <div class="pane-bar"><span>Your game</span></div>
@@ -181,11 +233,28 @@ export function LearnTrack() {
           </div>
         )}
 
-        {programSoFar && !done && (
-          <details class="program-so-far" open>
-            <summary>📜 Your program so far — {lineCount} {lineCount === 1 ? "line" : "lines"}</summary>
-            <pre>{programSoFar}</pre>
-          </details>
+        {!done && (
+          <div class="learn-aux">
+            <details
+              class="learn-collapse target"
+              open={targetOpen}
+              onToggle={(e) => setTargetOpen((e.currentTarget as HTMLDetailsElement).open)}
+            >
+              <summary>✍️ Type this</summary>
+              <pre>{pieceAdd(idx)}</pre>
+            </details>
+
+            {programSoFar && (
+              <details
+                class="learn-collapse"
+                open={programOpen}
+                onToggle={(e) => setProgramOpen((e.currentTarget as HTMLDetailsElement).open)}
+              >
+                <summary>📜 Your program so far — {lineCount} {lineCount === 1 ? "line" : "lines"}</summary>
+                <pre>{programSoFar}</pre>
+              </details>
+            )}
+          </div>
         )}
 
         <nav class="stepnav">
