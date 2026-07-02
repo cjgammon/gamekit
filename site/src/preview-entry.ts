@@ -4,7 +4,7 @@
 // runs whatever code the parent posts. Each run gets a fresh iframe (the parent
 // reloads it); we tear down the game the editor created on unload so its WebGPU
 // device is freed immediately instead of lingering until GC.
-import { Scene, Entity, Sprite, Group, Camera, Vec2, Ease, Rng } from "@cjgammon/gamekit";
+import { Scene, Entity, Sprite, Group, Camera, Vec2, Ease, Rng, Emitter, Particle } from "@cjgammon/gamekit";
 import {
   createGame,
   RenderGame,
@@ -77,6 +77,8 @@ const scope: Record<string, unknown> = {
   Vec2,
   Ease,
   Rng,
+  Emitter,
+  Particle,
   InputManager,
   hud,
   canvas,

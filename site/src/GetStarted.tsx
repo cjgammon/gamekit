@@ -9,7 +9,7 @@ function trackFromHash(): Track {
   return location.hash.replace(/^#\/?/, "").toLowerCase() === "learn" ? "learn" : "play";
 }
 
-export function App() {
+export function GetStarted() {
   const [track, setTrack] = useState<Track>(trackFromHash);
 
   // Keep the toggle and the URL hash in sync (both directions).
@@ -29,29 +29,30 @@ export function App() {
   return (
     <div class="app">
       <header class="topbar">
-        <div class="brand">🎮 gamekit</div>
+        <a class="brand" href="./">🎮 gamekit</a>
         <div class="tagline">Make your first game!</div>
 
         <div class="trackswitch" role="tablist" aria-label="Tutorial style">
-          <button
-            class={`track-tab${track === "learn" ? " active" : ""}`}
-            role="tab"
-            aria-selected={track === "learn"}
-            onClick={() => go("learn")}
-          >
-            ⌨️ Type it out
-          </button>
           <button
             class={`track-tab${track === "play" ? " active" : ""}`}
             role="tab"
             aria-selected={track === "play"}
             onClick={() => go("play")}
           >
-            🛠️ Play &amp; tweak
+            🌱 Easy — play &amp; tweak
+          </button>
+          <button
+            class={`track-tab${track === "learn" ? " active" : ""}`}
+            role="tab"
+            aria-selected={track === "learn"}
+            onClick={() => go("learn")}
+          >
+            🚀 Advanced — type it out
           </button>
         </div>
 
         <nav class="toplinks">
+          <a href="./">Home</a>
           <a href="https://github.com/cjgammon/gamekit" target="_blank" rel="noreferrer">
             GitHub
           </a>
