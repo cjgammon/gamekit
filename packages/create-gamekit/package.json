@@ -1,6 +1,6 @@
 {
   "name": "create-gamekit",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Scaffold a new gamekit game — `npm create gamekit`.",
   "type": "module",
   "bin": {

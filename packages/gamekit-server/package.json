@@ -1,6 +1,6 @@
 {
   "name": "@cjgammon/gamekit-server",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Authoritative multiplayer server for gamekit — headless fixed-rate loop, from-scratch WebSocket transport, snapshot broadcast. Zero runtime dependencies.",
   "type": "module",
   "license": "MIT",

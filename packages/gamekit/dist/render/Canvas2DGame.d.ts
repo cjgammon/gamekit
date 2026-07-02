@@ -18,6 +18,9 @@ export declare class Canvas2DGame extends Game {
      *  {@link RenderGame.create} (explicit `width`/`height`, or `fov` fitting). */
     static create(canvas: HTMLCanvasElement, config: RenderGameConfig, options?: Canvas2DRendererOptions): Canvas2DGame;
     stop(): void;
+    /** Stop the loop. Canvas2D holds no GPU device, so there's nothing extra to
+     *  free — provided for parity with {@link RenderGame.destroy}. */
+    destroy(): void;
     protected render(alpha: number): void;
     private static _fit;
     private static _dpr;

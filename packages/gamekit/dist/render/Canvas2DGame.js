@@ -37,6 +37,11 @@ export class Canvas2DGame extends Game {
         this._resizeObserver?.disconnect();
         this._resizeObserver = null;
     }
+    /** Stop the loop. Canvas2D holds no GPU device, so there's nothing extra to
+     *  free — provided for parity with {@link RenderGame.destroy}. */
+    destroy() {
+        this.stop();
+    }
     render(alpha) {
         if (this.currentScene) {
             this.renderer.draw(this.currentScene, alpha, this.assets);
