@@ -1,13 +1,10 @@
 import type { Mat3 } from "../math/Mat3.js";
-import { Vec2 } from "../math/Vec2.js";
-import { Entity, type RenderTransform } from "../core/Entity.js";
-import { Group } from "../core/Group.js";
-import { Sprite } from "../core/Sprite.js";
-import { Tilemap } from "../core/Tilemap.js";
-import { Text } from "../core/Text.js";
+import type { Camera } from "../core/Camera.js";
 import type { Scene } from "../core/Scene.js";
 import { Texture } from "./Texture.js";
 import type { AssetLoader, TextureFactory } from "./AssetLoader.js";
+import { SceneWalker, type DrawSink, type RenderPass } from "./SceneWalker.js";
+import type { SpriteInstance } from "./SpriteBatcher.js";
 
 /**
  * A texture handle for the Canvas2D backend: the frame metadata plus a drawable
@@ -33,37 +30,34 @@ function hexColor(tint: number): string {
 
 /**
  * A from-scratch **Canvas2D** renderer — the fallback for browsers/devices
- * without WebGPU. It walks the scene like the WebGPU `RenderView` (world pass
- * under the camera transform, then a screen-space HUD pass) but draws each
- * sprite immediately with `drawImage` instead of instancing.
+ * without WebGPU. A thin {@link DrawSink} adapter: the {@link SceneWalker}
+ * (shared with the WebGPU `RenderView`) does the scene traversal, culling, and
+ * entity-kind dispatch; this class only knows how to turn a drawable into a
+ * `ctx.drawImage()` call and a pass into a transform + optional clear.
  *
  * Browser-only (`CanvasRenderingContext2D`); exported from `gamekit/renderer`.
  * Implements {@link TextureFactory} so an {@link AssetLoader} can load into it.
  *
- * Parity notes vs. WebGPU: alpha, rotation, origin, sprite-sheet frames, and
- * multiplicative tint (via a cached tinted copy) match. Flips assume a centered
- * origin (the `Sprite` default). Per-sprite `drawImage` is slower than the
- * instanced GPU path — fine for typical 2D scenes, not for tens of thousands.
+ * Parity notes vs. WebGPU: alpha, rotation, origin, sprite-sheet frames, flips,
+ * and multiplicative tint (via a cached tinted copy) match exactly — both
+ * backends consume the same {@link SpriteInstance} shape from the walker. Flips
+ * are decoded from the instance's UV sign (negative `uScale`/`vScale`) rather
+ * than a `flipX`/`flipY` flag, since `emit()` never sees the source entity.
+ * Per-sprite `drawImage` is slower than the instanced GPU path — fine for
+ * typical 2D scenes, not for tens of thousands.
  */
-export class Canvas2DRenderer implements TextureFactory<Canvas2DTexture> {
+export class Canvas2DRenderer
+  implements TextureFactory<Canvas2DTexture>, DrawSink<Canvas2DTexture>
+{
   readonly ctx: CanvasRenderingContext2D;
   clearColor: string;
 
   private readonly _canvas: HTMLCanvasElement;
   private readonly _smoothing: boolean;
-  private readonly _t: RenderTransform = {
-    x: 0,
-    y: 0,
-    rotation: 0,
-    scaleX: 1,
-    scaleY: 1,
-  };
-  // Visible world rect (for tilemap culling), recomputed each frame.
-  private _viewMinX = 0;
-  private _viewMinY = 0;
-  private _viewMaxX = 0;
-  private _viewMaxY = 0;
-  private readonly _corner = new Vec2();
+  // Lazily built on the first draw() call, bound to whichever loader is passed
+  // (a Canvas2DRenderer can't take its AssetLoader at construction — it IS the
+  // loader's TextureFactory, so the loader must be built after the renderer).
+  private _walker: SceneWalker<Canvas2DTexture> | null = null;
 
   constructor(canvas: HTMLCanvasElement, options: Canvas2DRendererOptions = {}) {
     const ctx = canvas.getContext("2d");
@@ -84,28 +78,66 @@ export class Canvas2DRenderer implements TextureFactory<Canvas2DTexture> {
 
   /** Draw `scene` for this frame. `alpha` is `Game.render`'s 0..1 factor. */
   draw(scene: Scene, alpha: number, loader: AssetLoader<Canvas2DTexture>): void {
+    if (!this._walker) this._walker = new SceneWalker(loader);
+    this._walker.walk(scene, alpha, this);
+  }
+
+  // ---- DrawSink<Canvas2DTexture> ----
+
+  beginPass(camera: Camera, alpha: number, pass: RenderPass, clear: boolean): void {
     const ctx = this.ctx;
     ctx.imageSmoothingEnabled = this._smoothing;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = this.clearColor;
-    ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
-
-    const cam = scene.camera;
-    this._computeViewRect(scene);
-
-    // World pass — camera transform maps world → screen pixels.
-    this._setMatrix(cam.view(alpha));
-    this._drawGroup(scene.root, alpha, loader);
-
-    // HUD pass — screen-space (identity transform), drawn on top.
-    if (scene.hud.count > 0) {
+    if (clear) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      this._drawGroup(scene.hud, alpha, loader);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = this.clearColor;
+      ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
     }
+    if (pass === "world") this._setMatrix(camera.view(alpha));
+    else ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalAlpha = 1;
+  emit(inst: SpriteInstance<Canvas2DTexture>): void {
+    const entry = inst.texture;
+    const meta = entry.meta;
+    const src = inst.tint === 0xffffff ? entry.source : this._tinted(entry, inst.tint);
+
+    // Flips are baked into the UV sign by the walker (Texture.frameUV); decode
+    // back to a plain (always-positive) source rect + a destination-side flip,
+    // since drawImage's source width/height can't be negative.
+    const flipX = inst.uScale < 0;
+    const flipY = inst.vScale < 0;
+    const sx = (flipX ? inst.u + inst.uScale : inst.u) * meta.width;
+    const sy = (flipY ? inst.v + inst.vScale : inst.v) * meta.height;
+    const sw = Math.abs(inst.uScale) * meta.width;
+    const sh = Math.abs(inst.vScale) * meta.height;
+
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha = inst.alpha;
+    ctx.translate(
+      inst.x + inst.originX * inst.width,
+      inst.y + inst.originY * inst.height,
+    );
+    if (inst.rotation) ctx.rotate(inst.rotation);
+    if (flipX || flipY) ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+    ctx.drawImage(
+      src,
+      sx,
+      sy,
+      sw,
+      sh,
+      -inst.originX * inst.width,
+      -inst.originY * inst.height,
+      inst.width,
+      inst.height,
+    );
+    ctx.restore();
+  }
+
+  endPass(): void {
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.globalAlpha = 1;
   }
 
   // ---- TextureFactory (used by AssetLoader) ----
@@ -153,157 +185,6 @@ export class Canvas2DRenderer implements TextureFactory<Canvas2DTexture> {
   private _setMatrix(m: Mat3): void {
     const v = m.values;
     this.ctx.setTransform(v[0], v[1], v[3], v[4], v[6], v[7]);
-  }
-
-  private _computeViewRect(scene: Scene): void {
-    const cam = scene.camera;
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    const corners: ReadonlyArray<readonly [number, number]> = [
-      [0, 0],
-      [cam.viewportWidth, 0],
-      [0, cam.viewportHeight],
-      [cam.viewportWidth, cam.viewportHeight],
-    ];
-    for (const [sx, sy] of corners) {
-      const p = cam.screenToWorld(this._corner.set(sx, sy));
-      if (p.x < minX) minX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y > maxY) maxY = p.y;
-    }
-    this._viewMinX = minX;
-    this._viewMinY = minY;
-    this._viewMaxX = maxX;
-    this._viewMaxY = maxY;
-  }
-
-  private _drawGroup(
-    group: Group,
-    alpha: number,
-    loader: AssetLoader<Canvas2DTexture>,
-  ): void {
-    for (const child of group.children) {
-      if (!child.visible || !child.alive) continue;
-      if (child instanceof Group) this._drawGroup(child, alpha, loader);
-      else this._drawEntity(child, alpha, loader);
-    }
-  }
-
-  private _drawEntity(
-    e: Entity,
-    alpha: number,
-    loader: AssetLoader<Canvas2DTexture>,
-  ): void {
-    if (e instanceof Tilemap) return this._drawTilemap(e, loader);
-    if (e instanceof Text) return this._drawText(e, loader);
-    if (e.width === 0 || e.height === 0) return;
-
-    const t = e.sampleRender(alpha, this._t);
-    const w = e.width * t.scaleX;
-    const h = e.height * t.scaleY;
-    const ctx = this.ctx;
-
-    if (e instanceof Sprite) {
-      const entry = loader.resolve(e.textureId);
-      const meta = entry.meta;
-      const frame =
-        ((e.frame % meta.frameCount) + meta.frameCount) % meta.frameCount;
-      const col = frame % meta.framesPerRow;
-      const row = Math.floor(frame / meta.framesPerRow);
-      const sx = col * meta.frameWidth;
-      const sy = row * meta.frameHeight;
-      const src =
-        e.tint === 0xffffff ? entry.source : this._tinted(entry, e.tint);
-
-      ctx.save();
-      ctx.globalAlpha = e.alpha;
-      ctx.translate(t.x + e.originX * w, t.y + e.originY * h);
-      if (t.rotation) ctx.rotate(t.rotation);
-      if (e.flipX || e.flipY) ctx.scale(e.flipX ? -1 : 1, e.flipY ? -1 : 1);
-      ctx.drawImage(
-        src,
-        sx,
-        sy,
-        meta.frameWidth,
-        meta.frameHeight,
-        -e.originX * w,
-        -e.originY * h,
-        w,
-        h,
-      );
-      ctx.restore();
-    } else {
-      // Plain entity → solid white box, top-left anchored.
-      ctx.save();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = "#fff";
-      ctx.translate(t.x, t.y);
-      if (t.rotation) ctx.rotate(t.rotation);
-      ctx.fillRect(0, 0, w, h);
-      ctx.restore();
-    }
-  }
-
-  private _drawTilemap(
-    map: Tilemap,
-    loader: AssetLoader<Canvas2DTexture>,
-  ): void {
-    const entry = loader.resolve(map.tilesetId);
-    const meta = entry.meta;
-    const src =
-      map.tint === 0xffffff ? entry.source : this._tinted(entry, map.tint);
-    const ctx = this.ctx;
-    ctx.globalAlpha = 1;
-    map.forEachTileIn(
-      this._viewMinX,
-      this._viewMinY,
-      this._viewMaxX,
-      this._viewMaxY,
-      (_col, _row, index, worldX, worldY) => {
-        const frame = index - 1; // value N → frame N-1
-        const fc = frame % meta.framesPerRow;
-        const fr = Math.floor(frame / meta.framesPerRow);
-        ctx.drawImage(
-          src,
-          fc * meta.frameWidth,
-          fr * meta.frameHeight,
-          meta.frameWidth,
-          meta.frameHeight,
-          worldX,
-          worldY,
-          map.tileWidth,
-          map.tileHeight,
-        );
-      },
-    );
-  }
-
-  private _drawText(text: Text, loader: AssetLoader<Canvas2DTexture>): void {
-    const entry = loader.resolve(text.font.fontId);
-    const meta = entry.meta;
-    const src =
-      text.tint === 0xffffff ? entry.source : this._tinted(entry, text.tint);
-    const ctx = this.ctx;
-    ctx.globalAlpha = text.alpha;
-    text.forEachGlyph((frame, worldX, worldY, w, h) => {
-      const fc = frame % meta.framesPerRow;
-      const fr = Math.floor(frame / meta.framesPerRow);
-      ctx.drawImage(
-        src,
-        fc * meta.frameWidth,
-        fr * meta.frameHeight,
-        meta.frameWidth,
-        meta.frameHeight,
-        worldX,
-        worldY,
-        w,
-        h,
-      );
-    });
-    ctx.globalAlpha = 1;
   }
 
   /** A multiplicatively-tinted copy of a texture, cached per tint. */

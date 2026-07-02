@@ -24,6 +24,8 @@ export {
 } from "./unsupported.js";
 export { RenderView } from "./RenderView.js";
 export type { SpriteRenderer } from "./RenderView.js";
+export { SceneWalker } from "./SceneWalker.js";
+export type { DrawSink, RenderPass, HasMeta } from "./SceneWalker.js";
 export { AssetLoader, WHITE_TEXTURE } from "./AssetLoader.js";
 export type { AssetSpec, TextureFactory } from "./AssetLoader.js";
 export { Texture } from "./Texture.js";
