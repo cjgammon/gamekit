@@ -13,9 +13,17 @@ import {
   mountUnsupportedNotice,
 } from "@cjgammon/gamekit/renderer";
 import { InputManager } from "@cjgammon/gamekit/input";
+import type {
+  ChildToParentMessage,
+  ParentToChildMessage,
+} from "./preview-protocol.js";
 
 const canvas = document.getElementById("view") as HTMLCanvasElement;
 const hudEl = document.getElementById("hud") as HTMLDivElement;
+
+function postToParent(msg: ChildToParentMessage): void {
+  parent.postMessage(msg, "*");
+}
 
 /** Tutorial helper: write a line of text over the canvas — a stand-in for a real
  *  BitmapFont HUD so the steps stay asset-free. */
@@ -28,7 +36,7 @@ function hud(text: unknown): void {
   lastHud = s;
   hudEl.textContent = s;
   // Report it so the tutorial can tell when a mission is complete.
-  parent.postMessage({ type: "hud", text: s }, "*");
+  postToParent({ type: "hud", text: s });
 }
 
 // Track the game the editor code creates so we can tear it down when this iframe
@@ -77,7 +85,7 @@ const scope: Record<string, unknown> = {
 let ran = false;
 
 window.addEventListener("message", async (e: MessageEvent) => {
-  const data = e.data as { type?: string; code?: string } | null;
+  const data = e.data as ParentToChildMessage | null;
   if (!data || data.type !== "run" || ran) return;
   ran = true; // one run per load; the parent reloads the iframe for the next run
   hud("");
@@ -87,16 +95,16 @@ window.addEventListener("message", async (e: MessageEvent) => {
     // eslint-disable-next-line no-new-func
     const fn = new Function(
       ...names,
-      `"use strict"; return (async () => {\n${data.code ?? ""}\n})();`,
+      `"use strict"; return (async () => {\n${data.code}\n})();`,
     );
     await fn(...names.map((n) => scope[n]));
-    parent.postMessage({ type: "ok" }, "*");
+    postToParent({ type: "ok" });
   } catch (err) {
     const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
     hud("⚠ " + (err instanceof Error ? err.message : String(err)));
-    parent.postMessage({ type: "error", message }, "*");
+    postToParent({ type: "error", message });
   }
 });
 
 // Tell the parent we're loaded and ready to receive code.
-parent.postMessage({ type: "ready" }, "*");
+postToParent({ type: "ready" });

@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import type {
+  ChildToParentMessage,
+  ParentToChildMessage,
+} from "../preview-protocol.js";
 
 const PREVIEW_URL = `${import.meta.env.BASE_URL}preview.html`;
 
-export type PreviewSignal =
-  | { kind: "ok" }
-  | { kind: "hud"; text: string }
-  | { kind: "error"; message: string };
+/** Every {@link ChildToParentMessage} except "ready", which Preview handles
+ *  internally (it's what triggers sending "run") and never surfaces here. */
+export type PreviewSignal = Exclude<ChildToParentMessage, { type: "ready" }>;
 
 interface Props {
   /** Transpiled JS to run. */
@@ -32,21 +35,26 @@ export function Preview({ js, runKey, onSignal }: Props) {
   useEffect(() => {
     function onMessage(e: MessageEvent) {
       if (e.source !== frame.current?.contentWindow) return;
-      const data = e.data as { type?: string; message?: string; text?: string };
-      if (data?.type === "ready") {
-        setError(null);
-        frame.current?.contentWindow?.postMessage(
-          { type: "run", code: jsRef.current },
-          "*",
-        );
-      } else if (data?.type === "ok") {
-        setError(null);
-        signalRef.current?.({ kind: "ok" });
-      } else if (data?.type === "hud") {
-        signalRef.current?.({ kind: "hud", text: data.text ?? "" });
-      } else if (data?.type === "error") {
-        setError(data.message ?? "Error");
-        signalRef.current?.({ kind: "error", message: data.message ?? "Error" });
+      const data = e.data as ChildToParentMessage | null;
+      if (!data) return;
+      switch (data.type) {
+        case "ready": {
+          setError(null);
+          const run: ParentToChildMessage = { type: "run", code: jsRef.current };
+          frame.current?.contentWindow?.postMessage(run, "*");
+          break;
+        }
+        case "ok":
+          setError(null);
+          signalRef.current?.(data);
+          break;
+        case "error":
+          setError(data.message);
+          signalRef.current?.(data);
+          break;
+        case "hud":
+          signalRef.current?.(data);
+          break;
       }
     }
     window.addEventListener("message", onMessage);

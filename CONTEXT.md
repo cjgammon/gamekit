@@ -65,3 +65,38 @@ still `unknown`, joined only by `as Partial<Syncable>` /
 `as Partial<NetStateReceiver>` casts on either end — tying a tag to its
 payload *shape* (not just its name) is a separate, larger seam left for a
 future pass.
+
+## Tutorial sandbox message protocol
+
+`site/src/preview-entry.ts` (runs inside the sandbox `<iframe>`) and
+`site/src/components/Preview.tsx` (the parent Preact component) talk over
+`window.postMessage`, which is untyped at the platform level. Before this,
+each side hand-rolled its own inline message shape and `Preview.tsx`
+remapped the wire's `type` field into a second, separately-maintained
+`kind` vocabulary (`PreviewSignal`) via an if/else chain — two string
+enumerations for one concept, joined by nothing the compiler checked.
+
+`site/src/preview-protocol.ts` is the one module both sides import, split
+by **direction** rather than one bidirectional union — the four messages
+aren't symmetric: `"run"` only ever flows parent→child, the rest only ever
+flow child→parent, and collapsing both directions into one type would let
+either side statically accept a message it could never actually receive:
+
+```
+type ParentToChildMessage = { type: "run"; code: string };
+type ChildToParentMessage =
+  | { type: "ready" }
+  | { type: "ok" }
+  | { type: "hud"; text: string }
+  | { type: "error"; message: string };
+```
+
+`Preview.tsx`'s public `onSignal` callback still narrows out `"ready"` —
+that message is `Preview.tsx`'s own internal handshake (it's what triggers
+sending `"run"`), not something callers like `PlayTrack.tsx` should have to
+know exists. Rather than hand-listing the remaining cases (reintroducing
+the same drift risk this change removes), the callback's type is *derived*
+from the shared union: `PreviewSignal = Exclude<ChildToParentMessage, {
+type: "ready" }>`. Adding a new child→parent message to the protocol needs
+one edit to `ChildToParentMessage`; `PreviewSignal` picks it up
+automatically.
