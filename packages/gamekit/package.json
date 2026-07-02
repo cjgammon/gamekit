@@ -1,6 +1,6 @@
 {
   "name": "@cjgammon/gamekit",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A 2D multiplayer game engine for the web, written in TypeScript from scratch. Zero runtime dependencies, Flixel-inspired, WebGPU renderer.",
   "type": "module",
   "license": "MIT",

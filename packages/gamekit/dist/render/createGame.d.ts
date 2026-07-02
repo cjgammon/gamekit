@@ -13,10 +13,15 @@ export type AnyRenderGame = RenderGame | Canvas2DGame;
  * the shared options (the two backends type it differently); set it after via
  * `game.renderer.clearColor`.
  *
+ * **Config is optional.** With no config the game fits the canvas: world units
+ * match CSS pixels (`fov` = the canvas's CSS width) and it re-fits as the canvas
+ * resizes. Pass `fov`/`width` to override.
+ *
  * ```ts
- * const game = await createGame(canvas, { fov: 480, autoResize: true });
+ * const game = await createGame(canvas);          // fits the canvas, 1 unit = 1px
+ * // or: await createGame(canvas, { fov: 480 });  // show 480 world units across
  * game.switchScene(new PlayScene());
  * game.start();
  * ```
  */
-export declare function createGame(canvas: HTMLCanvasElement, config: RenderGameConfig): Promise<AnyRenderGame>;
+export declare function createGame(canvas: HTMLCanvasElement, config?: RenderGameConfig): Promise<AnyRenderGame>;
