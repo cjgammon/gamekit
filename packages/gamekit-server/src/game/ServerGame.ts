@@ -7,12 +7,15 @@ import {
 } from "@cjgammon/gamekit";
 import { NetServer, type PlayerFactory } from "../net/NetServer.js";
 
-export interface ServerGameOptions {
+export interface ServerGameOptions<T extends string = string> {
   /** Injectable clock (ms). Defaults to Date.now; tests pass a fake clock. */
   now?: () => number;
   /** Builds the entity each connection controls (default: a free-moving
    *  player). Supply your own for paddles, ships, etc. */
   createPlayer?: PlayerFactory;
+  /** Type tag assigned to the entity a connecting client controls. Defaults
+   *  to `"player"`. Set this if your `T` doesn't include that tag. */
+  playerType?: T;
   /** Wire codec. Defaults to the compact binary codec; must match the client. */
   codec?: Codec;
 }
@@ -25,15 +28,15 @@ export interface ServerGameOptions {
  *
  * For deterministic tests, drive `tick()` manually instead of `start()`.
  */
-export class ServerGame extends Game {
-  readonly net: NetServer;
+export class ServerGame<T extends string = string> extends Game {
+  readonly net: NetServer<T>;
   readonly scene: Scene;
 
   private readonly _now: () => number;
   private _tickCount = 0;
   private _timer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(config: GameConfig, options: ServerGameOptions = {}) {
+  constructor(config: GameConfig, options: ServerGameOptions<T> = {}) {
     super(config);
     this._now = options.now ?? Date.now;
     this.scene = new Scene();
@@ -43,8 +46,7 @@ export class ServerGame extends Game {
       this.tickRate,
       this.width,
       this.height,
-      options.createPlayer,
-      options.codec,
+      options,
     );
   }
 
