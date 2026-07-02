@@ -16,6 +16,7 @@ export type {
   PlayerInfo,
   Controllable,
   Syncable,
+  NetServerOptions,
 } from "./net/NetServer.js";
 export { ServerTransport } from "./net/ServerTransport.js";
 export { WebSocketServer } from "./ws/WebSocketServer.js";

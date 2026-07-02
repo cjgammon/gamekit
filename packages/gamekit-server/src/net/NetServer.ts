@@ -10,9 +10,9 @@ import {
 } from "@cjgammon/gamekit";
 import { PlayerEntity } from "../game/PlayerEntity.js";
 
-interface SyncedEntity {
+interface SyncedEntity<T extends string> {
   entity: Entity;
-  type: string;
+  type: T;
 }
 
 /** An entity a connection drives: the server writes its consumed input here. */
@@ -40,6 +40,20 @@ export interface PlayerInfo {
  *  (a free-moving {@link PlayerEntity}) to make paddles, ships, etc. */
 export type PlayerFactory = (info: PlayerInfo) => Controllable;
 
+/** Options for {@link NetServer}, generic over the game's own entity type
+ *  tag union `T` (e.g. `"player" | "ball"`). */
+export interface NetServerOptions<T extends string = string> {
+  /** Builds the entity each connection controls (default: a free-moving
+   *  player). Supply your own for paddles, ships, etc. */
+  createPlayer?: PlayerFactory;
+  /** Type tag assigned to the entity a connecting client controls.
+   *  Defaults to `"player"`. Set this if your `T` doesn't include that tag
+   *  (e.g. a game whose connecting entity is tagged `"paddle"`). */
+  playerType?: T;
+  /** Wire codec. Defaults to the compact binary codec; must match the client. */
+  codec?: Codec;
+}
+
 interface ClientRecord {
   id: NetId;
   transport: Transport;
@@ -55,36 +69,37 @@ interface ClientRecord {
  * gets a player entity spawned into the scene; the server is authoritative —
  * input only sets the player's latest intent, which its `fixedUpdate` consumes.
  */
-export class NetServer {
+export class NetServer<T extends string = string> {
   private readonly _clients = new Map<NetId, ClientRecord>();
-  private readonly _synced = new Map<NetId, SyncedEntity>();
+  private readonly _synced = new Map<NetId, SyncedEntity<T>>();
   private _nextId: NetId = 1;
   private _state: unknown = undefined;
+
+  private readonly _createPlayer: PlayerFactory;
+  private readonly _playerType: T;
+  private readonly _codec: Codec;
 
   constructor(
     private readonly _scene: Scene,
     private readonly _tickRate: number,
     private readonly _worldW: number,
     private readonly _worldH: number,
-    /** Builds the entity each connection controls. Defaults to a free-moving
-     *  PlayerEntity; supply your own to make paddles, ships, etc. */
-    private readonly _createPlayer: PlayerFactory = (i) =>
-      new PlayerEntity(
-        50 + ((i.id * 60) % i.worldW),
-        50,
-        i.worldW,
-        i.worldH,
-      ),
-    /** Wire codec. Defaults to the compact binary codec; must match the client. */
-    private readonly _codec: Codec = defaultCodec,
-  ) {}
+    options: NetServerOptions<T> = {},
+  ) {
+    this._createPlayer =
+      options.createPlayer ??
+      ((i) =>
+        new PlayerEntity(50 + ((i.id * 60) % i.worldW), 50, i.worldW, i.worldH));
+    this._playerType = options.playerType ?? ("player" as T);
+    this._codec = options.codec ?? defaultCodec;
+  }
 
   get clientCount(): number {
     return this._clients.size;
   }
 
   /** Spawn a synced entity into the scene and assign it a stable NetId. */
-  spawn(type: string, entity: Entity): NetId {
+  spawn(type: T, entity: Entity): NetId {
     const id = this._nextId++;
     this._scene.add(entity);
     this._synced.set(id, { entity, type });
@@ -115,7 +130,7 @@ export class NetServer {
       worldH: this._worldH,
     });
     this._scene.add(entity);
-    this._synced.set(id, { entity, type: "player" });
+    this._synced.set(id, { entity, type: this._playerType });
     const rec: ClientRecord = { id, transport, entity, queue: [], lastSeq: 0 };
     this._clients.set(id, rec);
 

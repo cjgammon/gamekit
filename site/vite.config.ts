@@ -25,9 +25,11 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      // Two entry HTML files: the app, and the sandbox iframe.
+      // Three entry HTML files: the marketing landing page, the tutorial app,
+      // and the sandbox iframe both of them run demos in.
       input: {
         main: here("index.html"),
+        getStarted: here("get-started.html"),
         preview: here("preview.html"),
       },
     },
