@@ -3,6 +3,7 @@ import { marked } from "marked";
 import { steps } from "./tutorial/steps";
 import { CodeEditor } from "./components/CodeEditor";
 import { Preview, type PreviewSignal } from "./components/Preview";
+import { SidebarToggle, useSidebarCollapsed } from "./components/SidebarToggle";
 import { tsToJs } from "./runner/transpile";
 
 const STEP_KEY = "gamekit-tutorial-step";
@@ -16,7 +17,8 @@ function loadDone(): Set<string> {
   }
 }
 
-export function App() {
+/** The "Play & tweak" track: a working game per step + an achievement to earn. */
+export function PlayTrack() {
   const [stepIndex, setStepIndex] = useState(() => {
     const n = Number(localStorage.getItem(STEP_KEY));
     return Number.isFinite(n) && n >= 0 && n < steps.length ? n : 0;
@@ -85,7 +87,9 @@ export function App() {
 
   function onSignal(sig: PreviewSignal) {
     if (sig.kind === "ok") setRan(true);
-    else if (sig.kind === "hud") setHuds((h) => [...h, sig.text]);
+    else if (sig.kind === "hud")
+      // Ignore a duplicate tail and keep the list bounded (goals only scan recent text).
+      setHuds((h) => (h[h.length - 1] === sig.text ? h : [...h, sig.text].slice(-50)));
   }
 
   function setCode(v: string) {
@@ -96,21 +100,12 @@ export function App() {
     doRun(step.starter);
   }
   const go = (i: number) => setStepIndex(Math.max(0, Math.min(steps.length - 1, i)));
+  const [collapsed, toggleCollapsed] = useSidebarCollapsed();
 
   return (
-    <div class="app">
-      <header class="topbar">
-        <div class="brand">🎮 gamekit</div>
-        <div class="tagline">Make your first game!</div>
-        <nav class="toplinks">
-          <a href="https://github.com/cjgammon/gamekit" target="_blank" rel="noreferrer">
-            GitHub
-          </a>
-        </nav>
-      </header>
-
+    <>
       <div class="body">
-        <aside class="sidebar">
+        <aside class={`sidebar${collapsed ? " collapsed" : ""}`}>
           <h2>Your quest</h2>
           <ol class="steplist">
             {steps.map((s, i) => (
@@ -118,14 +113,16 @@ export function App() {
                 <button
                   class={`step${i === stepIndex ? " active" : ""}${done.has(s.id) ? " done" : ""}`}
                   onClick={() => go(i)}
+                  title={s.title}
                 >
                   <span class="num">{done.has(s.id) ? "✓" : i + 1}</span>
-                  {s.title}
+                  <span class="step-label">{s.title}</span>
                 </button>
               </li>
             ))}
           </ol>
           <p class="sidebar-foot">{done.size} / {steps.length} done</p>
+          <SidebarToggle collapsed={collapsed} onToggle={toggleCollapsed} />
         </aside>
 
         <main class="main">
@@ -181,6 +178,6 @@ export function App() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

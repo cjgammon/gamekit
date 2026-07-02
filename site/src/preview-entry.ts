@@ -2,8 +2,9 @@
 // Runs INSIDE the sandbox iframe. Imports the real gamekit, exposes a friendly
 // set of names to the tutorial code (so editor snippets need no imports), then
 // runs whatever code the parent posts. Each run gets a fresh iframe (the parent
-// reloads it), so there's nothing to tear down here.
-import { Scene, Entity, Sprite, Group, Camera, Vec2, Ease, Rng } from "@cjgammon/gamekit";
+// reloads it); we tear down the game the editor created on unload so its WebGPU
+// device is freed immediately instead of lingering until GC.
+import { Scene, Entity, Sprite, Group, Camera, Vec2, Ease, Rng, Emitter, Particle } from "@cjgammon/gamekit";
 import {
   createGame,
   RenderGame,
@@ -18,16 +19,44 @@ const hudEl = document.getElementById("hud") as HTMLDivElement;
 
 /** Tutorial helper: write a line of text over the canvas — a stand-in for a real
  *  BitmapFont HUD so the steps stay asset-free. */
+let lastHud: string | null = null;
 function hud(text: unknown): void {
   const s = text == null ? "" : String(text);
+  // Steps may call hud() every frame (e.g. while moving). Only do work when the
+  // text actually changes, so we don't flood the parent with postMessages.
+  if (s === lastHud) return;
+  lastHud = s;
   hudEl.textContent = s;
   // Report it so the tutorial can tell when a mission is complete.
   parent.postMessage({ type: "hud", text: s }, "*");
 }
 
+// Track the game the editor code creates so we can tear it down when this iframe
+// reloads. Without this, every run would leak a WebGPU device until GC, and after
+// enough runs the page can stall. createGame is wrapped to capture the instance.
+let activeGame: { stop(): void; destroy?(): void } | null = null;
+const trackedCreateGame: typeof createGame = async (...args) => {
+  const game = await createGame(...args);
+  activeGame = game;
+  return game;
+};
+
+function teardownGame(): void {
+  const g = activeGame;
+  activeGame = null;
+  try {
+    if (g?.destroy) g.destroy();
+    else g?.stop();
+  } catch {
+    /* ignore teardown errors while the document is being torn down */
+  }
+}
+// Fires right before this iframe navigates to the next run — release GPU promptly.
+window.addEventListener("pagehide", teardownGame);
+
 // The names the tutorial code runs against (no imports needed in the editor).
 const scope: Record<string, unknown> = {
-  createGame,
+  createGame: trackedCreateGame,
   RenderGame,
   Canvas2DGame,
   isWebGPUAvailable,
@@ -40,6 +69,8 @@ const scope: Record<string, unknown> = {
   Vec2,
   Ease,
   Rng,
+  Emitter,
+  Particle,
   InputManager,
   hud,
   canvas,

@@ -7,12 +7,13 @@
   --muted: #9a9ab0;
   --accent: #6ca8ff;
   --accent-2: #3cf;
+  --topbar-h: 56px;
 }
 
 * { box-sizing: border-box; }
 
 html, body, #app {
-  height: 100%;
+  /* No fixed height — the document grows with content and scrolls naturally. */
   margin: 0;
 }
 
@@ -27,7 +28,7 @@ a { color: var(--accent); }
 .app {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100vh;
 }
 
 /* ---- top bar ---- */
@@ -38,6 +39,11 @@ a { color: var(--accent); }
   padding: 10px 18px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
+  /* Stays put while the page scrolls. */
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: var(--topbar-h);
 }
 .brand { font-weight: 700; font-size: 17px; }
 .tagline { color: var(--muted); font-size: 14px; }
@@ -46,8 +52,98 @@ a { color: var(--accent); }
 .toplinks a { color: var(--muted); text-decoration: none; }
 .toplinks a:hover { color: var(--text); }
 
+/* ---- track switch (Type it out | Play & tweak) ---- */
+.trackswitch {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 3px;
+}
+.track-tab {
+  font: 13px inherit;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.track-tab:hover { color: var(--text); }
+.track-tab.active { background: var(--accent); color: #04101f; font-weight: 600; }
+@media (max-width: 720px) { .track-tab { padding: 5px 8px; font-size: 12px; } }
+
+/* ---- Type-it-out track ---- */
+.learn-hint {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: rgba(255, 180, 80, 0.1);
+  color: #ffd28a;
+  font-size: 13px;
+}
+/* The exact code to copy, shown above the typing box. */
+/* ---- collapsible panels under the editor (Type this / Program so far) ---- */
+.learn-aux {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+}
+.learn-collapse {
+  flex: 1 1 280px;
+  min-width: 0;
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.learn-collapse.target {
+  border-color: var(--accent);
+  background: rgba(108, 168, 255, 0.08);
+}
+.learn-collapse > summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  user-select: none;
+}
+.learn-collapse.target > summary { color: var(--accent); }
+.learn-collapse pre {
+  margin: 0;
+  max-height: 22vh;
+  overflow: auto;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  color: #eaf2ff;
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+.learn-waiting { color: var(--muted); text-align: center; }
+.learn-waiting p { max-width: 320px; margin: 0; padding: 0 20px; }
+.learn-final {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  background: var(--panel);
+  color: #d7e0ee;
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+
 /* ---- body: sidebar + main ---- */
-.body { display: flex; flex: 1; min-height: 0; }
+.body { display: flex; flex: 1; }
 
 .sidebar {
   width: 240px;
@@ -55,7 +151,15 @@ a { color: var(--accent); }
   border-right: 1px solid var(--border);
   background: var(--panel);
   padding: 16px 12px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.15s ease;
+  /* Stick under the topbar while the main column scrolls past. */
+  position: sticky;
+  top: var(--topbar-h);
+  align-self: flex-start;
+  height: calc(100vh - var(--topbar-h));
 }
 .sidebar h2 {
   font-size: 12px;
@@ -64,7 +168,7 @@ a { color: var(--accent); }
   color: var(--muted);
   margin: 4px 8px 12px;
 }
-.steplist { list-style: none; margin: 0; padding: 0; }
+.steplist { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; overflow-y: auto; min-height: 0; }
 .steplist .step {
   display: flex;
   align-items: center;
@@ -93,23 +197,52 @@ a { color: var(--accent); }
 }
 .steplist .step.active .num { background: var(--accent); color: #04101f; }
 .steplist .step.done .num { background: #36c46a; color: #04101f; }
+.step-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-foot { color: var(--muted); font-size: 12px; margin: 14px 10px 0; }
+
+/* ---- collapse toggle (lower-left) ---- */
+.sidebar-toggle {
+  margin-top: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+.sidebar-toggle:hover { color: var(--text); border-color: var(--accent); }
+.sidebar-toggle-icon { font-size: 15px; line-height: 1; }
+
+/* ---- collapsed rail ---- */
+.sidebar.collapsed { width: 60px; padding-left: 8px; padding-right: 8px; }
+.sidebar.collapsed h2,
+.sidebar.collapsed .sidebar-foot,
+.sidebar.collapsed .step-label,
+.sidebar.collapsed .sidebar-toggle-label { display: none; }
+.sidebar.collapsed .steplist .step { justify-content: center; padding: 8px; gap: 0; }
+.sidebar.collapsed .sidebar-toggle { justify-content: center; padding: 8px; }
 
 /* ---- main ---- */
 .main {
   flex: 1;
   min-width: 0;
-  min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 20px clamp(16px, 4vw, 48px) 16px;
+  padding: 20px clamp(16px, 4vw, 48px) 24px;
   max-width: 1100px;
   margin: 0 auto;
   width: 100%;
 }
 
-/* Prose scrolls if it's long, so it never pushes the editor/preview out. */
-.prose { flex: 0 1 auto; overflow-y: auto; max-height: 38vh; }
+/* Prose flows at full height — the page scrolls rather than clipping it. */
+.prose { flex: 0 0 auto; }
 .prose h1 { font-size: 26px; margin: 0 0 8px; }
 .prose h2 { font-size: 19px; margin: 24px 0 6px; }
 .prose p { color: #cfcfdd; }
@@ -185,8 +318,10 @@ a { color: var(--accent); }
 
 /* ---- workbench: editor | preview ---- */
 .workbench {
-  flex: 1;
-  min-height: 0; /* lets the editor scroll instead of growing the page */
+  flex: 0 0 auto;
+  /* Working height for the editor + preview. Kept modest — the game canvas is
+     480x360, so ~400px shows it at full size; the rest of the page scrolls. */
+  height: clamp(320px, 44vh, 420px);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -279,12 +414,13 @@ a { color: var(--accent); }
   margin-top: 8px;
 }
 
-/* On narrow screens, stack and let the page scroll naturally. */
+/* On narrow screens, stack the editor over the preview; the page scrolls. The
+   sidebar drops out of sticky and flows with the page. */
 @media (max-width: 860px) {
-  .main { overflow-y: auto; }
-  .prose { max-height: none; overflow: visible; }
-  .workbench { grid-template-columns: 1fr; min-height: 0; }
+  .sidebar { position: static; height: auto; max-height: none; }
+  .workbench { grid-template-columns: 1fr; height: auto; }
   .editor-pane { height: 340px; }
+  .preview-pane { height: 300px; }
 }
 .stepnav .progress { color: var(--muted); font-size: 13px; }
 .stepnav .btn:last-child { margin-left: auto; }
